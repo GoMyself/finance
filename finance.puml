@@ -1,0 +1,66 @@
+@startuml
+
+start
+fork
+    :用户充值;
+    :路由/finance/pay 参数id,amount,bankid;
+
+    switch (id)
+    case (in newestPay)
+       :调用model.NewestPay(ctx, id, amount, bid, user);
+       :NewestPay 负责记录日志，写入订单，记录存款行为到redis;
+       :Pay()支付公共入口;
+       :online, remit, unionpay 类型支付方式, 银行ID编码必传;
+       :调用payment.Pay(pLog, ch, amount, bid) 向三方发起订单申请;
+       if (result) is (true) then
+         :返回支付链接;
+       else (no)
+         :返回错误信息;
+       endif
+       :记录完成请求日志，请求参数和返回结果;
+       :NewestPay() 将获取到的结果，返回前端;
+    case (in coinPay)
+        :model.CoinPay(ctx, id, amount, user);
+        :CoinPay 负责记录日志，写入订单，记录存款行为到redis,调用payment.Pay向三方发起订单申请;
+        if (result) is (true) then
+            :返回支付链接;
+            else (no)
+                :返回错误信息;
+            endif
+        :记录完整请求日志，请求参数和返回结果;
+        :CoinPay() 将获取到的结果，返回前端;
+    case (id not in newestPay and coinPay)
+      :404;
+      stop
+    endswitch
+fork again
+    :用户提现;
+    :路由/finance/withdraw 参数amount,bid;
+    :检测银行卡是否存在;
+    if (获取风控UID?) is (yes) then
+      :维护订单的风控审核人员;
+    else (no)
+      :将订单方式待领取订单池;
+    endif
+    if (风控审核提款订单 是否通过?) is (yes) then
+        if (amount > 10000?) is (yes) then
+          :人工出款或者人工指定代付渠道;
+        else (no)
+          :自动分配渠道出款;
+        endif
+    else (no)
+      :订单失败;
+      stop
+    endif;
+    if (出款成功?) is (yes) then
+      :订单成功;
+      stop
+    else (财务人工处理)
+      stop
+    endif
+fork again
+    :商户后台提款审核流程;
+    :前台;
+end fork
+stop
+@enduml
