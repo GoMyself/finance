@@ -1,7 +1,7 @@
 #! /bin/bash
 
-git checkout fat
-git pull origin fat
+git checkout main
+git pull origin main
 git submodule init
 git submodule update
 
