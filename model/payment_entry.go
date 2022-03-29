@@ -5,28 +5,30 @@ import (
 	"finance/contrib/helper"
 	"finance/contrib/validator"
 	"fmt"
+	"strconv"
+	"time"
+
 	g "github.com/doug-martin/goqu/v9"
 	"github.com/shopspring/decimal"
 	"lukechampine.com/frand"
-	"strconv"
-	"time"
 
 	"github.com/valyala/fasthttp"
 )
 
 // 定义全局 payment
-var (
-	WPay     = new(WPayment)
-	QuickPay = new(QuickPayment)
-	FyPay    = new(FyPayment)
-	UzPay    = new(UzPayment)
-	USDTPay  = new(USDTPayment)
-	YFB      = new(YfbPayment)
-	YNPAY    = new(YNPayment)
-)
 
 //New 初始化配置
 func NewPayment() {
+
+	var (
+		WPay     = new(WPayment)
+		QuickPay = new(QuickPayment)
+		FyPay    = new(FyPayment)
+		UzPay    = new(UzPayment)
+		USDTPay  = new(USDTPayment)
+		YFB      = new(YfbPayment)
+		YNPAY    = new(YNPayment)
+	)
 
 	WPay.New()     // wPay
 	QuickPay.New() // quickPay

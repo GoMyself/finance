@@ -243,12 +243,19 @@ func CoinPay(ctx *fasthttp.RequestCtx, pid, amount string, user Member) {
 }
 
 // DepositCallBack 存款回调
-func DepositCallBack(ctx *fasthttp.RequestCtx, p Payment) {
+func DepositCallBack(ctx *fasthttp.RequestCtx, payment_id string) {
 
 	var (
 		err  error
 		data paymentCallbackResp
 	)
+
+	p, ok := paymentRoute[payment_id]
+	if !ok {
+		fmt.Println(payment_id, " not found")
+		return
+	}
+
 	pLog := &paymentTDLog{
 		Merchant:   p.Name(),
 		Flag:       "deposit callback",

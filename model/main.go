@@ -18,7 +18,6 @@ import (
 	g "github.com/doug-martin/goqu/v9"
 	_ "github.com/doug-martin/goqu/v9/dialect/mysql"
 	"github.com/fluent/fluent-logger-golang/fluent"
-	"github.com/gertd/go-pluralize"
 	"github.com/go-redis/redis/v8"
 	"github.com/jmoiron/sqlx"
 	"github.com/olivere/elastic/v7"
@@ -57,11 +56,10 @@ type MetaTable struct {
 }
 
 var (
-	meta            *MetaTable
-	loc             *time.Location
-	fc              *fasthttp.Client
-	ctx             = context.Background()
-	pluralizeClient = pluralize.NewClient()
+	meta *MetaTable
+	loc  *time.Location
+	fc   *fasthttp.Client
+	ctx  = context.Background()
 
 	dialect              = g.Dialect("mysql")
 	zero                 = decimal.NewFromInt(0)
@@ -143,10 +141,6 @@ func Constructor(mt *MetaTable, socks5 string, c *gorpc.Client) {
 	}
 
 	NewPayment()
-
-	_, _ = meta.Nats.Subscribe(meta.Prefix+":merchant_notify", func(m *nats.Msg) {
-		fmt.Printf("Nats received a message: %s\n", string(m.Data))
-	})
 }
 
 func pushLog(err error, code string) error {
@@ -272,10 +266,6 @@ func PushWithdrawNotify(format, username, amount string) error {
 
 	_ = meta.Nats.Flush()
 	return nil
-}
-
-func (c *PrivTree) UnmarshalBinary(d []byte) error {
-	return helper.JsonUnmarshal(d, c)
 }
 
 func SystemLogWrite(content string, ctx *fasthttp.RequestCtx) {

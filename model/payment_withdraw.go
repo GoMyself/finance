@@ -4,6 +4,7 @@ import (
 	"errors"
 	"finance/contrib/helper"
 	"fmt"
+
 	g "github.com/doug-martin/goqu/v9"
 	"github.com/valyala/fasthttp"
 )
@@ -47,12 +48,18 @@ func Withdrawal(p Payment, arg WithdrawAutoParam) (string, error) {
 }
 
 // WithdrawalCallBack 提款回调
-func WithdrawalCallBack(ctx *fasthttp.RequestCtx, p Payment) {
+func WithdrawalCallBack(ctx *fasthttp.RequestCtx, payment_id string) {
 
 	var (
 		err  error
 		data paymentCallbackResp
 	)
+
+	p, ok := paymentRoute[payment_id]
+	if !ok {
+		fmt.Println(payment_id, " not found")
+		return
+	}
 
 	pLog := &paymentTDLog{
 		Merchant:   p.Name(),
