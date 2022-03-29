@@ -4,6 +4,7 @@ import (
 	"errors"
 	"finance/contrib/helper"
 	"fmt"
+
 	"github.com/olivere/elastic/v7"
 )
 
@@ -123,7 +124,7 @@ func DepositESQuery(index, sortField string, page, pageSize int,
 
 		deposit := Deposit{}
 		deposit.ID = v.Id
-		err = cjson.Unmarshal(v.Source, &deposit)
+		err = helper.JsonUnmarshal(v.Source, &deposit)
 		if err != nil {
 			return data, errors.New(helper.FormatErr)
 		}

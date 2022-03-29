@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/beanstalkd/go-beanstalk"
-	jsoniter "github.com/json-iterator/go"
 	"github.com/nats-io/nats.go"
 
 	"bitbucket.org/nwf2013/schema"
@@ -95,8 +94,6 @@ var (
 	withdrawOrderLockKey = "w:order:%s"
 	//usdt汇率 设置
 	usdtKey = "usdt_rate"
-
-	cjson = jsoniter.ConfigCompatibleWithStandardLibrary
 )
 
 //提现钱包

@@ -4,14 +4,16 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/go-redis/redis/v8"
 	"strconv"
 	"strings"
 	"time"
 
-	"bitbucket.org/nwf2013/schema"
+	"github.com/go-redis/redis/v8"
+
 	"finance/contrib/helper"
 	"finance/contrib/validator"
+
+	"bitbucket.org/nwf2013/schema"
 	g "github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
 	"github.com/olivere/elastic/v7"
@@ -481,7 +483,7 @@ func WithdrawHistoryList(ex g.Ex, rangeParam map[string][]interface{}, ty uint8,
 	for _, v := range esData {
 		withdraw := Withdraw{}
 		withdraw.ID = v.Id
-		err = cjson.Unmarshal(v.Source, &withdraw)
+		err = helper.JsonUnmarshal(v.Source, &withdraw)
 		if err != nil {
 			return data, errors.New(helper.FormatErr)
 		}
@@ -700,7 +702,7 @@ func WithDrawDailyLimit(date, username string) (map[string]string, error) {
 		}
 
 		data := make(map[string]string)
-		err = cjson.Unmarshal([]byte(rs), &data)
+		err = helper.JsonUnmarshal([]byte(rs), &data)
 		if err != nil {
 			return defaultLevelWithdrawLimit, errors.New(helper.FormatErr)
 		}
@@ -708,7 +710,7 @@ func WithDrawDailyLimit(date, username string) (map[string]string, error) {
 		return data, nil
 	}
 
-	b, _ := cjson.Marshal(defaultLevelWithdrawLimit)
+	b, _ := helper.JsonMarshal(defaultLevelWithdrawLimit)
 	err = meta.MerchantRedis.Set(ctx, limitKey, b, 24*60*60*time.Second).Err()
 	if err != nil {
 		return defaultLevelWithdrawLimit, pushLog(err, helper.RedisErr)
@@ -1300,7 +1302,7 @@ func withDrawDailyLimitUpdate(amount decimal.Decimal, date, username string) err
 		return pushLog(err, helper.RedisErr)
 	}
 
-	err = cjson.Unmarshal([]byte(rs), &wl)
+	err = helper.JsonUnmarshal([]byte(rs), &wl)
 	if err != nil {
 		return errors.New(helper.FormatErr)
 	}
@@ -1311,7 +1313,7 @@ func withDrawDailyLimitUpdate(amount decimal.Decimal, date, username string) err
 	prev, _ := decimal.NewFromString(wl["max_remain"])
 	wl["max_remain"] = prev.Sub(amount).String()
 
-	b, _ := cjson.Marshal(wl)
+	b, _ := helper.JsonMarshal(wl)
 	err = meta.MerchantRedis.Set(ctx, limitKey, b, 24*60*60*time.Second).Err()
 	if err != nil {
 		return pushLog(err, helper.RedisErr)
