@@ -48,26 +48,16 @@ type wPayWithdrawResp struct {
 
 func (that *WPayment) New() {
 
-	//appID := "10679"
-	//payKey := "KRYD47E53kWoP4p9yVcSJw"
-	//paySecret := "kwl56qForUC9sMYVVf7zUA"
-	//
-	//if meta.IsDev {
-	//	appID = "10701"
-	//	payKey = "dWTIlImmq0StIGRCZlItg"
-	//	paySecret = "jv39zam1PUONS_8E_eE4Fg"
-	//}
-
 	appID := meta.Finance["w"]["app_id"].(string)
 	payKey := meta.Finance["w"]["key"].(string)
 	paySecret := meta.Finance["w"]["paySecret"].(string)
-
+	apiUrl := meta.Finance["w"]["api"].(string)
 	that.Conf = wPayConf{
 		AppID:          appID,
 		PayKey:         payKey,
 		PaySecret:      paySecret,
 		Name:           "WPay",
-		Domain:         "https://wv.wppas.com",
+		Domain:         apiUrl,
 		PayNotify:      "%s/finance/callback/wd",
 		WithdrawNotify: "%s/finance/callback/ww",
 		Channel: map[paymentChannel]string{
@@ -114,9 +104,12 @@ func (that *WPayment) Pay(log *paymentTDLog, ch paymentChannel, amount, bid stri
 	for k, v := range recs {
 		formData.Set(k, v)
 	}
+	header := map[string]string{
+		"Content-Type": "application/x-www-form-urlencoded",
+	}
 
 	uri := fmt.Sprintf("%s/order/create", that.Conf.Domain)
-	v, err := httpDoTimeout([]byte(formData.Encode()), "POST", uri, nil, time.Second*8, log)
+	v, err := httpDoTimeout([]byte(formData.Encode()), "POST", uri, header, time.Second*8, log)
 	if err != nil {
 		return data, err
 	}
@@ -164,8 +157,10 @@ func (that *WPayment) Withdraw(log *paymentTDLog, arg WithdrawAutoParam) (paymen
 		formData.Set(k, v)
 	}
 	uri := fmt.Sprintf("%s/payout/create", that.Conf.Domain)
-	headers := map[string]string{}
 
+	headers := map[string]string{
+		"Content-Type": "application/x-www-form-urlencoded",
+	}
 	v, err := httpDoTimeout([]byte(formData.Encode()), "POST", uri, headers, time.Second*8, log)
 	if err != nil {
 		return data, err
