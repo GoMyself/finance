@@ -605,29 +605,42 @@ func WithdrawHandToAuto(uid, username, id, pid, bid string, amount float64, t ti
 func withdrawMatchBank(pid, bid string) (Bank_t, error) {
 
 	bank := Bank_t{}
-
+	ex := g.Ex{
+		"payment_id": pid,
+		"bank_id":    bid,
+		"state":      "1",
+		"prefix":     meta.Prefix,
+	}
+	query, _, _ := dialect.From("f_channel_banks").Select(colChannelBank...).Where(ex).Limit(1).ToSQL()
+	fmt.Println(query)
+	err := meta.MerchantDB.Get(&bank, query)
+	if err != nil {
+		return bank, pushLog(err, helper.DBErr)
+	}
 	// check bank, continue the for loop if bank not supported
-	res, err := meta.MerchantRedis.Get(ctx, "BK:"+pid).Result()
-	if err != nil {
-		return bank, pushLog(err, helper.RedisErr)
-	}
+	//res, err := meta.MerchantRedis.Get(ctx, "BK:"+pid).Result()
+	//if err != nil {
+	//	fmt.Println(err)
+	//	return bank, pushLog(err, helper.RedisErr)
+	//}
+	//
+	//// unmarshal the searched result of string of the banks to the destination []Bank_t struct
+	//var banks []Bank_t
+	//err = helper.JsonUnmarshal([]byte(res), &banks)
+	//if err != nil {
+	//	fmt.Println(err)
+	//	return bank, errors.New(helper.FormatErr)
+	//}
+	//
+	//// for loop the banks to match the suitable bank
+	//for _, v := range banks {
+	//	if v.BankID != bid {
+	//		continue
+	//	}
+	//	return v, nil
+	//}
 
-	// unmarshal the searched result of string of the banks to the destination []Bank_t struct
-	var banks []Bank_t
-	err = helper.JsonUnmarshal([]byte(res), &banks)
-	if err != nil {
-		return bank, errors.New(helper.FormatErr)
-	}
-
-	// for loop the banks to match the suitable bank
-	for _, v := range banks {
-		if v.BankID != bid {
-			continue
-		}
-		return v, nil
-	}
-
-	return bank, errors.New(helper.NoPayChannel)
+	return bank, nil
 }
 
 // WithdrawAutoPaySetFailed 将订单状态从出款中修改为代付失败
@@ -928,10 +941,9 @@ func WithdrawAuto(param WithdrawAutoParam, level int) error {
 			fmt.Println("withdrawAuto failed 5:", param, err)
 			continue
 		}
-
+		fmt.Println(bank)
 		param.BankCode = bank.Code
 		param.PaymentID = info.PaymentID
-
 		oid, err := Withdrawal(pay, param)
 		if err != nil {
 			fmt.Println("withdrawAuto failed 6:", param, err)

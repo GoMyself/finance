@@ -168,6 +168,8 @@ func SetupRouter(b BuildInfo) *router.Router {
 	// [商户后台] 财务管理-渠道管理-会员等级通道-新增
 	post(route_merchant_group, "/vip/insert", vipCtl.Insert)
 	// [商户后台] 财务管理-渠道管理-会员等级通道-修改
+	// [商户后台] 财务管理-渠道管理-会员等级通道-列表
+	post(route_merchant_group, "/vip/update", vipCtl.Update)
 	// [商户后台] 财务管理-渠道管理-会员等级通道-删除
 	// [商户后台] 财务管理-渠道管理-会员等级通道-删除
 	post(route_merchant_group, "/vip/delete", vipCtl.Delete)
