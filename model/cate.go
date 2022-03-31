@@ -4,11 +4,10 @@ import (
 	"database/sql"
 	"errors"
 	"finance/contrib/helper"
-	"fmt"
-	"time"
 
 	g "github.com/doug-martin/goqu/v9"
 	"github.com/go-redis/redis/v8"
+	"github.com/valyala/fastjson"
 )
 
 type Category struct {
@@ -380,6 +379,9 @@ func cateByIDS(ids []string) (map[string]string, error) {
 }
 
 func cateToRedis() error {
+
+	var a = &fastjson.Arena{}
+
 	var cate []Category
 	ex := g.Ex{
 		"prefix": meta.Prefix,
@@ -387,40 +389,22 @@ func cateToRedis() error {
 	query, _, _ := dialect.From("f_category").Select("*").Where(ex).Order(g.C("id").Asc()).ToSQL()
 	err := meta.MerchantDB.Select(&cate, query)
 
-	fmt.Println("cateToRedis query = ", query)
-	fmt.Println("cateToRedis err = ", err)
-	fmt.Println("cateToRedis = ", cate)
 	if err != nil || len(cate) < 1 {
 		return err
 	}
 
-	res := map[string]string{}
+	obj := a.NewObject()
+
 	for _, v := range cate {
-		res[v.ID] = v.Name
+		val := a.NewString(v.Name)
+
+		obj.Set(v.ID, val)
 	}
 
-	fmt.Println("cateToRedis res = ", res)
-
-	b, err := helper.JsonMarshal(res)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("cateToRedis b = ", string(b))
+	b := obj.String()
 
 	key := "f:category"
-	err = meta.MerchantRedis.Set(ctx, key, "1111", 999999*time.Hour).Err()
-
-	fmt.Println("cateToRedis set err = ", err)
-
-	/*
-		pipe := meta.MerchantRedis.TxPipeline()
-		defer pipe.Close()
-
-		pipe.Unlink(ctx, key)
-		pipe.Set(ctx, key, string(b), 0)
-		_, _ = pipe.Exec(ctx)
-	*/
+	err = meta.MerchantRedis.Set(ctx, key, b, 0).Err()
 	return err
 }
 
