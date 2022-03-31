@@ -118,7 +118,7 @@ func Constructor(mt *MetaTable, socks5 string, c *gorpc.Client) {
 	}
 
 	channelToRedis()
-	cateToRedis()
+	//cateToRedis()
 
 	gorpc.RegisterType([]schema.Enc_t{})
 	gorpc.RegisterType([]schema.Dec_t{})

@@ -3,14 +3,16 @@ package model
 import (
 	"finance/contrib/helper"
 	"fmt"
-	g "github.com/doug-martin/goqu/v9"
 	"time"
+
+	g "github.com/doug-martin/goqu/v9"
 )
 
 type Config struct {
 	ID      int64  `db:"id" json:"id"`
 	Name    string `db:"name" json:"name"`
 	Content string `db:"content" json:"content"`
+	Prefix  string `db:"prefix" json:"prefix"`
 }
 
 // ConfigSet 设置配置
@@ -52,6 +54,7 @@ func ConfigToRedis() error {
 	}
 
 	_, err = pipe.Exec(ctx)
+	cateToRedis()
 	return err
 }
 
