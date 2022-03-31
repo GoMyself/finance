@@ -39,6 +39,11 @@ var newestPay = map[string]bool{
 
 	"349773156100039250": true, // 越南支付 复制转卡
 	"308776750008524358": true, // 越南支付 扫码转卡 unionpay
+
+	"136705506399541635": true, // vt支付 momo
+	"136886346597697863": true, // vt支付 zalo
+	"136895233680932862": true, // vt支付 Viettelpay
+	"136918980872302649": true, // vt支付 Online
 }
 
 var coinPay = map[string]bool{

@@ -102,6 +102,10 @@ func SetupRouter(b BuildInfo) *router.Router {
 	post(route_callback_group, "/ynd", cbCtl.YND)
 	// [callback] 越南支付代收回调
 	post(route_callback_group, "/ynw", cbCtl.YNW)
+	// [callback] vt pay 代收回调
+	post(route_callback_group, "/vtd", cbCtl.VTD)
+	// [callback] vt pay 代付回调
+	post(route_callback_group, "/vtw", cbCtl.VTW)
 
 	// [前台] 存款渠道
 	get(nil, "/finance/cate", payCtl.Cate)

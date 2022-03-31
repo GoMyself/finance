@@ -15,6 +15,8 @@ import (
 )
 
 var allows = map[string]bool{
+	"/finance/callback/vtd":       true,
+	"/finance/callback/vtw":       true,
 	"/finance/callback/wd":        true,
 	"/finance/callback/ww":        true,
 	"/finance/callback/uzd":       true,

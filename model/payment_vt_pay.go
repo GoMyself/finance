@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/valyala/fasthttp"
 	"net/url"
-	"sort"
 	"strings"
 	"time"
 )
@@ -54,8 +53,8 @@ func (that *VtPayment) New() {
 		Key:            payKey,
 		Name:           "VtPay",
 		Domain:         apiUrl,
-		PayNotify:      "%s/finance/callback/wd",
-		WithdrawNotify: "%s/finance/callback/ww",
+		PayNotify:      "%s/finance/callback/vtd",
+		WithdrawNotify: "%s/finance/callback/vtw",
 		Channel: map[paymentChannel]string{
 			momo:       vtMomo,
 			unionpay:   vtBankQr,
@@ -90,21 +89,9 @@ func (that *VtPayment) Pay(log *paymentTDLog, ch paymentChannel, amount, bid str
 
 	recs["sign"] = that.sign(recs, "deposit")
 
-	formData := url.Values{}
-	for k, v := range recs {
-		formData.Set(k, v)
-	}
-	header := map[string]string{
-		"Content-Type": "application/x-www-form-urlencoded",
-	}
-
-	uri := fmt.Sprintf("%s/vtpay/request", that.Conf.Domain)
-	v, err := httpDoTimeout([]byte(formData.Encode()), "POST", uri, header, time.Second*8, log)
-	if err != nil {
-		return data, err
-	}
-
-	data.Addr = string(v)
+	uri := fmt.Sprintf("%s/vtpay/request?%s", that.Conf.Domain, paramEncode(recs))
+	fmt.Println(uri)
+	data.Addr = uri
 	data.OrderID = log.OrderID
 
 	return data, nil
@@ -219,45 +206,28 @@ func (that *VtPayment) WithdrawCallBack(ctx *fasthttp.RequestCtx) (paymentCallba
 func (that *VtPayment) sign(args map[string]string, method string) string {
 
 	qs := ""
-	keys := make([]string, 0)
 
-	for k := range args {
-		if method == "deposit" {
-			switch k {
-			case "merchantNo", "orderNo", "amount", "channel":
-				continue
-			}
-		}
+	if method == "deposit" {
 
-		if method == "depositCall" {
-			switch k {
-			case "merchantNo", "orderNo", "referenceNo", "amount", "channel":
-				continue
-			}
-		}
-
-		if method == "withdraw" {
-			switch k {
-			case "merchantNo", "orderNo", "amount", "accountNumber":
-				continue
-			}
-		}
-
-		if method == "withdrawCall" {
-			switch k {
-			case "merchantNo", "orderNo":
-				continue
-			}
-		}
-
-		keys = append(keys, k)
+		qs = fmt.Sprintf(`merchantNo=%s&orderNo=%s&amount=%s&channel=%s&key=%s`, args["merchantNo"],
+			args["orderNo"], args["amount"], args["channel"], that.Conf.Key)
 	}
 
-	sort.Strings(keys)
-	for _, v := range keys {
-		qs += fmt.Sprintf("%s=%s&", v, args[v])
+	if method == "depositCall" {
+		qs = fmt.Sprintf(`merchantNo=%s&orderNo=%s&referenceNo=%s&amount=%s&channel=%s&key=%s`, args["merchantNo"],
+			args["orderNo"], args["referenceNo"], args["amount"], args["channel"], that.Conf.Key)
 	}
-	qs = qs + "key=" + that.Conf.Key
 
+	if method == "withdraw" {
+		qs = fmt.Sprintf(`merchantNo=%s&orderNo=%s&amount=%s&accountNumber=%s&key=%s`, args["merchantNo"],
+			args["orderNo"], args["amount"], args["accountNumber"], that.Conf.Key)
+	}
+
+	if method == "withdrawCall" {
+		qs = fmt.Sprintf(`merchantNo=%s&orderNo=%s&key=%s`, args["merchantNo"],
+			args["orderNo"], that.Conf.Key)
+	}
+
+	fmt.Printf("sign content:" + qs)
 	return strings.ToLower(helper.GetMD5Hash(qs))
 }

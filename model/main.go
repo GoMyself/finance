@@ -8,6 +8,7 @@ import (
 	"finance/contrib/helper"
 	"finance/contrib/tracerr"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -356,4 +357,17 @@ func Unlock(id string) {
 		fmt.Println("Unlock res = ", res)
 		fmt.Println("Unlock err = ", err)
 	}
+}
+
+func paramEncode(args map[string]string) string {
+
+	if len(args) < 1 {
+		return ""
+	}
+
+	data := url.Values{}
+	for k, v := range args {
+		data.Set(k, v)
+	}
+	return data.Encode()
 }

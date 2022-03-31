@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"finance/contrib/helper"
+	"fmt"
 
 	g "github.com/doug-martin/goqu/v9"
 	"github.com/go-redis/redis/v8"
@@ -16,6 +17,7 @@ type Category struct {
 	State      string `db:"state" json:"state"`
 	Comment    string `db:"comment" json:"comment"`
 	CreatedAt  int64  `db:"created_at" json:"created_at"`
+	Prefix     string `db:"prefix" json:"prefix"`
 }
 
 // CategoryData 财务管理-渠道管理-列表 response structure
@@ -381,7 +383,8 @@ func cateToRedis() {
 	ex := g.Ex{
 		"prefix": meta.Prefix,
 	}
-	query, _, _ := dialect.From("f_category").Select("*").Where(ex).Order(g.C("id").Asc()).ToSQL()
+	query, _, _ := dialect.From("f_category").Select(colCate...).Where(ex).Order(g.C("id").Asc()).ToSQL()
+	fmt.Println(query)
 	err := meta.MerchantDB.Select(&cate, query)
 	if err != nil || len(cate) < 1 {
 		return
@@ -390,6 +393,7 @@ func cateToRedis() {
 	res := map[string]string{}
 	for _, v := range cate {
 		res[v.ID] = v.Name
+		fmt.Printf(v.ID + ":" + v.Name)
 	}
 	b, err := helper.JsonMarshal(res)
 	if err != nil {
