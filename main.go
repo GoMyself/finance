@@ -65,13 +65,15 @@ func main() {
 	model.Constructor(mt, os.Args[3], rpc)
 
 	session.New(mt.MerchantRedis, mt.Prefix)
+
 	defer func() {
 		model.Close()
 		mt = nil
 	}()
 
 	if os.Args[3] == "config" {
-		fmt.Println(model.ConfigToRedis())
+		fmt.Println("config load")
+		model.ConfigToRedis()
 		return
 	}
 
