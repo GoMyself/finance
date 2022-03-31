@@ -42,6 +42,7 @@ func NewPayment() {
 		USDTPay  = new(USDTPayment)
 		YFB      = new(YfbPayment)
 		YNPAY    = new(YNPayment)
+		VtPAY    = new(VtPayment)
 	)
 
 	WPay.New()     // wPay
@@ -51,6 +52,7 @@ func NewPayment() {
 	USDTPay.New()  // USDT1
 	YFB.New()      // yfb 支付
 	YNPAY.New()
+	VtPAY.New() //vtech支付
 
 	paymentRoute = map[string]Payment{
 		"1":  UzPay,
@@ -60,6 +62,7 @@ func NewPayment() {
 		"11": USDTPay,
 		"7":  YFB,
 		"16": YNPAY,
+		"17": VtPAY,
 	}
 }
 

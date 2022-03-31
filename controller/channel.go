@@ -117,7 +117,7 @@ func (that *ChannelController) Insert(ctx *fasthttp.RequestCtx) {
 	var device []string
 	if param.Device != "" {
 		for _, v := range strings.Split(param.Device, ",") {
-			if !validator.CtypeDigit(v) || !validator.CheckIntScope(v, 24, 31) {
+			if !validator.CtypeDigit(v) || !validator.CheckIntScope(v, 24, 36) {
 				helper.Print(ctx, false, helper.DeviceTypeErr)
 				return
 			}
