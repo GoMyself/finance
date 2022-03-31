@@ -206,7 +206,7 @@ func (that *VtPayment) WithdrawCallBack(ctx *fasthttp.RequestCtx) (paymentCallba
 		return data, fmt.Errorf("unknown status: [%s]", params["status"])
 	}
 
-	if that.sign(params, "withdraw") != data.Sign {
+	if that.sign(params, "withdrawCall") != data.Sign {
 		return data, fmt.Errorf("invalid sign")
 	}
 
