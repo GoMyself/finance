@@ -224,8 +224,8 @@ func (that *VtPayment) sign(args map[string]string, method string) string {
 	}
 
 	if method == "withdrawCall" {
-		qs = fmt.Sprintf(`merchantNo=%s&orderNo=%s&key=%s`, args["merchantNo"],
-			args["orderNo"], that.Conf.Key)
+		qs = fmt.Sprintf(`merchantNo=%s&orderNo=%s&referenceNo=%s&amount=%s&key=%s`, args["merchantNo"],
+			args["orderNo"], args["referenceNo"], args["amount"], that.Conf.Key)
 	}
 
 	fmt.Printf("sign content:" + qs)
