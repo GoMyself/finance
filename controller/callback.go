@@ -108,3 +108,15 @@ func (that *CallBackController) VTW(ctx *fasthttp.RequestCtx) {
 	//model.WithdrawalCallBack(ctx, model.WPay)
 	model.WithdrawalCallBack(ctx, "17")
 }
+
+func (that *CallBackController) JYBD(ctx *fasthttp.RequestCtx) {
+
+	//model.DepositCallBack(ctx, model.WPay)
+	model.DepositCallBack(ctx, "18")
+}
+
+func (that *CallBackController) JYBW(ctx *fasthttp.RequestCtx) {
+
+	//model.WithdrawalCallBack(ctx, model.WPay)
+	model.WithdrawalCallBack(ctx, "18")
+}

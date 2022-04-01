@@ -32,17 +32,6 @@ type VtPayment struct {
 	Conf vtPayConf
 }
 
-type vtPayResp struct {
-	Code      int    `json:"code"`
-	TradeNo   string `json:"tradeNo"`
-	TargetURL string `json:"targetUrl"`
-}
-
-type vtPayWithdrawResp struct {
-	Code    int    `json:"code"`
-	TradeNo string `json:"tradeNo"`
-}
-
 func (that *VtPayment) New() {
 
 	appID := meta.Finance["vt"]["app_id"].(string)
