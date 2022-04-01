@@ -285,7 +285,7 @@ func (that *JybPayment) sign(args map[string]string, method string) string {
 		qs = qs + "secretKey=" + that.Conf.PayKey
 
 		fmt.Println(qs)
-		sign, err := gorsa.PriKeyEncrypt(strings.ToLower(helper.GetMD5Hash(qs)), that.Conf.PaySecret)
+		sign, err := gorsa.PriKeyEncrypt(strings.ToLower(helper.GetMD5Hash(qs)), strings.ReplaceAll(that.Conf.PaySecret, "\n", ""))
 		if err != nil {
 			fmt.Println(err)
 			return ""
