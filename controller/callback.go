@@ -100,11 +100,11 @@ func (that *CallBackController) YNW(ctx *fasthttp.RequestCtx) {
 func (that *CallBackController) VTD(ctx *fasthttp.RequestCtx) {
 
 	//model.DepositCallBack(ctx, model.WPay)
-	model.DepositCallBack(ctx, "6")
+	model.DepositCallBack(ctx, "17")
 }
 
 func (that *CallBackController) VTW(ctx *fasthttp.RequestCtx) {
 
 	//model.WithdrawalCallBack(ctx, model.WPay)
-	model.WithdrawalCallBack(ctx, "6")
+	model.WithdrawalCallBack(ctx, "17")
 }

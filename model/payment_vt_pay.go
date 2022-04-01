@@ -163,7 +163,7 @@ func (that *VtPayment) PayCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackRes
 	}
 
 	data.OrderID = params["orderNo"]
-	data.Amount = params["successAmount"]
+	data.Amount = params["amount"]
 
 	return data, nil
 }
