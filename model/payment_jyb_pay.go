@@ -5,6 +5,7 @@ import (
 	"finance/contrib/helper"
 	"fmt"
 	"github.com/valyala/fasthttp"
+	"github.com/wenzhenxi/gorsa"
 	"net/url"
 	"sort"
 	"strings"
@@ -23,6 +24,7 @@ type jybPayConf struct {
 	AppID          string
 	PayKey         string
 	PaySecret      string
+	Publickey      string
 	Name           string
 	Domain         string
 	Key            string
@@ -52,12 +54,14 @@ func (that *JybPayment) New() {
 
 	appID := meta.Finance["jyb"]["app_id"].(string)
 	payKey := meta.Finance["jyb"]["key"].(string)
+	publickey := meta.Finance["jyb"]["public_key"].(string)
 	paySecret := meta.Finance["jyb"]["paySecret"].(string)
 	apiUrl := meta.Finance["jyb"]["api"].(string)
 	that.Conf = jybPayConf{
 		AppID:          appID,
 		PayKey:         payKey,
 		PaySecret:      paySecret,
+		Publickey:      publickey,
 		Name:           "jybPay",
 		Domain:         apiUrl,
 		PayNotify:      "%s/finance/callback/jybd",
@@ -90,26 +94,49 @@ func (that *JybPayment) Pay(log *paymentTDLog, ch paymentChannel, amount, bid st
 		"merchno":         that.Conf.AppID, // 商户编号
 		"orderId":         log.OrderID,     // 商户订单号
 		"payType":         cno,             // 纯数字格式; MomoPay:0 | ZaloPay:1 | 银行扫码:2 | 直連:3 | 网关:4 |VTPay:5
-		"tradeType":       "1",
 		"requestCurrency": "3",
-		"amount":          fmt.Sprintf("%s000", amount),                     // 订单金额
+		"amount":          fmt.Sprintf("%s000.00", amount),                  // 订单金额
 		"requestTime":     now.Format("20060102150405"),                     // 日期时间 (格式:2018-01-01 23:59:59)
 		"asyncUrl":        fmt.Sprintf(that.Conf.PayNotify, meta.Fcallback), // 异步通知地址
 		"syncUrl":         fmt.Sprintf(that.Conf.PayNotify, meta.Fcallback), // 异步通知地址
-		"bankCode":        bid,                                              // 银行编号VCB
 		"apiVersion":      "2",                                              //
+	}
+	if bid != "" {
+		recs["bankCode"] = bid
 	}
 	recs["sign"] = that.sign(recs, "deposit")
 
-	formData := url.Values{}
-	for k, v := range recs {
-		formData.Set(k, v)
-	}
+	//formData := url.Values{}
+	//for k, v := range recs {
+	//	formData.Set(k, v)
+	//}
+	//
+	//uri := fmt.Sprintf("%s/api/order/placeOrder?%s", that.Conf.Domain, paramEncode(recs))
+	//fmt.Println(uri)
+	//data.Addr = uri
+	//data.OrderID = log.OrderID
+	//
+	//return data, nil
 
-	uri := fmt.Sprintf("%s/api/order/placeOrder?%s", that.Conf.Domain, paramEncode(recs))
-	fmt.Println(uri)
+	//formData := url.Values{}
+	//for k, v := range recs {
+	//	formData.Set(k, v)
+	//}
+	//header := map[string]string{
+	//	"Content-Type": "application/x-www-form-urlencoded",
+	//}
+
+	uri := fmt.Sprintf("%s/api/order/placeOrder", that.Conf.Domain)
+	//v, err := httpDoTimeout([]byte(formData.Encode()), "POST", uri, header, time.Second*8, log)
+	//if err != nil {
+	//	return data, err
+	//}
 	data.Addr = uri
 	data.OrderID = log.OrderID
+	data.IsForm = "1"
+	for k, v := range recs {
+		data.Data[k] = v
+	}
 
 	return data, nil
 }
@@ -120,13 +147,13 @@ func (that *JybPayment) Withdraw(log *paymentTDLog, arg WithdrawAutoParam) (paym
 	params := map[string]string{
 		"merchno":         that.Conf.AppID,                                       // 商户编号
 		"orderId":         arg.OrderID,                                           // 商户订单号
-		"amount":          arg.Amount,                                            // 订单金额
+		"amount":          fmt.Sprintf("%s.00", arg.Amount),                      // 订单金额
 		"tradeType":       "1",                                                   //1：对私；2：对公；（目前只支持对私交易）
 		"account":         arg.CardName,                                          // 收款人姓名
-		"bankName":        arg.BankCode,                                          // 收款银行名称
 		"cardNo":          arg.CardNumber,                                        // 收款银行账号
-		"timestamp":       arg.Ts.Format("20060102150405"),                       // 日期时间 (格式:yyyyMMddHHmmss)
+		"bankName":        arg.BankCode,                                          // 收款银行名称
 		"asyncUrl":        fmt.Sprintf(that.Conf.WithdrawNotify, meta.Fcallback), // 异步通知地址
+		"timestamp":       arg.Ts.Format("20060102150405"),                       // 日期时间 (格式:yyyyMMddHHmmss)
 		"cashType":        "3",                                                   //下发类型(下发通道)1：人民币；2：USDT；3：越南盾；4：印度卢比
 		"requestCurrency": "3",                                                   //请求货币1：人民币；2：USDT；3：越南盾；4：印度卢比
 		"apiVersion":      "2",
@@ -137,7 +164,7 @@ func (that *JybPayment) Withdraw(log *paymentTDLog, arg WithdrawAutoParam) (paym
 	for k, v := range params {
 		formData.Set(k, v)
 	}
-	uri := fmt.Sprintf("%s/payout/create", that.Conf.Domain)
+	uri := fmt.Sprintf("%s/api/cash/queryCash", that.Conf.Domain)
 
 	headers := map[string]string{
 		"Content-Type": "application/x-www-form-urlencoded",
@@ -237,25 +264,6 @@ func (that *JybPayment) sign(args map[string]string, method string) string {
 	keys := make([]string, 0)
 
 	for k := range args {
-		if method == "deposit" {
-			switch k {
-			case "merchno", "orderId", "payType", "amount", "requestCurrency", "asyncUrl", "syncUrl", "requestTime", "apiVersion":
-				continue
-			}
-			sort.Strings(keys)
-			for _, v := range keys {
-				qs += fmt.Sprintf("%s=%s&", v, args[v])
-			}
-			qs = qs[:len(qs)-1] + "&secretKey=" + that.Conf.Key
-			return strings.ToLower(helper.GetMD5Hash(qs))
-		}
-
-		if method == "withdraw" {
-			switch k {
-			case "merchno", "orderId", "tradeType", "amount", "account", "cardNo", "bankName", "asyncUrl", "timestamp", "cashType", "requestCurrency", "apiVersion":
-				continue
-			}
-		}
 		keys = append(keys, k)
 	}
 
@@ -264,7 +272,8 @@ func (that *JybPayment) sign(args map[string]string, method string) string {
 		for _, v := range keys {
 			qs += fmt.Sprintf("%s=%s&", v, args[v])
 		}
-		qs = qs[:len(qs)-1] + "&secretKey=" + that.Conf.Key
+		qs = qs + "secretKey=" + that.Conf.PayKey
+		fmt.Println(qs)
 		return strings.ToLower(helper.GetMD5Hash(qs))
 	}
 
@@ -273,9 +282,16 @@ func (that *JybPayment) sign(args map[string]string, method string) string {
 		for _, v := range keys {
 			qs += fmt.Sprintf("%s=%s&", v, args[v])
 		}
-		qs = qs[:len(qs)-1] + "&secretKey=" + that.Conf.Key
-		sign := helper.RsaEncrypt([]byte(that.Conf.PayKey), []byte(strings.ToLower(helper.GetMD5Hash(qs))))
-		return string(sign)
+		qs = qs + "secretKey=" + that.Conf.PayKey
+
+		fmt.Println(qs)
+		sign, err := gorsa.PriKeyEncrypt(strings.ToLower(helper.GetMD5Hash(qs)), that.Conf.PaySecret)
+		if err != nil {
+			fmt.Println(err)
+			return ""
+		}
+		fmt.Println(sign)
+		return sign
 	}
 	return ""
 }

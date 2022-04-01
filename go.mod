@@ -34,6 +34,7 @@ require (
 	github.com/logrusorgru/aurora v0.0.0-20181002194514-a7b3b318ed4e
 	github.com/minio/md5-simd v1.1.2
 	github.com/minio/minio-go/v7 v7.0.10
+	github.com/minio/sha256-simd v0.1.1 // indirect
 	github.com/modern-go/reflect2 v1.0.1
 	github.com/nats-io/nats.go v1.9.1
 	github.com/olivere/elastic/v7 v7.0.24
@@ -50,6 +51,7 @@ require (
 	github.com/valyala/fastjson v1.6.3
 	github.com/valyala/gorpc v0.0.0-20160519171614-908281bef774
 	github.com/wI2L/jettison v0.7.1
+	github.com/wenzhenxi/gorsa v0.0.0-20210524035706-528c7050d703 // indirect
 	github.com/xxtea/xxtea-go v0.0.0-20170828040851-35c4b17eecf6
 	go.uber.org/automaxprocs v1.4.0
 	go.uber.org/zap v1.16.0 // indirect

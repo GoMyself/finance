@@ -235,6 +235,7 @@ type paymentDepositResp struct {
 	Addr    string                 // 三方返回的充值地址
 	OrderID string                 // 三方的订单号, 如果三方没有返回订单号, 这个值则为入参id(即我方订单号)
 	Data    map[string]interface{} // 向三方发起http请求的参数以及response data
+	IsForm  string
 }
 
 // paymentWithdrawalRsp 取款

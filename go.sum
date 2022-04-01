@@ -440,6 +440,8 @@ github.com/valyala/gorpc v0.0.0-20160519171614-908281bef774/go.mod h1:8uNqM1i7pr
 github.com/valyala/tcplisten v1.0.0/go.mod h1:T0xQ8SeCZGxckz9qRXTfG43PvQ/mcWh7FwZEA7Ioqkc=
 github.com/wI2L/jettison v0.7.1 h1:XNq/WvSOAiJhFww9F5JZZcBZtKFL2Y/9WHHEHLDq9TE=
 github.com/wI2L/jettison v0.7.1/go.mod h1:dj49nOP41M7x6Jql62BqqF/+nW+XJgBaWzJR0hd6M84=
+github.com/wenzhenxi/gorsa v0.0.0-20210524035706-528c7050d703 h1:Tiqr9EWpYopXZf668mgTNWguzE6ssRIEviULO3gSWnU=
+github.com/wenzhenxi/gorsa v0.0.0-20210524035706-528c7050d703/go.mod h1:nfhBTKji6rC8lrjyikx8NJ85JHg6ZQam0a9Je+2RVOg=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 h1:eY9dn8+vbi4tKz5Qo6v2eYzo7kUS51QINcR5jNpbZS8=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
 github.com/xxtea/xxtea-go v0.0.0-20170828040851-35c4b17eecf6 h1:S+0oS/OPAe0kdSpQ7GAnCmpcDL7Jh2iJMjZTV6mYbPo=
