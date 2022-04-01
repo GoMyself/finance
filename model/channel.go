@@ -9,6 +9,7 @@ import (
 
 	g "github.com/doug-martin/goqu/v9"
 	"github.com/go-redis/redis/v8"
+	"github.com/valyala/fastjson"
 )
 
 type PaymentIDChannelID struct {
@@ -492,32 +493,33 @@ func PaymentIDMapToChanID(pids []string) (map[string]string, error) {
 
 func channelToRedis() {
 
-	var channel []Tunnel_t
+	var a = &fastjson.Arena{}
+
+	var channels []Tunnel_t
 	ex := g.Ex{
 		"prefix": meta.Prefix,
 	}
 	query, _, _ := dialect.From("f_channel_type").Select("*").Where(ex).Order(g.C("sort").Asc()).ToSQL()
-	err := meta.MerchantDB.Select(&channel, query)
-	if err != nil || len(channel) < 1 {
+	err := meta.MerchantDB.Select(&channels, query)
+	if err != nil || len(channels) < 1 {
 		return
 	}
 
-	res := map[string]string{}
-	for _, v := range channel {
-		res[v.ID] = v.Name
+	obj := a.NewObject()
+
+	for _, v := range channels {
+		val := a.NewString(v.Name)
+
+		obj.Set(v.ID, val)
 	}
 
-	b, err := helper.JsonMarshal(res)
-	if err != nil {
-		return
-	}
-
+	b := obj.String()
 	key := "f:channel"
 	pipe := meta.MerchantRedis.TxPipeline()
 	defer pipe.Close()
 
 	pipe.Unlink(ctx, key)
-	pipe.Set(ctx, key, string(b), 0)
+	pipe.Set(ctx, key, b, 0)
 
 	_, _ = pipe.Exec(ctx)
 }

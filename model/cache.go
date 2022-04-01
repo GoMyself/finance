@@ -1,7 +1,6 @@
 package model
 
 import (
-	"bytes"
 	"errors"
 	"finance/contrib/helper"
 	"fmt"
@@ -275,59 +274,6 @@ func Tunnel(fctx *fasthttp.RequestCtx, id string) (string, error) {
 }
 
 func Cate(fctx *fasthttp.RequestCtx) (string, error) {
-
-	var buffer bytes.Buffer
-
-	m, err := MemberCache(fctx)
-	if err != nil {
-		return "", err
-	}
-
-	pipe := meta.MerchantRedis.TxPipeline()
-	defer pipe.Close()
-
-	exists := pipe.Exists(ctx, fmt.Sprintf("DL:%s", m.UID))
-
-	key := fmt.Sprintf("p:%d", m.Level)
-	//sip := helper.FromRequest(fctx)
-	//if strings.Count(sip, ":") >= 2 {
-	//	key = fmt.Sprintf("p:%d", 9)
-	//}
-
-	rs := pipe.SMembers(ctx, key)
-
-	_, err = pipe.Exec(ctx)
-	if err != nil {
-		return "[]", pushLog(err, helper.RedisErr)
-	}
-
-	// 如果会员被锁定不返回通道
-	if exists.Val() != 0 {
-		return "[]", nil
-	}
-
-	recs, err := rs.Result()
-	if err != nil {
-		fmt.Println("SMembers = ", err.Error())
-		return "", pushLog(err, helper.RedisErr)
-	}
-
-	total := len(recs)
-	if total == 0 {
-		return "[]", nil
-	}
-
-	buffer.WriteString("[")
-	for i, value := range recs {
-		buffer.WriteString(value)
-		if (i + 1) != total {
-			buffer.WriteString(",")
-		}
-	}
-
-	buffer.WriteString("]")
-
-	return buffer.String(), nil
 
 	str := CateListRedis()
 	return str, nil
