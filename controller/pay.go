@@ -50,6 +50,8 @@ var newestPay = map[string]bool{
 	"153934719126025455": true, // 918支付 zalo
 	"153950213488642272": true, // 918支付 Viettelpay
 	"153985081880918463": true, //918支付 Chuyển khoản 转卡
+
+	"171560943702910226": true, // VN支付 Online
 }
 
 var coinPay = map[string]bool{
