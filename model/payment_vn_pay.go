@@ -5,7 +5,6 @@ import (
 	"finance/contrib/helper"
 	"fmt"
 	"github.com/valyala/fasthttp"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -59,7 +58,7 @@ func (that *VnPayment) New() {
 		Merchan:        merchan,
 		MerchanNo:      merchanNo,
 		PayKey:         payKey,
-		Name:           "WPay",
+		Name:           "VnPay",
 		Domain:         apiUrl,
 		PayNotify:      "%s/finance/callback/vnd",
 		WithdrawNotify: "%s/finance/callback/vnw",
@@ -84,16 +83,16 @@ func (that *VnPayment) Pay(log *paymentTDLog, ch paymentChannel, amount, bid str
 
 	now := time.Now()
 	recs := map[string]string{
-		"merchantNo":  that.Conf.AppID,                                  // 商户编号
+		"merchantNo":  that.Conf.MerchanNo,                              // 商户编号
+		"channelCode": bid,                                              // 银行名称 (用于银行扫码（通道2）,直連（通道3） 的收款账户分配)
 		"orderNo":     log.OrderID,                                      // 商户订单号
 		"bankDirct":   cno,                                              // 纯数字格式; MomoPay:0 | ZaloPay:1 | 银行扫码:2 | 直連:3 | 网关:4 |VTPay:5
-		"amount":      fmt.Sprintf("%s000.00", amount),                  // 订单金额
-		"channelCode": bid,                                              // 银行名称 (用于银行扫码（通道2）,直連（通道3） 的收款账户分配)
-		"datetime":    now.Format("2006-01-02 15:04:05"),                // 日期时间 (格式:2018-01-01 23:59:59)
-		"notifyUrl":   fmt.Sprintf(that.Conf.PayNotify, meta.Fcallback), // 异步通知地址
 		"currency":    "VND",                                            //
+		"amount":      fmt.Sprintf("%s000.00", amount),                  // 订单金额
+		"notifyUrl":   fmt.Sprintf(that.Conf.PayNotify, meta.Fcallback), // 异步通知地址
 	}
-	tp := strconv.FormatInt(time.Now().Unix(), 64)
+	tp := fmt.Sprintf("%d", now.UnixMilli())
+	fmt.Println(tp)
 	recs["timestamp"] = tp
 	recs["sign"] = that.sign(recs, "deposit")
 	delete(recs, "timestamp")
@@ -139,11 +138,9 @@ func (that *VnPayment) Withdraw(log *paymentTDLog, arg WithdrawAutoParam) (payme
 		"channelCode":   arg.BankCode,        // 收款银行名称
 		"orderNo":       arg.OrderID,         // 商户订单号
 		"currency":      "VND",
-		"amount":        fmt.Sprintf("%s.00", arg.Amount), // 订单金额
-		"payee":         arg.CardName,                     // 收款人姓名
-		"payeeBankCard": arg.CardNumber,                   // 收款银行账号
-		"bankName":      "",                               // 收款银行支行 (可选；提供此项可加速入账。示例：NGUYEN)
-		"extra":         "",
+		"amount":        fmt.Sprintf("%s.00", arg.Amount),                      // 订单金额
+		"payee":         arg.CardName,                                          // 收款人姓名
+		"payeeBankCard": arg.CardNumber,                                        // 收款银行账号
 		"notifyUrl":     fmt.Sprintf(that.Conf.WithdrawNotify, meta.Fcallback), // 异步通知地址
 		"verifyUrl":     "",                                                    // 验证订单地址,若提供则,我方 post 请 求验证,默认返回 {“code”:”0000”}
 	}
@@ -154,7 +151,9 @@ func (that *VnPayment) Withdraw(log *paymentTDLog, arg WithdrawAutoParam) (payme
 		return data, errors.New(helper.FormatErr)
 	}
 	uri := fmt.Sprintf("%s/v1/api/online/ebank/%s/%s/%s", that.Conf.Domain, that.Conf.AppID, that.Conf.Merchan, arg.OrderID)
-	tp := strconv.FormatInt(time.Now().Unix(), 64)
+	now := time.Now()
+	tp := fmt.Sprintf("%d", now.UnixMilli())
+	fmt.Println(tp)
 	header := map[string]string{
 		"Content-Type": "application/json",
 		"Nonce":        helper.MD5Hash(helper.GenId()),
@@ -210,7 +209,7 @@ func (that *VnPayment) PayCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackRes
 
 	data.OrderID = params["merchantOrderNo"]
 	data.Amount = params["amount"]
-
+	data.Resp = `{"code" : "0000"}`
 	return data, nil
 }
 
@@ -245,7 +244,7 @@ func (that *VnPayment) WithdrawCallBack(ctx *fasthttp.RequestCtx) (paymentCallba
 
 	data.OrderID = params["merchantOrderNo"]
 	data.Amount = params["amount"]
-
+	data.Resp = `{"code" : "0000"}`
 	return data, nil
 }
 
