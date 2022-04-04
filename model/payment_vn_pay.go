@@ -144,16 +144,16 @@ func (that *VnPayment) Withdraw(log *paymentTDLog, arg WithdrawAutoParam) (payme
 		"notifyUrl":     fmt.Sprintf(that.Conf.WithdrawNotify, meta.Fcallback), // 异步通知地址
 		"verifyUrl":     "",                                                    // 验证订单地址,若提供则,我方 post 请 求验证,默认返回 {“code”:”0000”}
 	}
-
+	now := time.Now()
+	tp := fmt.Sprintf("%d", now.UnixMilli())
+	params["timestamp"] = tp
 	params["sign"] = that.sign(params, "withdraw")
+	delete(params, "timestamp")
 	body, err := helper.JsonMarshal(params)
 	if err != nil {
 		return data, errors.New(helper.FormatErr)
 	}
-	uri := fmt.Sprintf("%s/v1/api/online/ebank/%s/%s/%s", that.Conf.Domain, that.Conf.AppID, that.Conf.Merchan, arg.OrderID)
-	now := time.Now()
-	tp := fmt.Sprintf("%d", now.UnixMilli())
-	fmt.Println(tp)
+	uri := fmt.Sprintf("%s/v1/api/withdraw/%s/%s/%s", that.Conf.Domain, that.Conf.AppID, that.Conf.Merchan, arg.OrderID)
 	header := map[string]string{
 		"Content-Type": "application/json",
 		"Nonce":        helper.MD5Hash(helper.GenId()),
@@ -265,12 +265,12 @@ func (that *VnPayment) sign(args map[string]string, method string) string {
 	}
 
 	if method == "withdraw" {
-		qs += fmt.Sprintf(`merchantNo=%s&channelCode=%s&orderNo=%s&currency=%s&amount=%s&payee=%s&payeeBankCard=%s&notifyUrl=%s`,
+		qs += fmt.Sprintf(`merchantNo=%s&channelCode=%s&orderNo=%s&currency=%s&amount=%s&payee=%s&payeeBankCard=%s&notifyUrl=%s&timestamp=%s`,
 			args["merchantNo"], args["channelCode"], args["orderNo"], args["currency"], args["amount"], args["payee"],
-			args["payeeBankCard"], args["notifyUrl"])
+			args["payeeBankCard"], args["notifyUrl"], args["timestamp"])
 	}
 
 	qs = qs + "&appsecret=" + that.Conf.PayKey
-
-	return strings.ToLower(helper.GetMD5Hash(helper.GetMD5Hash(helper.GetMD5Hash(qs))))
+	sg := strings.ToLower(helper.GetMD5Hash(helper.GetMD5Hash(helper.GetMD5Hash(qs))))
+	return sg
 }

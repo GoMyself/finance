@@ -45,6 +45,7 @@ func NewPayment() {
 		VtPAY    = new(VtPayment)
 		JybPAY   = new(JybPayment)
 		VnPAY    = new(VnPayment)
+		DbPay    = new(DbPayment)
 	)
 
 	WPay.New()     // wPay
@@ -54,9 +55,10 @@ func NewPayment() {
 	USDTPay.New()  // USDT1
 	YFB.New()      // yfb 支付
 	YNPAY.New()
-	VtPAY.New()  //vtech支付
-	JybPAY.New() //918支付
-	VnPAY.New()  //越南支付
+	VtPAY.New()  // vtech支付
+	JybPAY.New() // 918支付
+	VnPAY.New()  // 越南支付
+	DbPay.New()  // 帝宝支付
 
 	paymentRoute = map[string]Payment{
 		"1":  UzPay,
@@ -69,6 +71,7 @@ func NewPayment() {
 		"17": VtPAY,
 		"18": JybPAY,
 		"19": VnPAY,
+		"20": DbPay,
 	}
 }
 

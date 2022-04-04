@@ -132,3 +132,15 @@ func (that *CallBackController) VNW(ctx *fasthttp.RequestCtx) {
 	//model.WithdrawalCallBack(ctx, model.WPay)
 	model.WithdrawalCallBack(ctx, "19")
 }
+
+func (that *CallBackController) DBD(ctx *fasthttp.RequestCtx) {
+
+	//model.DepositCallBack(ctx, model.WPay)
+	model.DepositCallBack(ctx, "20")
+}
+
+func (that *CallBackController) DBW(ctx *fasthttp.RequestCtx) {
+
+	//model.WithdrawalCallBack(ctx, model.WPay)
+	model.WithdrawalCallBack(ctx, "20")
+}

@@ -55,6 +55,8 @@ var allows = map[string]bool{
 	"/finance/callback/ynw":       true,
 	"/finance/callback/vnd":       true,
 	"/finance/callback/vnw":       true,
+	"/finance/callback/dbd":       true,
+	"/finance/callback/dbw":       true,
 }
 
 // 哪些路由不用动态密码验证
