@@ -12,10 +12,11 @@ import (
 )
 
 const (
-	dbMomo     = "923"
-	dbUnionPay = "908"
-	dbOnline   = "907"
-	dbZalo     = "921"
+	dbMomo   = "923"
+	dbRemit  = "908"
+	dbOnline = "907"
+	//dbZalo     = "921"
+	dbViettelpay = "925"
 )
 
 type dbPayConf struct {
@@ -73,10 +74,10 @@ func (that *DbPayment) New() {
 		PayNotify:      "%s/finance/callback/dbd",
 		WithdrawNotify: "%s/finance/callback/dbw",
 		Channel: map[paymentChannel]string{
-			momo:     dbMomo,
-			unionpay: dbUnionPay,
-			online:   dbOnline,
-			zalo:     dbZalo,
+			momo:       dbMomo,
+			remit:      dbRemit,
+			online:     dbOnline,
+			viettelpay: dbViettelpay,
 		},
 	}
 }
@@ -100,8 +101,8 @@ func (that *DbPayment) Pay(log *paymentTDLog, ch paymentChannel, amount, bid str
 		"orderid":    log.OrderID,                                      // 商户订单号
 		"channel":    cno,                                              // 纯数字格式; MomoPay:0 | ZaloPay:1 | 银行扫码:2 | 直連:3 | 网关:4 |VTPay:5
 		"notify_url": fmt.Sprintf(that.Conf.PayNotify, meta.Fcallback), // 异步通知地址
-		"return_url": "",
-		"amount":     fmt.Sprintf("%s000", amount), // 订单金额
+		"return_url": fmt.Sprintf(that.Conf.PayNotify, meta.Fcallback), // 同步返回地址
+		"amount":     fmt.Sprintf("%s000", amount),                     // 订单金额
 		"userip":     "86.98.64.30",
 		"timestamp":  fmt.Sprintf("%d", now.Unix()), // 时间戳
 		"custom":     "",
