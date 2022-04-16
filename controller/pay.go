@@ -52,6 +52,9 @@ var newestPay = map[string]bool{
 	"153985081880918463": true, //918支付 Chuyển khoản 转卡
 
 	"171560943702910226": true, // VN支付 Online
+	"439141987451271871": true, // VN支付 Offline
+	"440046584965688018": true, // VN支付 MOMO
+	"440058675832531078": true, // VN支付 QR Banking
 
 	"212584594583418214": true, // 帝宝支付 momo
 	"212601768213089447": true, // 帝宝支付 zalo

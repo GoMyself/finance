@@ -207,7 +207,6 @@ func CachePayment(id string) (FPay, error) {
 	if err != nil {
 		return m, err
 	}
-
 	return m, nil
 }
 

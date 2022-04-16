@@ -10,7 +10,10 @@ import (
 )
 
 const (
-	vnOnline = "Y"
+	p3Online  = "online"
+	p3Offline = "offline"
+	p3QR      = "qr"
+	p3MOMO    = "momo"
 )
 
 type vnPayConf struct {
@@ -63,7 +66,10 @@ func (that *VnPayment) New() {
 		PayNotify:      "%s/finance/callback/vnd",
 		WithdrawNotify: "%s/finance/callback/vnw",
 		Channel: map[paymentChannel]string{
-			online: vnOnline,
+			online:   p3Online,
+			offline:  p3Offline,
+			momo:     p3MOMO,
+			unionpay: p3QR,
 		},
 	}
 }
@@ -75,24 +81,30 @@ func (that *VnPayment) Name() string {
 func (that *VnPayment) Pay(log *paymentTDLog, ch paymentChannel, amount, bid string) (paymentDepositResp, error) {
 
 	data := paymentDepositResp{}
-
+	fmt.Println(ch)
 	cno, ok := that.Conf.Channel[ch]
 	if !ok {
 		return data, errors.New(helper.ChannelNotExist)
 	}
+	var res vnPayResp
+	var path string
 
 	now := time.Now()
 	recs := map[string]string{
 		"merchantNo":  that.Conf.MerchanNo,                              // 商户编号
 		"channelCode": bid,                                              // 银行名称 (用于银行扫码（通道2）,直連（通道3） 的收款账户分配)
 		"orderNo":     log.OrderID,                                      // 商户订单号
-		"bankDirct":   cno,                                              // 纯数字格式; MomoPay:0 | ZaloPay:1 | 银行扫码:2 | 直連:3 | 网关:4 |VTPay:5
 		"currency":    "VND",                                            //
 		"amount":      fmt.Sprintf("%s000.00", amount),                  // 订单金额
 		"notifyUrl":   fmt.Sprintf(that.Conf.PayNotify, meta.Fcallback), // 异步通知地址
 	}
+	if cno == p3Online || cno == p3Offline {
+		recs["bankDirct"] = cno
+	}
+	if cno == p3MOMO {
+		recs["channelCode"] = "MOMO"
+	}
 	tp := fmt.Sprintf("%d", now.UnixMilli())
-	fmt.Println(tp)
 	recs["timestamp"] = tp
 	recs["sign"] = that.sign(recs, "deposit")
 	delete(recs, "timestamp")
@@ -100,21 +112,30 @@ func (that *VnPayment) Pay(log *paymentTDLog, ch paymentChannel, amount, bid str
 	if err != nil {
 		return data, errors.New(helper.FormatErr)
 	}
-
 	header := map[string]string{
 		"Content-Type": "application/json",
 		"Nonce":        helper.MD5Hash(helper.GenId()),
 		"Timestamp":    tp,
 		"x-Request-Id": helper.GenId(),
 	}
+	if cno == p3Online {
+		path = "/v1/api/online/ebank/"
+	}
+	if cno == p3Offline {
+		path = "/v1/api/offline/deposit/"
+	}
+	if cno == p3QR {
+		path = "/v1/api/pay/scan/"
+	}
+	if cno == p3MOMO {
+		path = "/v1/api/pay/scan/"
+	}
 
-	uri := fmt.Sprintf("%s/v1/api/online/ebank/%s/%s/%s", that.Conf.Domain, that.Conf.AppID, that.Conf.Merchan, log.OrderID)
+	uri := fmt.Sprintf("%s%s%s/%s/%s", that.Conf.Domain, path, that.Conf.AppID, that.Conf.Merchan, log.OrderID)
 	v, err := httpDoTimeout(body, "POST", uri, header, time.Second*8, log)
 	if err != nil {
 		return data, err
 	}
-
-	var res vnPayResp
 
 	if err = helper.JsonUnmarshal(v, &res); err != nil {
 		return data, fmt.Errorf("json format err: %s", err.Error())
