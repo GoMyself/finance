@@ -255,7 +255,12 @@ func (that *VnPayment) PayCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackRes
 
 	data.OrderID = params.MerchantOrderNo
 	data.Amount = params.Amount
-	data.Resp = `{"code" : "0000"}`
+	resp := &vnPayWithdrawResp{
+		Code: "0000",
+		Msg:  "Success",
+		Data: params.MerchantOrderNo,
+	}
+	data.Resp = resp
 	return data, nil
 }
 
@@ -297,7 +302,12 @@ func (that *VnPayment) WithdrawCallBack(ctx *fasthttp.RequestCtx) (paymentCallba
 
 	data.OrderID = params.MerchantOrderNo
 	data.Amount = params.Amount
-	data.Resp = `{"code" : "0000"}`
+	resp := &vnPayWithdrawResp{
+		Code: "0000",
+		Msg:  "Success",
+		Data: params.MerchantOrderNo,
+	}
+	data.Resp = resp
 	return data, nil
 }
 
