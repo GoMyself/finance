@@ -1,5 +1,6 @@
 #! /bin/bash
 
+git pull
 git checkout main
 git pull origin main
 git submodule init
@@ -11,9 +12,8 @@ BuildTime=`date +'%Y.%m.%d.%H%M%S'`
 BuildGoVersion=`go version`
 
 go build -ldflags "-X main.gitReversion=${GitReversion}  -X 'main.buildTime=${BuildTime}' -X 'main.buildGoVersion=${BuildGoVersion}'" -o $PROJECT
-mv $PROJECT /opt/data/deploy/va/$PROJECT
-# shellcheck disable=SC2164
-cd /opt/data/deploy/va/$PROJECT
+mv $PROJECT /opt/deploy/$PROJECT
+cd /opt/deploy/$PROJECT
 
 git commit -am "${GitReversion}"
 git push
