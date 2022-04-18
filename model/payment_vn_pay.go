@@ -287,18 +287,18 @@ func (that *VnPayment) WithdrawCallBack(ctx *fasthttp.RequestCtx) (paymentCallba
 		return data, fmt.Errorf("unknown status: [%s]", params.Status)
 	}
 
-	paraMap := map[string]string{
-		"merchantNo":      params.MerchantNo,
-		"merchantOrderNo": params.MerchantOrderNo,
-		"orderNo":         params.OrderNo,
-		"channelCode":     params.ChannelCode,
-		"currency":        params.Currency,
-		"amount":          params.Amount,
-		"status":          params.Status,
-	}
-	if that.sign(paraMap, "call") != data.Sign {
-		return data, fmt.Errorf("invalid sign")
-	}
+	//paraMap := map[string]string{
+	//	"merchantNo":      params.MerchantNo,
+	//	"merchantOrderNo": params.MerchantOrderNo,
+	//	"orderNo":         params.OrderNo,
+	//	"channelCode":     params.ChannelCode,
+	//	"currency":        params.Currency,
+	//	"amount":          params.Amount,
+	//	"status":          params.Status,
+	//}
+	//if that.sign(paraMap, "call") != data.Sign {
+	//	return data, fmt.Errorf("invalid sign")
+	//}
 
 	data.OrderID = params.MerchantOrderNo
 	data.Amount = params.Amount
