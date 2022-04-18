@@ -12,8 +12,8 @@ BuildTime=`date +'%Y.%m.%d.%H%M%S'`
 BuildGoVersion=`go version`
 
 go build -ldflags "-X main.gitReversion=${GitReversion}  -X 'main.buildTime=${BuildTime}' -X 'main.buildGoVersion=${BuildGoVersion}'" -o $PROJECT
-mv $PROJECT /opt/deploy/$PROJECT
-cd /opt/deploy/$PROJECT
+mv $PROJECT /opt/deploy/cg/$PROJECT
+cd /opt/deploy/cg/$PROJECT
 
 git commit -am "${GitReversion}"
 git push
