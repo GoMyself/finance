@@ -15,6 +15,7 @@ go build -ldflags "-X main.gitReversion=${GitReversion}  -X 'main.buildTime=${Bu
 mv $PROJECT /opt/deploy/cg/$PROJECT
 cd /opt/deploy/cg/$PROJECT
 
+git pull
 git commit -am "${GitReversion}"
 git push
 
