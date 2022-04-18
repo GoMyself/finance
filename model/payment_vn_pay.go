@@ -5,6 +5,7 @@ import (
 	"finance/contrib/helper"
 	"fmt"
 	"github.com/valyala/fasthttp"
+	"github.com/valyala/fastjson"
 	"strings"
 	"time"
 )
@@ -47,6 +48,19 @@ type vnPayWithdrawResp struct {
 	Code string `json:"code"`
 	Msg  string `json:"msg"`
 	Data string `json:"data"`
+}
+
+type vnPayCallBack struct {
+	MerchantNo      string `json:"merchantNo"`      //商户号
+	MerchantOrderNo string `json:"merchantOrderNo"` // 订单号
+	ChannelCode     string `json:"channelCode"`     // 充值(collection) or 提现(withdraw)
+	OrderNo         string `json:"orderNo"`         // verified = 已完成 & revoked = 被撒销 timeout = 逾时 & processing = 處理中
+	Currency        string `json:"currency"`        // 币种
+	Amount          string `json:"amount"`          // 订单金额
+	UserId          string `json:"userId"`
+	Extra           string `json:"extra"`
+	Status          string `json:"status"`
+	Sign            string `json:"sign"`
 }
 
 func (that *VnPayment) New() {
@@ -203,68 +217,86 @@ func (that *VnPayment) Withdraw(log *paymentTDLog, arg WithdrawAutoParam) (payme
 
 func (that *VnPayment) PayCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
 
-	params := make(map[string]string)
-	ctx.PostArgs().VisitAll(func(key, value []byte) {
-		params[string(key)] = string(value)
-	})
-
 	data := paymentCallbackResp{
 		State: DepositConfirming,
-		Sign:  string(ctx.PostArgs().Peek("sign")),
 	}
 
-	if !valid(params, []string{"merchantNo", "merchantOrderNo", "channelCode", "orderNo", "currency", "amount", "status"}) {
-		return data, fmt.Errorf("param err: [%v]", params)
+	var p fastjson.Parser
+	v, err := p.ParseBytes(ctx.PostBody())
+	if err != nil {
+		fmt.Println("PayCallBack content error : ", err, string(ctx.PostBody()))
 	}
+	fmt.Println(v.String())
+	params := vnPayCallBack{}
+	if err := helper.JsonUnmarshal(ctx.PostBody(), &params); err != nil {
+		return data, fmt.Errorf("param format err: %s", err.Error())
+	}
+	fmt.Println(params)
 
-	switch params["status"] {
+	data.Sign = params.Sign
+
+	switch params.Status {
 	case "Success":
 		data.State = DepositSuccess
 	default:
-		return data, fmt.Errorf("unknown status: [%s]", params["status"])
+		return data, fmt.Errorf("unknown status: [%s]", params.Status)
 	}
 
-	if that.sign(params, "call") != params["sign"] {
+	paraMap := map[string]string{
+		"merchantNo":      that.Conf.MerchanNo,
+		"merchantOrderNo": params.MerchantOrderNo,
+		"orderNo":         params.OrderNo,
+		"amount":          params.Amount,
+		"status":          params.Status,
+	}
+	if that.sign(paraMap, "call") != params.Sign {
 		return data, fmt.Errorf("invalid sign")
 	}
 
-	data.OrderID = params["merchantOrderNo"]
-	data.Amount = params["amount"]
+	data.OrderID = params.MerchantOrderNo
+	data.Amount = params.Amount
 	data.Resp = `{"code" : "0000"}`
 	return data, nil
 }
 
 func (that *VnPayment) WithdrawCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
 
-	params := make(map[string]string)
-	ctx.PostArgs().VisitAll(func(key, value []byte) {
-		params[string(key)] = string(value)
-	})
-
 	data := paymentCallbackResp{
 		State: WithdrawDealing,
-		Sign:  string(ctx.PostArgs().Peek("sign")),
+	}
+	params := vnPayCallBack{}
+	if err := helper.JsonUnmarshal(ctx.PostBody(), &params); err != nil {
+		return data, fmt.Errorf("param format err: %s", err.Error())
 	}
 
-	if !valid(params, []string{"merchantNo", "merchantOrderNo", "channelCode", "orderNo", "currency", "amount", "status"}) {
-		return data, fmt.Errorf("param err: [%v]", params)
-	}
+	fmt.Println(params)
 
-	switch params["status"] {
+	data.Sign = params.Sign
+
+	switch params.Status {
 	case "Success":
 		data.State = WithdrawSuccess
 	case "Failure":
 		data.State = WithdrawAutoPayFailed
 	default:
-		return data, fmt.Errorf("unknown status: [%s]", params["status"])
+		return data, fmt.Errorf("unknown status: [%s]", params.Status)
 	}
 
-	if that.sign(params, "call") != data.Sign {
+	paraMap := map[string]string{
+		"merchantNo":      params.MerchantNo,
+		"merchantOrderNo": params.MerchantOrderNo,
+		"orderNo":         params.OrderNo,
+		"channelCode":     params.ChannelCode,
+		"currency":        params.Currency,
+		"amount":          params.Amount,
+		"status":          params.Status,
+	}
+	if that.sign(paraMap, "call") != data.Sign {
 		return data, fmt.Errorf("invalid sign")
 	}
 
-	data.OrderID = params["merchantOrderNo"]
-	data.Amount = params["amount"]
+	data.OrderID = params.MerchantOrderNo
+	data.Amount = params.Amount
 	data.Resp = `{"code" : "0000"}`
 	return data, nil
 }
@@ -280,8 +312,8 @@ func (that *VnPayment) sign(args map[string]string, method string) string {
 	}
 
 	if method == "call" {
-		qs += fmt.Sprintf(`merchantNo=%s&merchantOrderNo=%s&orderNo=%s&channelCode=%s&currency=%s&amount=%s&status=%s`,
-			args["merchantNo"], args["merchantOrderNo"], args["orderNo"], args["channelCode"], args["currency"], args["amount"],
+		qs += fmt.Sprintf(`merchantNo=%s&orderNo=%s&merchantOrderNo=%s&amount=%s&status=%s`,
+			args["merchantNo"], args["orderNo"], args["merchantOrderNo"], args["amount"],
 			args["status"])
 	}
 
@@ -292,6 +324,7 @@ func (that *VnPayment) sign(args map[string]string, method string) string {
 	}
 
 	qs = qs + "&appsecret=" + that.Conf.PayKey
+	fmt.Println(qs)
 	sg := strings.ToLower(helper.GetMD5Hash(helper.GetMD5Hash(helper.GetMD5Hash(qs))))
 	return sg
 }
