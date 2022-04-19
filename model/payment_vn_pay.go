@@ -287,18 +287,18 @@ func (that *VnPayment) WithdrawCallBack(ctx *fasthttp.RequestCtx) (paymentCallba
 		return data, fmt.Errorf("unknown status: [%s]", params.Status)
 	}
 
-	//paraMap := map[string]string{
-	//	"merchantNo":      params.MerchantNo,
-	//	"merchantOrderNo": params.MerchantOrderNo,
-	//	"orderNo":         params.OrderNo,
-	//	"channelCode":     params.ChannelCode,
-	//	"currency":        params.Currency,
-	//	"amount":          params.Amount,
-	//	"status":          params.Status,
-	//}
-	//if that.sign(paraMap, "call") != data.Sign {
-	//	return data, fmt.Errorf("invalid sign")
-	//}
+	paraMap := map[string]string{
+		"merchantNo":      params.MerchantNo,
+		"merchantOrderNo": params.MerchantOrderNo,
+		"orderNo":         params.OrderNo,
+		"channelCode":     params.ChannelCode,
+		"currency":        params.Currency,
+		"amount":          params.Amount,
+		"status":          params.Status,
+	}
+	if that.sign(paraMap, "withdrawcall") != data.Sign {
+		return data, fmt.Errorf("invalid sign")
+	}
 
 	data.OrderID = params.MerchantOrderNo
 	data.Amount = params.Amount
@@ -331,6 +331,14 @@ func (that *VnPayment) sign(args map[string]string, method string) string {
 		qs += fmt.Sprintf(`merchantNo=%s&channelCode=%s&orderNo=%s&currency=%s&amount=%s&payee=%s&payeeBankCard=%s&notifyUrl=%s&timestamp=%s`,
 			args["merchantNo"], args["channelCode"], args["orderNo"], args["currency"], args["amount"], args["payee"],
 			args["payeeBankCard"], args["notifyUrl"], args["timestamp"])
+	}
+
+	if method == "withdrawcall" {
+		qs += fmt.Sprintf(`merchantNo=%s&merchantOrderNo=%s&orderNo=%s&channelCode=%s&currency=%s&amount=%s&status=%s`,
+			args["merchantNo"], args["merchantOrderNo"], args["orderNo"], args["channelCode"],
+			args["currency"],
+			args["amount"],
+			args["status"])
 	}
 
 	qs = qs + "&appsecret=" + that.Conf.PayKey
