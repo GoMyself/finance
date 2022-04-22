@@ -107,7 +107,7 @@ func WithdrawalCallBack(ctx *fasthttp.RequestCtx, payment_id string) {
 	// 提款成功只考虑出款中和代付失败的情况
 	// 审核中的状态不用考虑，因为不会走到三方去，出款成功和出款失败是终态也不用考虑
 	if order.State != WithdrawDealing && order.State != WithdrawAutoPayFailed {
-		err = fmt.Errorf("duplicated deposite notify: [%v]", err)
+		err = fmt.Errorf("duplicated Withdrawal notify: [%v]", err)
 		ctx.SetBody([]byte(`failed`))
 		return
 	}
