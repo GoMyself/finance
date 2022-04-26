@@ -375,6 +375,7 @@ func ChannelSet(id, state string) error {
 
 	_ = CacheRefreshPayment(id)
 
+	_ = CacheRefreshPaymentBanks(id)
 	return nil
 }
 

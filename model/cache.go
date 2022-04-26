@@ -299,7 +299,6 @@ func Cate(fctx *fasthttp.RequestCtx) (string, error) {
 	if err != nil {
 		return "[]", pushLog(err, helper.RedisErr)
 	}
-
 	// 如果会员被锁定不返回通道
 	if exists.Val() != 0 {
 		return "[]", nil
