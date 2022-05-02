@@ -38,7 +38,8 @@ type memberTransaction struct {
 	ID           string `db:"id"`            //
 	UID          string `db:"uid"`           //用户ID
 	Username     string `db:"username"`      //用户名
-	Prefix       string `db:"prefix"`
+	Prefix       string `db:"prefix"`        //站点前缀
+	OperationNo  string `db:"operation_no"`  //三方单号
 }
 
 // MemberCache 通过用户名获取用户在redis中的数据

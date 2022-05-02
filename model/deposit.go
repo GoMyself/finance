@@ -506,6 +506,9 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 		Username:     order.Username,
 		Prefix:       meta.Prefix,
 	}
+	if cashType == TransactionFinanceDownPoint {
+		mbTrans.OperationNo = id
+	}
 
 	query, _, _ = dialect.Insert("tbl_balance_transaction").Rows(mbTrans).ToSQL()
 	_, err = tx.Exec(query)
