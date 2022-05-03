@@ -138,7 +138,7 @@ func Constructor(mt *MetaTable, socks5 string, c *gorpc.Client) {
 	}
 
 	if socks5 != "0.0.0.0" {
-		fc.Dial = fasthttpproxy.FasthttpSocksDialer(socks5)
+		fc.Dial = fasthttpproxy.FasthttpHTTPDialer(socks5)
 	}
 
 	NewPayment()
