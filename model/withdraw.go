@@ -13,7 +13,6 @@ import (
 	"finance/contrib/helper"
 	"finance/contrib/validator"
 
-	"bitbucket.org/nwf2013/schema"
 	g "github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
 	"github.com/olivere/elastic/v7"
@@ -499,9 +498,9 @@ func WithdrawReject(id string, d g.Record) error {
 }
 
 // 人工出款成功
-func WithdrawHandSuccess(id, bid string, record g.Record) error {
+func WithdrawHandSuccess(id, uid, bid string, record g.Record) error {
 
-	bankcard, err := withdrawGetBankcard(bid)
+	bankcard, err := withdrawGetBankcard(uid, bid)
 	if err != nil {
 		fmt.Println("query bankcard error: ", err.Error())
 	}
@@ -816,23 +815,31 @@ func WithdrawDealListData(data FWithdrawData) (WithdrawListData, error) {
 		return result, err
 	}
 
-	bankcardNos, err := RpcGetDecode("bankcard", true, rpcParam["bankcard"])
-	if err != nil {
-		return result, errors.New(helper.GetRPCErr)
-	}
+	fmt.Println("bankcard", rpcParam["bankcard"])
+	fmt.Println("realname = ", rpcParam["realname"])
 
-	realNames, err := RpcGetDecode("realname", true, rpcParam["realname"])
-	if err != nil {
-		return result, errors.New(helper.GetRPCErr)
-	}
+	/*
+		bankcardNos, err := RpcGetDecode("bankcard", true, rpcParam["bankcard"])
+		if err != nil {
+			return result, errors.New(helper.GetRPCErr)
+		}
 
+		realNames, err := RpcGetDecode("realname", true, rpcParam["realname"])
+		if err != nil {
+			return result, errors.New(helper.GetRPCErr)
+		}
+	*/
 	cids, _ := channelCateMap(pids)
 
 	// 处理返回前端的数据
 	for k, v := range data.D {
 
-		cardNo := bankcardNos[k].Res
-		realName := realNames[k].Res
+		fmt.Println("k = ", k)
+		//cardNo := bankcardNos[k].Res
+		//realName := realNames[k].Res
+
+		cardNo := ""
+		realName := ""
 
 		w := withdrawCols{
 			Withdraw:           v,
@@ -1001,50 +1008,25 @@ func WithdrawGetBank(bid, username string) (MemberBankCard, error) {
 // tbl_member_bankcard(which is bid) and the username as parameters
 func WithdrawGetBkAndRn(bid, uid string) (string, string, error) {
 
-	res := []schema.Dec_t{
-		{Field: "bankcard", Hide: false, ID: bid},
-		{Field: "realname", Hide: false, ID: uid},
-	}
-	record, err := rpcGet(res)
+	field := "bankcard" + bid
+	recs, err := grpc_t.Decrypt(uid, true, []string{"realname", field})
 
 	if err != nil {
 		return "", "", errors.New(helper.GetRPCErr)
 	}
 
-	if len(res) < 2 {
-		return "", "", errors.New(helper.GetRPCErr)
-	}
-
-	if record[0].Err != "" {
-		return "", "", errors.New(helper.BankcardIDErr)
-	}
-
-	if record[1].Err != "" {
-		return "", "", errors.New(helper.UIDErr)
-	}
-
-	return record[0].Res, record[1].Res, nil
+	return recs[field], recs["realname"], nil
 }
 
-func withdrawGetBankcard(bid string) (string, error) {
+func withdrawGetBankcard(id, bid string) (string, error) {
 
-	res := []schema.Dec_t{
-		{Field: "bankcard", Hide: false, ID: bid},
-	}
-	r, err := rpcGet(res)
+	field := "bankcard" + bid
+	recs, err := grpc_t.Decrypt(id, true, []string{field})
 	if err != nil {
 		return "", errors.New(helper.GetRPCErr)
 	}
 
-	if len(res) < 1 {
-		return "", errors.New(helper.GetRPCErr)
-	}
-
-	if r[0].Err != "" {
-		return "", errors.New(helper.BankcardIDErr)
-	}
-
-	return r[0].Res, nil
+	return recs[field], nil
 }
 
 // 获取银行卡成功失败的次数
@@ -1404,7 +1386,7 @@ func withdrawOrderFailed(query string, order Withdraw) error {
 }
 
 // 接收到三方回调后调用这个方法（三方调用缺少confirm uid和confirm name这些信息）
-func withdrawUpdate(bid, id string, state int, t time.Time) error {
+func withdrawUpdate(id, uid, bid string, state int, t time.Time) error {
 
 	// 加锁
 	err := withdrawLock(id)
@@ -1427,7 +1409,7 @@ func withdrawUpdate(bid, id string, state int, t time.Time) error {
 		return errors.New(helper.StateParamErr)
 	}
 
-	bankcard, err := withdrawGetBankcard(bid)
+	bankcard, err := withdrawGetBankcard(uid, bid)
 	if err != nil {
 		fmt.Println("query bankcard error: ", err.Error())
 	}

@@ -127,7 +127,7 @@ func WithdrawalCallBack(ctx *fasthttp.RequestCtx, payment_id string) {
 	}
 
 	// 修改订单状态
-	err = withdrawUpdate(order.BID, data.OrderID, data.State, ctx.Time())
+	err = withdrawUpdate(data.OrderID, order.UID, order.BID, data.State, ctx.Time())
 	if err != nil {
 		err = fmt.Errorf("set order state [%d] to [%d] error: [%v]", order.State, data.State, err)
 		ctx.SetBody([]byte(`failed`))

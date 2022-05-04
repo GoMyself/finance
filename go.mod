@@ -16,7 +16,6 @@ require (
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf // indirect
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
-	github.com/doug-martin/goqu v5.0.0+incompatible // indirect
 	github.com/doug-martin/goqu/v9 v9.12.0
 	github.com/eclipse/paho.mqtt.golang v1.3.5
 	github.com/fasthttp/router v1.4.7
@@ -28,6 +27,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
+	github.com/hprose/hprose-golang/v3 v3.0.8
 	github.com/ipipdotnet/ipdb-go v1.3.1
 	github.com/jmoiron/sqlx v1.3.3
 	github.com/jonboulle/clockwork v0.2.3 // indirect
