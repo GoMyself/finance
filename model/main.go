@@ -15,11 +15,13 @@ import (
 	"github.com/beanstalkd/go-beanstalk"
 	"github.com/nats-io/nats.go"
 
-	"bitbucket.org/nwf2013/schema"
 	g "github.com/doug-martin/goqu/v9"
 	_ "github.com/doug-martin/goqu/v9/dialect/mysql"
 	"github.com/fluent/fluent-logger-golang/fluent"
 	"github.com/go-redis/redis/v8"
+	"github.com/hprose/hprose-golang/v3/rpc/core"
+	rpchttp "github.com/hprose/hprose-golang/v3/rpc/http"
+	. "github.com/hprose/hprose-golang/v3/rpc/http/fasthttp"
 	"github.com/jmoiron/sqlx"
 	"github.com/olivere/elastic/v7"
 	"github.com/shopspring/decimal"
@@ -28,7 +30,6 @@ import (
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fasthttp/fasthttpproxy"
 	"github.com/valyala/fastjson"
-	"github.com/valyala/gorpc"
 )
 
 type log_t struct {
@@ -45,7 +46,6 @@ type MetaTable struct {
 	MerchantDB    *sqlx.DB
 	MerchantRedis *redis.Client
 	ES            *elastic.Client
-	Grpc          *gorpc.DispatcherClient
 	MQPool        cpool.Pool
 	Nats          *nats.Conn
 	Prefix        string
@@ -54,6 +54,13 @@ type MetaTable struct {
 	IsDev         bool
 	EsPrefix      string
 	Finance       map[string]map[string]interface{}
+}
+
+var grpc_t struct {
+	View       func(uid, field string) ([]string, error)
+	Encrypt    func(uid string, data [][]string) error
+	Decrypt    func(uid string, hide bool, field []string) (map[string]string, error)
+	DecryptAll func(uids []string, hide bool, field []string) (map[string]map[string]string, error)
 }
 
 var (
@@ -108,7 +115,7 @@ var defaultLevelWithdrawLimit = map[string]string{
 	"withdraw_max":   "700000",
 }
 
-func Constructor(mt *MetaTable, socks5 string, c *gorpc.Client) {
+func Constructor(mt *MetaTable, socks5, c string) {
 
 	meta = mt
 
@@ -121,14 +128,13 @@ func Constructor(mt *MetaTable, socks5 string, c *gorpc.Client) {
 	channelToRedis()
 	cateToRedis()
 
-	gorpc.RegisterType([]schema.Enc_t{})
-	gorpc.RegisterType([]schema.Dec_t{})
+	rpchttp.RegisterHandler()
+	RegisterTransport()
 
-	d := gorpc.NewDispatcher()
-	d.AddFunc("Encrypt", func(data []schema.Enc_t) []byte { return nil })
-	d.AddFunc("Decrypt", func(data []schema.Dec_t) []byte { return nil })
+	client := core.NewClient(c)
+	//client.Use(log.Plugin)
 
-	meta.Grpc = d.NewFuncClient(c)
+	client.UseService(&grpc_t)
 
 	fc = &fasthttp.Client{
 		MaxConnsPerHost: 60000,
@@ -138,7 +144,7 @@ func Constructor(mt *MetaTable, socks5 string, c *gorpc.Client) {
 	}
 
 	if socks5 != "0.0.0.0" {
-		fc.Dial = fasthttpproxy.FasthttpSocksDialer(socks5)
+		fc.Dial = fasthttpproxy.FasthttpHTTPDialer(socks5)
 	}
 
 	NewPayment()

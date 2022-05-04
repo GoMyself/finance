@@ -5,12 +5,13 @@ import (
 	"finance/contrib/validator"
 	"finance/model"
 	"fmt"
+	"strconv"
+	"strings"
+
 	g "github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
 	"github.com/shopspring/decimal"
 	"github.com/valyala/fasthttp"
-	"strconv"
-	"strings"
 )
 
 type WithdrawController struct{}
@@ -906,7 +907,7 @@ func (that *WithdrawController) Review(ctx *fasthttp.RequestCtx) {
 		record["bank_name"] = param.BankName
 		record["card_no"] = param.CardNo
 		record["real_name"] = param.RealName
-		err = model.WithdrawHandSuccess(param.ID, withdraw.BID, record)
+		err = model.WithdrawHandSuccess(param.ID, withdraw.UID, withdraw.BID, record)
 		if err != nil {
 			helper.Print(ctx, false, err.Error())
 			return

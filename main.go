@@ -59,10 +59,8 @@ func main() {
 
 	mt.Finance = content
 
-	rpc := conn.InitRpc(cfg.Rpc)
-
 	//tdlog.New(cfg.Td.Servers, cfg.Td.Username, cfg.Td.Password)
-	model.Constructor(mt, os.Args[3], rpc)
+	model.Constructor(mt, os.Args[3], cfg.Rpc)
 
 	session.New(mt.MerchantRedis, mt.Prefix)
 
