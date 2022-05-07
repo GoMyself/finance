@@ -99,10 +99,10 @@ type withdrawTotal struct {
 }
 
 // WithdrawUserInsert 用户申请订单
-func WithdrawUserInsert(amount, bid string, ctx *fasthttp.RequestCtx) (string, error) {
+func WithdrawUserInsert(amount, bid string, fctx *fasthttp.RequestCtx) (string, error) {
 
 	// check member
-	member, err := MemberCache(ctx)
+	member, err := MemberCache(fctx)
 	if err != nil {
 		return "", err
 	}
@@ -158,12 +158,12 @@ func WithdrawUserInsert(amount, bid string, ctx *fasthttp.RequestCtx) (string, e
 
 		if uid != "0" {
 			state = WithdrawDispatched
-			receiveAt = ctx.Time().Unix()
+			receiveAt = fctx.Time().Unix()
 		}
 	}
 
 	// 记录提款单
-	err = WithdrawInsert(amount, bid, withdrawId, uid, adminName, receiveAt, state, ctx.Time(), member)
+	err = WithdrawInsert(amount, bid, withdrawId, uid, adminName, receiveAt, state, fctx.Time(), member)
 	if err != nil {
 		return "", err
 	}
@@ -574,9 +574,10 @@ func WithdrawHandToAuto(uid, username, id, pid, bid string, amount float64, t ti
 		return err
 	}
 
+	kvnd := decimal.NewFromInt(1000)
 	param := WithdrawAutoParam{
 		OrderID:    id,
-		Amount:     decimal.NewFromFloat(amount).Mul(decimal.NewFromInt(1000)).String(),
+		Amount:     decimal.NewFromFloat(amount).Mul(kvnd).String(),
 		BankID:     bank.ID,
 		BankCode:   bank.Code,
 		CardNumber: bankcardNo, // 银行卡号
@@ -815,20 +816,23 @@ func WithdrawDealListData(data FWithdrawData) (WithdrawListData, error) {
 		return result, err
 	}
 
-	fmt.Println("bankcard", rpcParam["bankcard"])
-	fmt.Println("realname = ", rpcParam["realname"])
+	encFields := []string{"realname"}
+
+	for _, v := range rpcParam["bankcard"] {
+		encFields = append(encFields, "bankcard"+v)
+	}
 
 	/*
-		bankcardNos, err := RpcGetDecode("bankcard", true, rpcParam["bankcard"])
-		if err != nil {
-			return result, errors.New(helper.GetRPCErr)
-		}
-
-		realNames, err := RpcGetDecode("realname", true, rpcParam["realname"])
-		if err != nil {
-			return result, errors.New(helper.GetRPCErr)
-		}
+		fmt.Println("bankcard", rpcParam["bankcard"])
+		fmt.Println("bankcards = ", bankcards)
+		fmt.Println("realname = ", rpcParam["realname"])
 	*/
+
+	recs, err := grpc_t.DecryptAll(rpcParam["realname"], true, encFields)
+	if err != nil {
+		return result, errors.New(helper.GetRPCErr)
+	}
+
 	cids, _ := channelCateMap(pids)
 
 	// 处理返回前端的数据
@@ -838,14 +842,14 @@ func WithdrawDealListData(data FWithdrawData) (WithdrawListData, error) {
 		//cardNo := bankcardNos[k].Res
 		//realName := realNames[k].Res
 
-		cardNo := ""
-		realName := ""
+		//cardNo := ""
+		//realName := ""
 
 		w := withdrawCols{
 			Withdraw:           v,
-			MemberBankNo:       cardNo,
-			MemberBankRealName: realName,
-			MemberRealName:     realName,
+			MemberBankNo:       recs[v.UID]["bankcard"+v.BID],
+			MemberBankRealName: recs[v.UID]["realname"],
+			MemberRealName:     recs[v.UID]["realname"],
 			MemberTags:         tags[v.Username],
 		}
 
