@@ -183,7 +183,7 @@ func CachePayment(id string) (FPay, error) {
 	m := FPay{}
 	var cols []string
 
-	pipe := meta.MerchantRedis.TxPipeline()
+	pipe := meta.MerchantRedisRead.TxPipeline()
 	defer pipe.Close()
 
 	for _, val := range colPayment {
@@ -230,7 +230,7 @@ func Tunnel(fctx *fasthttp.RequestCtx, id string) (string, error) {
 		return "[]", nil
 	}
 
-	pipe := meta.MerchantRedis.TxPipeline()
+	pipe := meta.MerchantRedisRead.TxPipeline()
 	defer pipe.Close()
 
 	rs := pipe.HMGet(ctx, "p:"+paymentId, "id", "fmin", "fmax", "et", "st", "amount_list")
@@ -282,7 +282,7 @@ func Cate(fctx *fasthttp.RequestCtx) (string, error) {
 		return "", err
 	}
 
-	pipe := meta.MerchantRedis.TxPipeline()
+	pipe := meta.MerchantRedisRead.TxPipeline()
 	defer pipe.Close()
 
 	exists := pipe.Exists(ctx, fmt.Sprintf("DL:%s", m.UID))

@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"finance/contrib/helper"
+
 	g "github.com/doug-martin/goqu/v9"
 	"github.com/shopspring/decimal"
 	"github.com/valyala/fasthttp"
@@ -43,22 +44,31 @@ type memberTransaction struct {
 }
 
 // MemberCache 通过用户名获取用户在redis中的数据
-func MemberCache(fCtx *fasthttp.RequestCtx) (Member, error) {
+func MemberCache(fctx *fasthttp.RequestCtx) (Member, error) {
 
 	m := Member{}
-	name := string(fCtx.UserValue("token").([]byte))
+	name := string(fctx.UserValue("token").([]byte))
 	if name == "" {
 		return m, errors.New(helper.UsernameErr)
 	}
 
-	ex := g.Ex{
-		"username": name,
-		"prefix":   meta.Prefix,
-	}
-	query, _, _ := dialect.From("tbl_members").Select(colsMember...).Where(ex).ToSQL()
-	err := meta.MerchantDB.Get(&m, query)
+	pipe := meta.MerchantRedis.TxPipeline()
+	defer pipe.Close()
+
+	exist := pipe.Exists(ctx, name)
+	rs := pipe.HMGet(ctx, name, "uid", "username", "realname_hash", "state", "top_uid", "top_name", "parent_uid", "parent_name", "level")
+
+	_, err := pipe.Exec(ctx)
 	if err != nil {
-		return m, pushLog(err, helper.DBErr)
+		return m, pushLog(err, helper.RedisErr)
+	}
+
+	if exist.Val() == 0 {
+		return m, errors.New(helper.UsernameErr)
+	}
+
+	if err = rs.Scan(&m); err != nil {
+		return m, pushLog(rs.Err(), helper.RedisErr)
 	}
 
 	return m, nil
