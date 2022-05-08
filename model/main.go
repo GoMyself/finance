@@ -42,18 +42,19 @@ type log_t struct {
 }
 
 type MetaTable struct {
-	Zlog          *fluent.Fluent
-	MerchantDB    *sqlx.DB
-	MerchantRedis *redis.Client
-	ES            *elastic.Client
-	MQPool        cpool.Pool
-	Nats          *nats.Conn
-	Prefix        string
-	Lang          string
-	Fcallback     string
-	IsDev         bool
-	EsPrefix      string
-	Finance       map[string]map[string]interface{}
+	Zlog              *fluent.Fluent
+	MerchantDB        *sqlx.DB
+	MerchantRedis     *redis.Client
+	MerchantRedisRead *redis.Client
+	ES                *elastic.Client
+	MQPool            cpool.Pool
+	Nats              *nats.Conn
+	Prefix            string
+	Lang              string
+	Fcallback         string
+	IsDev             bool
+	EsPrefix          string
+	Finance           map[string]map[string]interface{}
 }
 
 var grpc_t struct {
