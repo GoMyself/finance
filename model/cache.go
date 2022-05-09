@@ -37,6 +37,7 @@ type Tunnel_t struct {
 	//Discount string `db:"discount" json:"discount"` // 存款优惠比例
 }
 
+/*
 type vip_t struct {
 	CateID    string `db:"cate_id"`    //渠道ID
 	Comment   string `db:"comment"`    //备注
@@ -48,6 +49,7 @@ type vip_t struct {
 	Vip       string `db:"vip"`        //VIP等级
 	State     string `db:"state"`      //0:关闭1:开启
 }
+*/
 
 type PaymentDetail struct {
 	Alias string `db:"alias"` //别名
