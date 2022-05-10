@@ -115,11 +115,11 @@ func CheckTokenMiddleware(ctx *fasthttp.RequestCtx) error {
 	if has {
 
 		gid := fastjson.GetString(data, "group_id")
-		fmt.Println("path = ", path)
-		fmt.Println("gid = ", gid)
+		//fmt.Println("path = ", path)
+		//fmt.Println("gid = ", gid)
 
 		permission := model.PrivCheck(path, gid)
-		fmt.Println("permission = ", permission)
+		//fmt.Println("permission = ", permission)
 
 		if permission != nil {
 			return errors.New(`{"status":false,"data":"permission denied"}`)

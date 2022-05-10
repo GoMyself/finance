@@ -6,7 +6,6 @@ import (
 	"finance/model"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/valyala/fasthttp"
 )
@@ -29,14 +28,6 @@ type vipUpdateParam struct {
 	Code string `rule:"digit" msg:"code error" name:"code"`         // 动态验证码
 }
 
-type vipListParam struct {
-	Vip       string `rule:"digit" default:"1" min:"1" msg:"vip error" name:"vip"` // 会员等级
-	ChanName  string `rule:"none"  msg:"cate_name error" name:"cate_name"`         // 渠道名称
-	ChannelID string `rule:"none" msg:"channel_id error" name:"channel_id"`        // 渠道id(逗号分割)
-	Page      uint16 `rule:"digit" default:"1" min:"1" msg:"page error" name:"page"`
-	PageSize  uint16 `rule:"digit" default:"10" min:"10" max:"200" msg:"page_size error" name:"page_size"`
-}
-
 type vipStateParam struct {
 	ID    string `rule:"digit" default:"0" msg:"id error" name:"id"`
 	State string `rule:"digit" min:"0" max:"1" msg:"state error" name:"state"` // 0:关闭1:开启
@@ -46,32 +37,19 @@ type vipStateParam struct {
 // List 财务管理-渠道管理-会员等级通道-列表
 func (that *VipController) List(ctx *fasthttp.RequestCtx) {
 
-	param := vipListParam{}
-	err := validator.Bind(ctx, &param)
-	if err != nil {
+	level := string(ctx.QueryArgs().Peek("level"))
+	flags := string(ctx.QueryArgs().Peek("flags"))
+
+	if !helper.CtypeDigit(level) {
+		helper.Print(ctx, false, helper.ParamErr)
+		return
+	}
+	if !helper.CtypeDigit(flags) {
 		helper.Print(ctx, false, helper.ParamErr)
 		return
 	}
 
-	if param.ChanName != "" {
-		if !validator.CheckStringCHNAlnum(param.ChanName) || !validator.CheckStringLength(param.ChanName, 1, 20) {
-			helper.Print(ctx, false, helper.CateNameErr)
-			return
-		}
-	}
-
-	var cids []string
-	if param.ChannelID != "" {
-		if !validator.CheckStringCommaDigit(param.ChannelID) {
-			// todo
-			helper.Print(ctx, false, "channel_id error")
-			return
-		}
-
-		cids = strings.Split(param.ChannelID, ",")
-	}
-
-	data, err := model.VipList(param.Vip, param.ChanName, param.Page, param.PageSize, cids)
+	data, err := model.VipList(level, flags)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return
@@ -258,6 +236,7 @@ func (that *VipController) UpdateState(ctx *fasthttp.RequestCtx) {
 		helper.Print(ctx, false, err.Error())
 		return
 	}
+	fmt.Println("UpdateState VipByID = ", vip)
 
 	if len(vip.ID) == 0 {
 		helper.Print(ctx, false, helper.RecordNotExistErr)
@@ -280,23 +259,24 @@ func (that *VipController) UpdateState(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	cateName, channelName, err := model.TunnelAndChannelGetName(vip.CateID, channelIDMap[vip.PaymentID])
-	if err != nil {
-		helper.Print(ctx, false, err.Error())
-		return
-	}
+	/*
+		cateName, channelName, err := model.TunnelAndChannelGetName(vip.CateID, channelIDMap[vip.PaymentID])
+		if err != nil {
+			helper.Print(ctx, false, err.Error())
+			return
+		}
 
-	keyword := "启用"
-	if param.State == "0" {
-		keyword = "禁用"
-	}
+		keyword := "启用"
+		if param.State == "0" {
+			keyword = "禁用"
+		}
 
-	level, _ := strconv.Atoi(vip.Vip)
-	logMsg := fmt.Sprintf("%s【渠道名称: %s；通道名称: %s；会员等级: %d；存款金额最小值: %s；存款金额最大值: %s】",
-		keyword, cateName, channelName, level-1, vip.Fmin, vip.Fmax)
-	defer model.SystemLogWrite(logMsg, ctx)
-
-	err = model.VipSet(param.ID, param.State, &vip)
+		level, _ := strconv.Atoi(vip.Vip)
+		logMsg := fmt.Sprintf("%s【渠道名称: %s；通道名称: %s；会员等级: %d；存款金额最小值: %s；存款金额最大值: %s】",
+			keyword, cateName, channelName, level-1, vip.Fmin, vip.Fmax)
+		defer model.SystemLogWrite(logMsg, ctx)
+	*/
+	err = model.VipSet(param.ID, param.State, vip)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return

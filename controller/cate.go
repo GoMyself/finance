@@ -22,8 +22,6 @@ type cateParam struct {
 type cateListParam struct {
 	All      string `rule:"digit" min:"0" max:"1" default:"0" msg:"all error" name:"all"` // 商户id
 	CateName string `rule:"none" msg:"cate_name error" name:"cate_name"`                  // 渠道名称
-	Page     uint16 `rule:"digit" default:"1" min:"1" msg:"page error" name:"page"`
-	PageSize uint16 `rule:"digit" default:"10" min:"10" max:"200" msg:"page_size error" name:"page_size"`
 }
 
 type cateStateParam struct {
@@ -49,7 +47,7 @@ func (that *CateController) List(ctx *fasthttp.RequestCtx) {
 		}
 	}
 
-	data, err := model.CateList(param.CateName, param.All, param.Page, param.PageSize)
+	data, err := model.CateList(param.CateName, param.All)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return

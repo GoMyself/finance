@@ -134,7 +134,7 @@ func SetupRouter(b BuildInfo) *router.Router {
 	// [前台] 渠道列表数据缓存
 	get(nil, "/finance/cate/cache", cateCtl.Cache)
 	// [前台] 通道列表数据缓存
-	get(nil, "/finance/channel/cache", channelCtl.Cache)
+	//get(nil, "/finance/channel/cache", channelCtl.Cache)
 	// [前台] usdt汇率
 	get(nil, "/finance/usdt/rate", usdtCtl.GetRate)
 	// [前台] 线下转卡-发起存款
@@ -175,9 +175,9 @@ func SetupRouter(b BuildInfo) *router.Router {
 	// [商户后台] 财务管理-渠道管理-通道管理-删除
 	// post("/channel/delete", channelCtl.Delete)
 	// [商户后台] 财务管理-渠道管理-通道管理-列表
-	post(route_merchant_group, "/channel/list", channelCtl.List)
+	get(route_merchant_group, "/channel/list", channelCtl.List)
 	// [商户后台] 通道列表数据缓存
-	get(route_merchant_group, "/channel/cache", channelCtl.Cache)
+	//get(route_merchant_group, "/channel/cache", channelCtl.Cache)
 	// [商户后台] 财务管理-渠道管理-通道管理-启用/停用
 	post(route_merchant_group, "/channel/updatestate", channelCtl.UpdateState)
 
@@ -190,9 +190,9 @@ func SetupRouter(b BuildInfo) *router.Router {
 	// [商户后台] 财务管理-渠道管理-会员等级通道-删除
 	post(route_merchant_group, "/vip/delete", vipCtl.Delete)
 	// [商户后台] 财务管理-渠道管理-会员等级通道-列表
-	post(route_merchant_group, "/vip/list", vipCtl.List)
+	get(route_merchant_group, "/vip/list", vipCtl.List)
 	// [商户后台] 财务管理-渠道管理-会员等级通道-启用/停用
-	post(route_merchant_group, "/vip/updatestate", vipCtl.UpdateState)
+	post(route_merchant_group, "/vip/update/state", vipCtl.UpdateState)
 
 	// [商户后台] 财务管理-渠道管理-通道银行管理-新增
 	post(route_merchant_group, "/bank/insert", bankCtl.Insert)

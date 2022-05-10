@@ -42,19 +42,19 @@ type log_t struct {
 }
 
 type MetaTable struct {
-	Zlog              *fluent.Fluent
-	MerchantDB        *sqlx.DB
-	MerchantRedis     *redis.Client
-	MerchantRedisRead *redis.Client
-	ES                *elastic.Client
-	MQPool            cpool.Pool
-	Nats              *nats.Conn
-	Prefix            string
-	Lang              string
-	Fcallback         string
-	IsDev             bool
-	EsPrefix          string
-	Finance           map[string]map[string]interface{}
+	Zlog          *fluent.Fluent
+	MerchantDB    *sqlx.DB
+	MerchantRedis *redis.Client
+	ES            *elastic.Client
+	MQPool        cpool.Pool
+	Nats          *nats.Conn
+	Prefix        string
+	Lang          string
+	Fcallback     string
+	IsDev         bool
+	EsPrefix      string
+	MerchantInfo  map[string]string
+	Finance       map[string]map[string]interface{}
 }
 
 var grpc_t struct {
@@ -75,7 +75,7 @@ var (
 	colTunnel            = helper.EnumFields(Tunnel_t{})
 	colCate              = helper.EnumFields(Category{})
 	colPayment           = helper.EnumFields(Payment_t{})
-	colVip               = helper.EnumFields(Vip{})
+	colVip               = helper.EnumFields(Vip_t{})
 	colWithdraw          = helper.EnumFields(Withdraw{})
 	colChannelBank       = helper.EnumFields(ChannelBanks{})
 	colsDeposit          = helper.EnumFields(Deposit{})
@@ -126,7 +126,15 @@ func Constructor(mt *MetaTable, socks5, c string) {
 		loc, _ = time.LoadLocation("Asia/Bangkok")
 	}
 
-	channelToRedis()
+	meta.MerchantInfo = map[string]string{
+		"6":  "W",
+		"12": "Manual",
+		"13": "USDT2",
+		"17": "VTPAY",
+		"18": "918PAY",
+		"19": "DBPAY",
+	}
+
 	cateToRedis()
 
 	rpchttp.RegisterHandler()
@@ -137,14 +145,14 @@ func Constructor(mt *MetaTable, socks5, c string) {
 
 	client.UseService(&grpc_t)
 
-	fc = &fasthttp.Client{
-		MaxConnsPerHost: 60000,
-		TLSConfig:       &tls.Config{InsecureSkipVerify: true},
-		ReadTimeout:     time.Second * 10,
-		WriteTimeout:    time.Second * 10,
-	}
-
 	if socks5 != "0.0.0.0" {
+		fc = &fasthttp.Client{
+			MaxConnsPerHost: 60000,
+			TLSConfig:       &tls.Config{InsecureSkipVerify: true},
+			ReadTimeout:     time.Second * 10,
+			WriteTimeout:    time.Second * 10,
+		}
+
 		fc.Dial = fasthttpproxy.FasthttpHTTPDialer(socks5)
 	}
 

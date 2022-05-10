@@ -924,7 +924,7 @@ func WithdrawAuto(param WithdrawAutoParam, level int) error {
 		}
 
 		// unmarshal the searched result of string of the payment channel to the destination vip_t struct
-		var info vip_t
+		var info Vip_t
 		err = helper.JsonUnmarshal([]byte(res), &info)
 		if err != nil {
 			fmt.Println("withdrawAuto failed 3:", param, err)

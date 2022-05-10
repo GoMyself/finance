@@ -9,7 +9,6 @@ import (
 
 	g "github.com/doug-martin/goqu/v9"
 	"github.com/go-redis/redis/v8"
-	"github.com/valyala/fastjson"
 )
 
 type PaymentIDChannelID struct {
@@ -24,20 +23,22 @@ type ChannelDevice struct {
 }
 
 // ChannelData 财务管理-渠道管理-列表 response structure
+/*
 type ChannelData struct {
 	D []Payment_t `json:"d"`
 	T int64       `json:"t"`
 	S uint16      `json:"s"`
 }
+*/
 
 type channelCate struct {
 	PaymentID string `db:"id" json:"id"`
 	CateID    string `db:"cate_id" json:"cate_id"`
 }
 
-func ChannelList(cateID, chanID string, page, pageSize uint16, device []string) (ChannelData, error) {
+func ChannelList(cateID, chanID string, device []string) ([]Payment_t, error) {
 
-	var data ChannelData
+	var data []Payment_t
 
 	ex := g.Ex{
 		"prefix": meta.Prefix,
@@ -74,58 +75,30 @@ func ChannelList(cateID, chanID string, page, pageSize uint16, device []string) 
 		ex["id"] = ids
 	}
 
-	if page == 1 {
-		query, _, _ := dialect.From("f_payment").Select(g.COUNT(1)).Where(ex).ToSQL()
-		err := meta.MerchantDB.Get(&data.T, query)
-		if err != nil && err != sql.ErrNoRows {
-			return data, pushLog(err, helper.DBErr)
-		}
-
-		if data.T == 0 {
-			return data, nil
-		}
-	}
-
-	offset := (page - 1) * pageSize
-	query, _, _ := dialect.From("f_payment").Select(colPayment...).
-		Where(ex).Order(g.C("sort").Asc()).Offset(uint(offset)).Limit(uint(pageSize)).ToSQL()
-	err := meta.MerchantDB.Select(&data.D, query)
+	query, _, _ := dialect.From("f_payment").Select(colPayment...).Where(ex).ToSQL()
+	err := meta.MerchantDB.Select(&data, query)
 	if err != nil {
 		return data, pushLog(err, helper.DBErr)
 	}
+	ll := len(data)
 
-	// 拼装查询device的pids和查询cate_name的cids
-	var (
-		pids []string
-		cids []string
-	)
-	for _, v := range data.D {
-		pids = append(pids, v.ID)
-		cids = append(cids, v.CateID)
-	}
+	if ll > 0 {
 
-	ex = g.Ex{
-		"payment_id": g.Op{"in": pids},
-		"prefix":     meta.Prefix,
-	}
-	// device slice
-	var ds []ChannelDevice
-	query, _, _ = dialect.From("f_channel_device").
-		Select(closChannelDevice...).Where(ex).ToSQL()
-	err = meta.MerchantDB.Select(&ds, query)
-	if err != nil {
-		return data, pushLog(err, helper.DBErr)
-	}
-
-	dm := map[string][]string{}
-	for _, v := range ds {
-		if _, ok := dm[v.PaymentId]; !ok {
-			dm[v.PaymentId] = make([]string, 0)
+		res := make([]*redis.StringCmd, ll)
+		pipe := meta.MerchantRedis.Pipeline()
+		for i, v := range data {
+			key := "p:c:t:" + v.ChannelID
+			res[i] = pipe.HGet(ctx, key, "name")
 		}
-		dm[v.PaymentId] = append(dm[v.PaymentId], v.DeviceId)
+
+		pipe.Exec(ctx)
+		pipe.Close()
+
+		for i := 0; i < ll; i++ {
+			data[i].ChannelName = res[i].Val()
+		}
 	}
 
-	data.S = pageSize
 	return data, nil
 }
 
@@ -492,6 +465,7 @@ func PaymentIDMapToChanID(pids []string) (map[string]string, error) {
 	return res, err
 }
 
+/*
 func channelToRedis() {
 
 	var a = &fastjson.Arena{}
@@ -534,6 +508,7 @@ func ChannelListRedis() string {
 
 	return res
 }
+*/
 
 // 批量获取存款通道的渠道id和name
 func channelCateMap(pids []string) (map[string]CateIDAndName, error) {

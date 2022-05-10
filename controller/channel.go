@@ -44,8 +44,6 @@ type channelListParam struct {
 	CateID    string `rule:"digit" default:"0" msg:"cate_id error" name:"cate_id"`       // 渠道id
 	ChannelID string `rule:"digit" default:"0" msg:"channel_id error" name:"channel_id"` // 通道id
 	Device    string `rule:"none" msg:"device error" name:"device"`                      // 支持设备
-	Page      uint16 `rule:"digit" default:"1" min:"1" msg:"page error" name:"page"`
-	PageSize  uint16 `rule:"digit" default:"10" min:"10" max:"200" msg:"page_size error" name:"page_size"`
 }
 
 type chanStateParam struct {
@@ -76,7 +74,7 @@ func (that *ChannelController) List(ctx *fasthttp.RequestCtx) {
 		}
 	}
 
-	data, err := model.ChannelList(param.CateID, param.ChannelID, param.Page, param.PageSize, device)
+	data, err := model.ChannelList(param.CateID, param.ChannelID, device)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return
@@ -85,10 +83,12 @@ func (that *ChannelController) List(ctx *fasthttp.RequestCtx) {
 	helper.Print(ctx, true, data)
 }
 
+/*
 func (that *ChannelController) Cache(ctx *fasthttp.RequestCtx) {
 	data := model.ChannelListRedis()
 	helper.PrintJson(ctx, true, data)
 }
+*/
 
 // Insert 财务管理-渠道管理-通道管理-新增
 func (that *ChannelController) Insert(ctx *fasthttp.RequestCtx) {

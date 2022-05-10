@@ -20,22 +20,15 @@ type Category struct {
 	Prefix     string `db:"prefix" json:"prefix"`
 }
 
-// CategoryData 财务管理-渠道管理-列表 response structure
-type CategoryData struct {
-	D []Category `json:"d"`
-	T int64      `json:"t"`
-	S uint16     `json:"s"`
-}
-
 // CateIDAndName 渠道id和name
 type CateIDAndName struct {
 	ID   string `db:"id" json:"id"`
 	Name string `db:"name" json:"name"`
 }
 
-func CateList(name, all string, page, pageSize uint16) (CategoryData, error) {
+func CateList(name, all string) ([]Category, error) {
 
-	var data CategoryData
+	var data []Category
 
 	// 新增渠道时用
 	if all == "1" {
@@ -43,8 +36,8 @@ func CateList(name, all string, page, pageSize uint16) (CategoryData, error) {
 			"state":  "1",
 			"prefix": meta.Prefix,
 		}
-		query, _, _ := dialect.From("f_category").Select(colCate...).Where(cond).Order(g.C("created_at").Asc()).ToSQL()
-		err := meta.MerchantDB.Select(&data.D, query)
+		query, _, _ := dialect.From("f_category").Select(colCate...).Where(cond).ToSQL()
+		err := meta.MerchantDB.Select(&data, query)
 		if err != nil {
 			return data, pushLog(err, helper.DBErr)
 		}
@@ -60,33 +53,18 @@ func CateList(name, all string, page, pageSize uint16) (CategoryData, error) {
 		ex["name"] = name
 	}
 
-	if page == 1 {
-		query, _, _ := dialect.From("f_category").Select(g.COUNT(1)).Where(ex).ToSQL()
-		err := meta.MerchantDB.Get(&data.T, query)
-		if err != nil && err != sql.ErrNoRows {
-			return data, pushLog(err, helper.DBErr)
-		}
-
-		if data.T == 0 {
-			return data, nil
-		}
-	}
-
-	offset := (page - 1) * pageSize
-	query, _, _ := dialect.From("f_category").
-		Select(colCate...).Where(ex).Order(g.C("created_at").Desc()).Offset(uint(offset)).Limit(uint(pageSize)).ToSQL()
-	err := meta.MerchantDB.Select(&data.D, query)
+	query, _, _ := dialect.From("f_category").Select(colCate...).Where(ex).ToSQL()
+	err := meta.MerchantDB.Select(&data, query)
 	if err != nil {
 		return data, pushLog(err, helper.DBErr)
 	}
 
-	data.S = pageSize
 	return data, nil
 }
 
-func CateWithdrawList(amount float64) (CategoryData, error) {
+func CateWithdrawList(amount float64) ([]Category, error) {
 
-	var data CategoryData
+	var data []Category
 
 	ex := g.Ex{
 		"channel_id": "7",
@@ -115,7 +93,7 @@ func CateWithdrawList(amount float64) (CategoryData, error) {
 		"prefix": meta.Prefix,
 	}
 	query, _, _ = dialect.From("f_category").Select(colCate...).Where(ex).Order(g.C("created_at").Desc()).ToSQL()
-	err = meta.MerchantDB.Select(&data.D, query)
+	err = meta.MerchantDB.Select(&data, query)
 	if err != nil {
 		return data, pushLog(err, helper.DBErr)
 	}

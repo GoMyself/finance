@@ -1,7 +1,6 @@
 package model
 
 import (
-	"bytes"
 	"errors"
 	"finance/contrib/helper"
 	"fmt"
@@ -33,7 +32,7 @@ type Tunnel_t struct {
 	Name       string `db:"name" json:"name"`                //
 	Sort       int    `db:"sort" json:"sort"`                //排序
 	PromoState string `db:"promo_state"  json:"promo_state"` //存款优化开关
-	Content    string `db:"content"  json:"content"`         //存款优化开关
+	//Content    string `db:"content"  json:"content"`         //存款优化开关
 	//Discount string `db:"discount" json:"discount"` // 存款优惠比例
 }
 
@@ -59,22 +58,23 @@ type PaymentDetail struct {
 }
 
 type Payment_t struct {
-	CateID     string `db:"cate_id" redis:"cate_id" json:"cate_id"`             //渠道ID
-	ChannelID  string `db:"channel_id" redis:"channel_id" json:"channel_id"`    //通道id
-	Comment    string `db:"comment" redis:"comment" json:"comment"`             //
-	CreatedAt  string `db:"created_at" redis:"created_at" json:"created_at"`    //创建时间
-	Et         string `db:"et" redis:"et" json:"et"`                            //结束时间
-	Fmax       string `db:"fmax" redis:"fmax" json:"fmax"`                      //最大支付金额
-	Fmin       string `db:"fmin" redis:"fmin" json:"fmin"`                      //最小支付金额
-	Gateway    string `db:"gateway" redis:"gateway" json:"gateway"`             //支付网关
-	ID         string `db:"id" redis:"id" json:"id"`                            //
-	Quota      string `db:"quota" redis:"quota" json:"quota"`                   //每天限额
-	Amount     string `db:"amount" redis:"amount" json:"amount"`                //每天限额
-	Sort       string `db:"sort" redis:"sort" json:"sort"`                      //
-	St         string `db:"st" redis:"st" json:"st"`                            //开始时间
-	State      string `db:"state" redis:"state" json:"state"`                   //0:关闭1:开启
-	Devices    string `db:"devices" redis:"devices" json:"devices"`             //设备号
-	AmountList string `db:"amount_list" redis:"amount_list" json:"amount_list"` // 固定金额列表
+	CateID      string `db:"cate_id" redis:"cate_id" json:"cate_id"`             //渠道ID
+	ChannelID   string `db:"channel_id" redis:"channel_id" json:"channel_id"`    //通道id
+	ChannelName string `redis:"channel_name" json:"channel_name"`                //通道id
+	Comment     string `db:"comment" redis:"comment" json:"comment"`             //
+	CreatedAt   string `db:"created_at" redis:"created_at" json:"created_at"`    //创建时间
+	Et          string `db:"et" redis:"et" json:"et"`                            //结束时间
+	Fmax        string `db:"fmax" redis:"fmax" json:"fmax"`                      //最大支付金额
+	Fmin        string `db:"fmin" redis:"fmin" json:"fmin"`                      //最小支付金额
+	Gateway     string `db:"gateway" redis:"gateway" json:"gateway"`             //支付网关
+	ID          string `db:"id" redis:"id" json:"id"`                            //
+	Quota       string `db:"quota" redis:"quota" json:"quota"`                   //每天限额
+	Amount      string `db:"amount" redis:"amount" json:"amount"`                //每天限额
+	Sort        string `db:"sort" redis:"sort" json:"sort"`                      //
+	St          string `db:"st" redis:"st" json:"st"`                            //开始时间
+	State       string `db:"state" redis:"state" json:"state"`                   //0:关闭1:开启
+	Devices     string `db:"devices" redis:"devices" json:"devices"`             //设备号
+	AmountList  string `db:"amount_list" redis:"amount_list" json:"amount_list"` // 固定金额列表
 }
 
 func CacheRefreshPaymentBanks(id string) error {
@@ -185,7 +185,7 @@ func CachePayment(id string) (FPay, error) {
 	m := FPay{}
 	var cols []string
 
-	pipe := meta.MerchantRedisRead.TxPipeline()
+	pipe := meta.MerchantRedis.TxPipeline()
 	defer pipe.Close()
 
 	for _, val := range colPayment {
@@ -232,7 +232,7 @@ func Tunnel(fctx *fasthttp.RequestCtx, id string) (string, error) {
 		return "[]", nil
 	}
 
-	pipe := meta.MerchantRedisRead.TxPipeline()
+	pipe := meta.MerchantRedis.TxPipeline()
 	defer pipe.Close()
 
 	rs := pipe.HMGet(ctx, "p:"+paymentId, "id", "fmin", "fmax", "et", "st", "amount_list")
@@ -277,27 +277,25 @@ func Tunnel(fctx *fasthttp.RequestCtx, id string) (string, error) {
 
 func Cate(fctx *fasthttp.RequestCtx) (string, error) {
 
-	var buffer bytes.Buffer
-
 	m, err := MemberCache(fctx)
 	if err != nil {
 		return "", err
 	}
 
-	pipe := meta.MerchantRedisRead.TxPipeline()
-	defer pipe.Close()
-
+	key := fmt.Sprintf("p:%d", m.Level)
+	//pipe := meta.MerchantRedisRead.Pipeline()
+	pipe := meta.MerchantRedis.Pipeline()
 	exists := pipe.Exists(ctx, fmt.Sprintf("DL:%s", m.UID))
 
-	key := fmt.Sprintf("p:%d", m.Level)
 	//sip := helper.FromRequest(fctx)
 	//if strings.Count(sip, ":") >= 2 {
 	//	key = fmt.Sprintf("p:%d", 9)
 	//}
 
-	rs := pipe.SMembers(ctx, key)
+	recs_temp := pipe.SMembers(ctx, key)
 
 	_, err = pipe.Exec(ctx)
+	pipe.Close()
 	if err != nil {
 		return "[]", pushLog(err, helper.RedisErr)
 	}
@@ -306,34 +304,29 @@ func Cate(fctx *fasthttp.RequestCtx) (string, error) {
 		return "[]", nil
 	}
 
-	recs, err := rs.Result()
-	if err != nil {
-		fmt.Println("SMembers = ", err.Error())
-		return "", pushLog(err, helper.RedisErr)
-	}
+	a := new(fastjson.Arena)
+	obj := a.NewArray()
+	recs := recs_temp.Val()
 
-	total := len(recs)
-	if total == 0 {
-		return "[]", nil
-	}
+	fmt.Println("key = ", key)
+	fmt.Println("exists.Val() = ", exists.Val())
+	fmt.Println("recs = ", recs)
 
-	buffer.WriteString("[")
 	for i, value := range recs {
-		buffer.WriteString(value)
-		if (i + 1) != total {
-			buffer.WriteString(",")
-		}
+		val := fastjson.MustParse(value)
+		obj.SetArrayItem(i, val)
 	}
 
-	buffer.WriteString("]")
+	str := obj.String()
+	a = nil
 
-	return buffer.String(), nil
+	return str, nil
 }
 
 // CreateAutomatic 创建代付的轮询队列
 func CreateAutomatic(level string) {
 
-	var vips []vip_t
+	var vips []Vip_t
 	ex := g.Ex{
 		"vip":    level,
 		"flags":  2,
@@ -368,7 +361,7 @@ func Create(level string) {
 	var (
 		cIds       []string
 		paymentIds []string
-		vips       []vip_t
+		vips       []Vip_t
 		tunnels    []Tunnel_t
 		payments   []Payment_t
 	)
@@ -436,7 +429,6 @@ func Create(level string) {
 	}
 
 	pipe := meta.MerchantRedis.TxPipeline()
-	defer pipe.Close()
 
 	for _, val := range payments {
 		pipe.Unlink(ctx, "p:"+val.ID)
@@ -488,10 +480,46 @@ func Create(level string) {
 	}
 
 	_, err = pipe.Exec(ctx)
+	pipe.Close()
 
 	fmt.Println("err = ", err)
 	fmt.Println("vip = ", vips)
 	fmt.Println("tunnels = ", tunnels)
 	fmt.Println("payments = ", payments)
 	fmt.Println("paymentIds = ", paymentIds)
+}
+
+func CreateChannelType() {
+
+	var reocrd []Tunnel_t
+
+	query, _, _ := dialect.From("f_channel_type").Select("id", "name", "sort", "promo_state").ToSQL()
+	err := meta.MerchantDB.Select(&reocrd, query)
+	if err != nil {
+		fmt.Println("CreateChannelType meta.MerchantDB.Select = ", err.Error())
+		return
+	}
+
+	pipe := meta.MerchantRedis.TxPipeline()
+
+	for _, value := range reocrd {
+
+		key := "p:c:t:" + value.ID
+		val := map[string]interface{}{
+			"promo_state": value.PromoState,
+			"sort":        value.Sort,
+			"name":        value.Name,
+			"id":          value.ID,
+		}
+
+		pipe.Unlink(ctx, key)
+		pipe.HMSet(ctx, key, val)
+		pipe.Persist(ctx, key)
+	}
+	_, err = pipe.Exec(ctx)
+	pipe.Close()
+
+	if err != nil {
+		fmt.Println("pipe.Exec = ", err.Error())
+	}
 }

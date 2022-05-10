@@ -4,54 +4,26 @@ import (
 	"database/sql"
 	"errors"
 	"finance/contrib/helper"
+
 	g "github.com/doug-martin/goqu/v9"
 )
 
 // TunnelData 财务管理-渠道管理-列表 response structure
-type TunnelData struct {
-	D []Tunnel_t `json:"d"`
-	T int64      `json:"t"`
-	S uint16     `json:"s"`
-}
 
-func TunnelList(all bool, page uint16, pageSize uint16) (TunnelData, error) {
+func TunnelList() ([]Tunnel_t, error) {
+
+	var data []Tunnel_t
 
 	ex := g.Ex{
 		"prefix": meta.Prefix,
 	}
 
-	var data TunnelData
-	if all {
-		query, _, _ := dialect.From("f_channel_type").Select(colTunnel...).Where(ex).Order(g.C("sort").Asc()).ToSQL()
-		err := meta.MerchantDB.Select(&data.D, query)
-		if err != nil {
-			return data, pushLog(err, helper.DBErr)
-		}
-
-		return data, nil
-	}
-
-	if page == 1 {
-		query, _, _ := dialect.From("f_channel_type").Select(g.COUNT(1)).Where(ex).ToSQL()
-		err := meta.MerchantDB.Get(&data.T, query)
-		if err != nil && err != sql.ErrNoRows {
-			return data, pushLog(err, helper.DBErr)
-		}
-
-		if data.T == 0 {
-			return data, nil
-		}
-	}
-
-	offset := (page - 1) * pageSize
-	query, _, _ := dialect.From("f_channel_type").Select(colTunnel...).
-		Where(ex).Order(g.C("sort").Asc()).Offset(uint(offset)).Limit(uint(pageSize)).ToSQL()
-	err := meta.MerchantDB.Select(&data.D, query)
+	query, _, _ := dialect.From("f_channel_type").Select(colTunnel...).Where(ex).ToSQL()
+	err := meta.MerchantDB.Select(&data, query)
 	if err != nil {
 		return data, pushLog(err, helper.DBErr)
 	}
 
-	data.S = pageSize
 	return data, nil
 }
 
