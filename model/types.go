@@ -11,12 +11,6 @@ const (
 	DepositFlagUSDT      = 4
 )
 
-const (
-	ZH = "zh" // 中国
-	VN = "vn" // 越南
-	TH = "th" // 泰国
-)
-
 // 存款状态
 const (
 	DepositConfirming = 361 //确认中

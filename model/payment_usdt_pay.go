@@ -1,16 +1,14 @@
 package model
 
 import (
-	"errors"
 	"finance/contrib/helper"
 	"fmt"
-	"github.com/go-redis/redis/v8"
-	"github.com/shopspring/decimal"
-	"github.com/valyala/fasthttp"
 	"net/url"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/valyala/fasthttp"
 )
 
 type USDTPayment struct {
@@ -186,33 +184,4 @@ func (that *USDTPayment) sign(args map[string]string) string {
 	qs += that.Conf.Key
 
 	return strings.ToLower(helper.GetMD5Hash(qs))
-}
-
-func USDTConfig() (decimal.Decimal, error) {
-
-	f, err := meta.MerchantRedis.Get(ctx, "usdt_rate").Result()
-	if err != nil && redis.Nil != err {
-		return decimal.Zero, pushLog(err, helper.RedisErr)
-	}
-
-	df, err := decimal.NewFromString(f)
-	if err != nil {
-		return decimal.Zero, errors.New(helper.ExchangeRateRrr)
-	}
-
-	return df, nil
-}
-
-func TRCConfig() (string, error) {
-
-	f, err := meta.MerchantRedis.Get(ctx, "trc_addr").Result()
-	if err != nil && redis.Nil != err {
-		return "", pushLog(err, helper.RedisErr)
-	}
-
-	if f == "" {
-		return "", errors.New(helper.ServerErr)
-	}
-
-	return f, nil
 }

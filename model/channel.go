@@ -465,51 +465,6 @@ func PaymentIDMapToChanID(pids []string) (map[string]string, error) {
 	return res, err
 }
 
-/*
-func channelToRedis() {
-
-	var a = &fastjson.Arena{}
-
-	var channels []Tunnel_t
-	ex := g.Ex{
-		"prefix": meta.Prefix,
-	}
-	query, _, _ := dialect.From("f_channel_type").Select("*").Where(ex).Order(g.C("sort").Asc()).ToSQL()
-	err := meta.MerchantDB.Select(&channels, query)
-	if err != nil || len(channels) < 1 {
-		return
-	}
-
-	obj := a.NewObject()
-
-	for _, v := range channels {
-		val := a.NewString(v.Name)
-
-		obj.Set(v.ID, val)
-	}
-
-	b := obj.String()
-	key := "f:channel"
-	pipe := meta.MerchantRedis.TxPipeline()
-	defer pipe.Close()
-
-	pipe.Unlink(ctx, key)
-	pipe.Set(ctx, key, b, 0)
-
-	_, _ = pipe.Exec(ctx)
-}
-
-func ChannelListRedis() string {
-
-	res, err := meta.MerchantRedis.Get(ctx, "f:channel").Result()
-	if err == redis.Nil || err != nil {
-		return "{}"
-	}
-
-	return res
-}
-*/
-
 // 批量获取存款通道的渠道id和name
 func channelCateMap(pids []string) (map[string]CateIDAndName, error) {
 

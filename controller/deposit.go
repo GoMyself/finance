@@ -5,11 +5,12 @@ import (
 	"finance/contrib/validator"
 	"finance/model"
 	"fmt"
+	"strconv"
+
 	g "github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
 	"github.com/shopspring/decimal"
 	"github.com/valyala/fasthttp"
-	"strconv"
 )
 
 type DepositController struct{}
@@ -647,14 +648,20 @@ func (that *DepositController) OfflineUSDT(ctx *fasthttp.RequestCtx) {
 	logMsg := fmt.Sprintf("线下转卡【订单id:%s；到账金额USDT:%.4f】", id, usdtAmount)
 	defer model.SystemLogWrite(logMsg, ctx)
 
-	rate, err := model.USDTConfig()
+	usdt_info_temp, err := model.UsdtInfo()
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return
 	}
 
+	usdt_rate, err := decimal.NewFromString(usdt_info_temp["usdt_rate"])
+	if err != nil {
+		helper.Print(ctx, false, helper.AmountErr)
+		return
+	}
+
 	// 计算获取上分的越南盾金额 单位kvnd
-	amount := decimal.NewFromFloat(usdtAmount).Mul(rate).
+	amount := decimal.NewFromFloat(usdtAmount).Mul(usdt_rate).
 		DivRound(decimal.NewFromInt(1000), 3).String()
 
 	rec := g.Record{

@@ -5,12 +5,8 @@ import (
 	"errors"
 	"finance/contrib/helper"
 	"finance/contrib/validator"
-	"fmt"
+
 	g "github.com/doug-martin/goqu/v9"
-	"github.com/go-redis/redis/v8"
-	"github.com/shopspring/decimal"
-	"time"
-	"unicode/utf8"
 )
 
 type BankCard struct {
@@ -27,13 +23,6 @@ type BankCard struct {
 	Prefix        string  `db:"prefix" json:"prefix"`
 }
 
-//BankCardListData 财务管理-渠道管理-列表 response structure
-type BankCardListData struct {
-	D []BankCard `json:"d"`
-	T int64      `json:"t"`
-	S int        `json:"s"`
-}
-
 // BankCardListForDeposit 银行卡信息 线下转卡 订单列表
 type BankCardListForDeposit struct {
 	ID       string `db:"id" json:"id"`
@@ -43,23 +32,17 @@ type BankCardListForDeposit struct {
 	BankAddr string `db:"bank_addr" json:"bank_addr"`
 }
 
-func BankCardInsert(card *BankCard) error {
+func BankCardInsert(recs BankCard) error {
 
-	if meta.Lang == VN {
-		if !validator.CheckStringVName(card.RealName) {
+	if meta.Lang == "vn" {
+		if !validator.CheckStringVName(recs.RealName) {
 			return errors.New(helper.ParamErr)
 		}
 	}
 
-	if meta.Lang == ZH {
-		if !validator.CheckStringCHN(card.RealName) || utf8.RuneCountInString(card.RealName) < 2 || utf8.RuneCountInString(card.RealName) > 50 {
-			return errors.New(helper.ParamErr)
-		}
-	}
+	recs.Prefix = meta.Prefix
 
-	card.Prefix = meta.Prefix
-
-	query, _, _ := dialect.Insert("f_bankcards").Rows(card).ToSQL()
+	query, _, _ := dialect.Insert("f_bankcards").Rows(recs).ToSQL()
 	_, err := meta.MerchantDB.Exec(query)
 	if err != nil {
 		return pushLog(err, helper.DBErr)
@@ -84,62 +67,18 @@ func BankCardDelete(id string) error {
 }
 
 //BankCardList 银行卡列表
-func BankCardList(ex g.Ex, page, pageSize int) (BankCardListData, error) {
+func BankCardList(ex g.Ex) ([]BankCard, error) {
+
+	var data []BankCard
 
 	ex["prefix"] = meta.Prefix
-	var data BankCardListData
 
-	if page == 1 {
-		query, _, _ := dialect.From("f_bankcards").Select(g.COUNT(1)).Where(ex).ToSQL()
-		err := meta.MerchantDB.Get(&data.T, query)
-		if err != nil && err != sql.ErrNoRows {
-			return data, pushLog(err, helper.DBErr)
-		}
-
-		if data.T == 0 {
-			return data, nil
-		}
-	}
-
-	offset := (page - 1) * pageSize
-	query, _, _ := dialect.From("f_bankcards").Select(colBankCard...).
-		Where(ex).Offset(uint(offset)).Limit(uint(pageSize)).ToSQL()
-	err := meta.MerchantDB.Select(&data.D, query)
+	query, _, _ := dialect.From("f_bankcards").Select(colBankCard...).Where(ex).ToSQL()
+	err := meta.MerchantDB.Select(&data, query)
 	if err != nil {
 		return data, pushLog(err, helper.DBErr)
 	}
 
-	// 获取金额存款金额
-	var ids []string
-	for _, card := range data.D {
-		ids = append(ids, card.ID)
-	}
-
-	cardMoney := map[string]*redis.StringCmd{}
-	pipe := meta.MerchantRedis.TxPipeline()
-	defer pipe.Close()
-
-	for _, id := range ids {
-		key := BankCardTotalKey(id)
-		cardMoney[id] = pipe.Get(ctx, key)
-	}
-
-	_, _ = pipe.Exec(ctx)
-	for i, card := range data.D {
-
-		if cardMoney[card.ID].Err() != nil {
-			continue
-		}
-
-		rs, err := cardMoney[card.ID].Float64()
-		if err != nil {
-			continue
-		}
-
-		data.D[i].Money = rs
-	}
-
-	data.S = pageSize
 	return data, nil
 }
 
@@ -208,6 +147,7 @@ func BankCardExistByEx(ex g.Ex) (bool, error) {
 	return bc > 0, nil
 }
 
+/*
 func BankCardOpenCondition(id, channelBankID string, max float64) error {
 
 	key := BankCardTotalKey(id)
@@ -246,8 +186,10 @@ func BankCardOpenCondition(id, channelBankID string, max float64) error {
 
 	return nil
 }
-
+*/
+/*
 func BankCardTotalKey(bankID string) string {
 	timeStr := time.Now().In(loc).Format("2006-01-02")
 	return fmt.Sprintf("BT:%s:%s", bankID, timeStr)
 }
+*/

@@ -5,6 +5,7 @@ import (
 	"finance/contrib/validator"
 	"finance/model"
 	"fmt"
+
 	g "github.com/doug-martin/goqu/v9"
 	"github.com/valyala/fasthttp"
 )
@@ -51,7 +52,7 @@ func (that *BankCardController) Insert(ctx *fasthttp.RequestCtx) {
 		MaxAmount:     maxAmount,
 	}
 
-	err = model.BankCardInsert(&bankCard)
+	err = model.BankCardInsert(bankCard)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return
@@ -128,7 +129,7 @@ func (that *BankCardController) List(ctx *fasthttp.RequestCtx) {
 		ex["channel_bank_id"] = channelBankID
 	}
 
-	data, err := model.BankCardList(ex, page, pageSize)
+	data, err := model.BankCardList(ex)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return
@@ -153,17 +154,19 @@ func (that *BankCardController) Update(ctx *fasthttp.RequestCtx) {
 
 	// 开启银行卡
 	if bankcard.State == 0 && state == 1 {
+		/*
+			amount := bankcard.MaxAmount
+			if maxAmount > 0 {
+				amount = maxAmount
+			}
 
-		amount := bankcard.MaxAmount
-		if maxAmount > 0 {
-			amount = maxAmount
-		}
 
-		err = model.BankCardOpenCondition(bankcard.ID, bankcard.ChannelBankID, amount)
-		if err != nil {
-			helper.Print(ctx, false, err.Error())
-			return
-		}
+				err = model.BankCardOpenCondition(bankcard.ID, bankcard.ChannelBankID, amount)
+				if err != nil {
+					helper.Print(ctx, false, err.Error())
+					return
+				}
+		*/
 	}
 
 	rec := g.Record{
@@ -201,34 +204,36 @@ func (that *BankCardController) Update(ctx *fasthttp.RequestCtx) {
 //BankCards 银行卡列表 前台
 func (that *BankCardController) BankCards(ctx *fasthttp.RequestCtx) {
 
-	channelBankID := string(ctx.PostArgs().Peek("channel_bank_id"))
-	page := ctx.PostArgs().GetUintOrZero("page")
-	pageSize := ctx.PostArgs().GetUintOrZero("page_size")
+	/*
+		channelBankID := string(ctx.PostArgs().Peek("channel_bank_id"))
+		page := ctx.PostArgs().GetUintOrZero("page")
+		pageSize := ctx.PostArgs().GetUintOrZero("page_size")
 
-	if page == 0 {
-		page = 1
-	}
+		if page == 0 {
+			page = 1
+		}
 
-	if pageSize == 0 {
-		pageSize = 15
-	}
+		if pageSize == 0 {
+			pageSize = 15
+		}
 
-	ex := g.Ex{
-		"state": 1,
-	}
+		ex := g.Ex{
+			"state": 1,
+		}
 
-	if channelBankID == "" || !validator.CheckStringDigit(channelBankID) {
-		helper.Print(ctx, false, helper.ParamErr)
-		return
-	}
+		if channelBankID == "" || !validator.CheckStringDigit(channelBankID) {
+			helper.Print(ctx, false, helper.ParamErr)
+			return
+		}
 
-	ex["channel_bank_id"] = channelBankID
+		ex["channel_bank_id"] = channelBankID
 
-	data, err := model.BankCardList(ex, page, pageSize)
-	if err != nil {
-		helper.Print(ctx, false, err.Error())
-		return
-	}
+		data, err := model.BankCardList(ex)
+		if err != nil {
+			helper.Print(ctx, false, err.Error())
+			return
+		}
 
-	helper.Print(ctx, true, data)
+		helper.Print(ctx, true, data)
+	*/
 }

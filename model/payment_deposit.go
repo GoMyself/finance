@@ -1,6 +1,7 @@
 package model
 
 import (
+	"errors"
 	"finance/contrib/helper"
 	"finance/contrib/validator"
 	"fmt"
@@ -124,7 +125,7 @@ func CoinPay(ctx *fasthttp.RequestCtx, pid, amount string, user Member) {
 	}()
 
 	protocolType := string(ctx.PostArgs().Peek("protocol_type"))
-	if protocolType != "TRC20" && protocolType != "ERC20" {
+	if protocolType != "TRC20" {
 		helper.Print(ctx, false, helper.ParamErr)
 		return
 	}
@@ -135,9 +136,15 @@ func CoinPay(ctx *fasthttp.RequestCtx, pid, amount string, user Member) {
 		return
 	}
 
-	rate, err := USDTConfig()
+	usdt_info_temp, err := UsdtInfo()
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
+		return
+	}
+
+	usdt_rate, err := decimal.NewFromString(usdt_info_temp["usdt_rate"])
+	if err != nil {
+		helper.Print(ctx, false, helper.AmountErr)
 		return
 	}
 
@@ -148,7 +155,7 @@ func CoinPay(ctx *fasthttp.RequestCtx, pid, amount string, user Member) {
 	}
 
 	// 提交usdt金额给三方
-	usdtAmount := dm.Mul(decimal.NewFromInt(1000)).DivRound(rate, 3).String()
+	usdtAmount := dm.Mul(decimal.NewFromInt(1000)).DivRound(usdt_rate, 3).String()
 
 	payment, ok := paymentRoute[p.CateID]
 	if !ok {
@@ -204,7 +211,7 @@ func CoinPay(ctx *fasthttp.RequestCtx, pid, amount string, user Member) {
 		"pid":               p.ID,
 		"amount":            0,
 		"usdt_apply_amount": usdtAmount,
-		"rate":              rate.String(),
+		"rate":              usdt_rate.String(),
 		"state":             DepositConfirming,
 		"finance_type":      TransactionDeposit,
 		"automatic":         "1",
@@ -360,9 +367,14 @@ func DepositCallBack(ctx *fasthttp.RequestCtx, payment_id string) {
 }
 
 // Manual 调用与pid对应的渠道, 发起充值(代付)请求
-func Manual(ctx *fasthttp.RequestCtx, pid, amount, bankcardID, bankCode string, user Member) {
+func Manual(fctx *fasthttp.RequestCtx, pid, amount, bankcardID, bankCode string) (map[string]string, error) {
 
-	var err error
+	res := map[string]string{}
+	user, err := MemberCache(fctx)
+	if err != nil {
+		return res, err
+	}
+
 	pLog := &paymentTDLog{
 		Lable:    paymentLogTag,
 		Flag:     "deposit",
@@ -371,15 +383,14 @@ func Manual(ctx *fasthttp.RequestCtx, pid, amount, bankcardID, bankCode string, 
 	// 记录请求日志
 	defer func() {
 		if err != nil {
-			pLog.Error = fmt.Sprintf("{req: %s, err: %s}", ctx.PostArgs().String(), err.Error())
+			pLog.Error = fmt.Sprintf("{req: %s, err: %s}", fctx.PostArgs().String(), err.Error())
 		}
 		paymentPushLog(pLog)
 	}()
 
 	p, err := CachePayment(pid)
 	if err != nil {
-		helper.Print(ctx, false, helper.ChannelNotExist)
-		return
+		return res, errors.New(helper.ChannelNotExist)
 	}
 
 	ch := paymentChannelMatch(p.ChannelID)
@@ -389,29 +400,25 @@ func Manual(ctx *fasthttp.RequestCtx, pid, amount, bankcardID, bankCode string, 
 	// 检查存款金额是否符合范围
 	a, ok := validator.CheckFloatScope(amount, p.Fmin, p.Fmax)
 	if !ok {
-		helper.Print(ctx, false, helper.AmountOutRange)
-		return
+		return res, errors.New(helper.AmountOutRange)
 	}
 
 	// 检查用户的存款行为是否过于频繁
 	err = cacheDepositProcessing(user.UID, time.Now().Unix())
 	if err != nil {
-		helper.Print(ctx, false, err.Error())
-		return
+		return res, err
 	}
 
 	// 获取银行卡
 	card, err := BankCards(bankcardID)
 	if err != nil {
-		helper.Print(ctx, false, helper.ChannelBusyTryOthers)
-		return
+		return res, errors.New(helper.ChannelBusyTryOthers)
 	}
 
 	// 获取附言码
 	code, err := DepositManualRemark(bankcardID)
 	if err != nil {
-		helper.Print(ctx, false, helper.ChannelBusyTryOthers)
-		return
+		return res, errors.New(helper.ChannelBusyTryOthers)
 	}
 
 	amount = a.Truncate(0).String()
@@ -436,7 +443,7 @@ func Manual(ctx *fasthttp.RequestCtx, pid, amount, bankcardID, bankCode string, 
 		"state":         DepositConfirming,
 		"finance_type":  TransactionOfflineDeposit,
 		"automatic":     "0",
-		"created_at":    ctx.Time().Unix(),
+		"created_at":    fctx.Time().In(loc).Unix(),
 		"created_uid":   "0",
 		"created_name":  "",
 		"confirm_at":    "0",
@@ -454,125 +461,21 @@ func Manual(ctx *fasthttp.RequestCtx, pid, amount, bankcardID, bankCode string, 
 	// 请求成功插入订单
 	err = deposit(d)
 	if err != nil {
-		pLog.Error = fmt.Sprintf("insert into table error: [%v]", err)
-		helper.Print(ctx, false, helper.DBErr)
-		return
+		fmt.Println("Manual deposit err = ", err)
+		return res, errors.New(helper.DBErr)
 	}
 
 	// 记录存款行为
-	_ = cacheDepositProcessingInsert(user.UID, pLog.OrderID, ctx.Time().Unix())
+	_ = cacheDepositProcessingInsert(user.UID, pLog.OrderID, fctx.Time().Unix())
 
-	res := offlineCommRes{
-		ID:           pLog.OrderID,
-		Name:         card.Name,
-		CardNo:       card.CardNo,
-		RealName:     card.RealName,
-		BankAddr:     card.BankAddr,
-		ManualRemark: code,
+	res = map[string]string{
+		"id":           pLog.OrderID,
+		"name":         card.Name,
+		"cardNo":       card.CardNo,
+		"realname":     card.RealName,
+		"bankAddr":     card.BankAddr,
+		"manualRemark": code,
 	}
 
-	helper.Print(ctx, true, res)
-}
-
-// USDT 线下USDT支付
-func USDT(ctx *fasthttp.RequestCtx, pid, amount, addr, protocolType, hashID string, user Member) {
-
-	var err error
-	pLog := &paymentTDLog{
-		Lable:    paymentLogTag,
-		Flag:     "deposit",
-		Username: user.Username,
-	}
-	// 记录请求日志
-	defer func() {
-		if err != nil {
-			pLog.Error = fmt.Sprintf("{req: %s, err: %s, user: %s}", ctx.PostArgs().String(), err.Error(), user.Username)
-		}
-		paymentPushLog(pLog)
-	}()
-
-	p, err := CachePayment(pid)
-	if err != nil {
-		helper.Print(ctx, false, helper.ChannelNotExist)
-		return
-	}
-
-	ch := paymentChannelMatch(p.ChannelID)
-	pLog.Merchant = "线下USDT"
-	pLog.Channel = string(ch)
-
-	rate, err := USDTConfig()
-	if err != nil {
-		helper.Print(ctx, false, err.Error())
-		return
-	}
-
-	dm, err := decimal.NewFromString(amount)
-	if err != nil {
-		helper.Print(ctx, false, helper.AmountErr)
-		return
-	}
-
-	// 发起的usdt金额
-	usdtAmount := dm.Mul(decimal.NewFromInt(1000)).DivRound(rate, 3).String()
-
-	// 生成我方存款订单号
-	pLog.OrderID = helper.GenId()
-
-	// 检查用户的存款行为是否过于频繁
-	err = cacheDepositProcessing(user.UID, time.Now().Unix())
-	if err != nil {
-		helper.Print(ctx, false, err.Error())
-		return
-	}
-
-	d := g.Record{
-		"id":                pLog.OrderID,
-		"prefix":            meta.Prefix,
-		"oid":               pLog.OrderID,
-		"uid":               user.UID,
-		"top_uid":           user.TopUID,
-		"top_name":          user.TopName,
-		"parent_name":       user.ParentName,
-		"parent_uid":        user.ParentUID,
-		"username":          user.Username,
-		"channel_id":        p.ChannelID,
-		"cid":               p.CateID,
-		"pid":               p.ID,
-		"amount":            0,
-		"state":             DepositConfirming,
-		"finance_type":      TransactionUSDTOfflineDeposit,
-		"automatic":         "0",
-		"created_at":        ctx.Time().Unix(),
-		"created_uid":       "0",
-		"created_name":      "",
-		"confirm_at":        "0",
-		"confirm_uid":       "0",
-		"confirm_name":      "",
-		"review_remark":     "",
-		"protocol_type":     protocolType,
-		"address":           addr,
-		"usdt_apply_amount": usdtAmount,
-		"rate":              rate.String(),
-		"hash_id":           hashID,
-		"flag":              DepositFlagUSDT,
-		"level":             user.Level,
-	}
-
-	// 请求成功插入订单
-	err = deposit(d)
-	if err != nil {
-		pLog.Error = fmt.Sprintf("insert into table error: [%v]", err)
-		helper.Print(ctx, false, helper.DBErr)
-		return
-	}
-
-	// 记录存款行为
-	_ = cacheDepositProcessingInsert(user.UID, pLog.OrderID, ctx.Time().Unix())
-
-	res := payCommRes{
-		ID: pLog.OrderID,
-	}
-
-	helper.Print(ctx, true, res)
+	return res, nil
 }

@@ -3,85 +3,85 @@ package controller
 import (
 	"finance/contrib/helper"
 	"finance/model"
-	"fmt"
-	"github.com/shopspring/decimal"
+
 	"github.com/valyala/fasthttp"
-	"strings"
 )
 
 type UsdtController struct{}
 
-// SetRate 设置usdt汇率
-func (that *UsdtController) SetRate(ctx *fasthttp.RequestCtx) {
+func (that *UsdtController) Info(ctx *fasthttp.RequestCtx) {
 
-	r := string(ctx.PostArgs().Peek("rate"))
-	rate, err := decimal.NewFromString(r)
-	if err != nil {
-		helper.Print(ctx, false, helper.ParamErr)
-		return
-	}
-
-	c := &model.Config{
-		Name:    "usdt_rate",
-		Content: rate.Truncate(4).String(),
-	}
-
-	err = model.ConfigSet(c)
+	res, err := model.UsdtInfo()
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return
 	}
 
-	content := fmt.Sprintf("汇率编辑[汇率:%s]", rate.String())
-	defer model.SystemLogWrite(content, ctx)
+	helper.Print(ctx, true, res)
+}
+
+func (that *UsdtController) Update(ctx *fasthttp.RequestCtx) {
+
+	field := string(ctx.PostArgs().Peek("field"))
+	value := string(ctx.PostArgs().Peek("value"))
+	code := string(ctx.PostArgs().Peek("code"))
+
+	/*
+		fmt.Println("field = ", field)
+		fmt.Println("value = ", value)
+	*/
+	if field != "usdt_rate" && field != "usdt_trc_addr" {
+		helper.Print(ctx, false, helper.ParamErr)
+		return
+	}
+
+	if !helper.CtypeDigit(code) {
+		helper.Print(ctx, false, helper.ParamErr)
+		return
+	}
+
+	err := model.UsdtUpdate(field, value)
+	if err != nil {
+		helper.Print(ctx, false, err.Error())
+		return
+	}
 
 	helper.Print(ctx, true, helper.Success)
 }
 
-func (that *UsdtController) SetTRC(ctx *fasthttp.RequestCtx) {
+// USDT 发起线下USDT
+func (that *UsdtController) Pay(ctx *fasthttp.RequestCtx) {
 
+	amount := string(ctx.PostArgs().Peek("amount"))
+	id := string(ctx.PostArgs().Peek("id"))
 	addr := string(ctx.PostArgs().Peek("addr"))
-	if addr == "" || !strings.HasPrefix(addr, "T") {
+	protocolType := string(ctx.PostArgs().Peek("protocol_type"))
+	hashID := string(ctx.PostArgs().Peek("hash_id"))
+
+	if protocolType != "TRC20" || addr == "" {
 		helper.Print(ctx, false, helper.ParamErr)
 		return
 	}
 
-	c := &model.Config{
-		Name:    "trc_addr",
-		Content: addr,
-	}
-	err := model.ConfigSet(c)
-	if err != nil {
-		helper.Print(ctx, false, err.Error())
+	if len(hashID) != 64 {
+		helper.Print(ctx, false, helper.InvalidTransactionHash)
 		return
 	}
 
-	content := fmt.Sprintf("设置TRC地址[%s]", addr)
-	defer model.SystemLogWrite(content, ctx)
-
-	helper.Print(ctx, true, helper.Success)
-}
-
-// GetRate 设置usdt汇率
-func (that *UsdtController) GetRate(ctx *fasthttp.RequestCtx) {
-
-	rate, err := model.USDTConfig()
-	if err != nil {
-		helper.Print(ctx, false, err.Error())
+	if id != "387901070217440117" {
+		helper.Print(ctx, false, helper.ChannelIDErr)
 		return
 	}
 
-	helper.Print(ctx, true, rate.String())
-}
-
-// GetTRC 获取TRC地址
-func (that *UsdtController) GetTRC(ctx *fasthttp.RequestCtx) {
-
-	addr, err := model.TRCConfig()
-	if err != nil {
-		helper.Print(ctx, false, err.Error())
+	if !helper.CtypeDigit(amount) {
+		helper.Print(ctx, false, helper.AmountErr)
 		return
 	}
 
-	helper.Print(ctx, true, addr)
+	if addr == "" {
+		helper.Print(ctx, false, helper.ParamErr)
+		return
+	}
+
+	model.UsdtPay(ctx, id, amount, addr, protocolType, hashID)
 }

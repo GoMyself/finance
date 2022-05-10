@@ -4,6 +4,7 @@ import (
 	"finance/contrib/helper"
 	"finance/model"
 	"fmt"
+
 	"github.com/valyala/fasthttp"
 )
 
@@ -136,6 +137,8 @@ func (that *PayController) Manual(ctx *fasthttp.RequestCtx) {
 	bid := string(ctx.PostArgs().Peek("bankcard_id"))
 	bankCode := string(ctx.PostArgs().Peek("bank_code"))
 	fmt.Println("id:", id)
+	fmt.Println("Manual: ", string(ctx.PostBody()))
+
 	if id != "767158011957916898" {
 		helper.Print(ctx, false, helper.ChannelIDErr)
 		return
@@ -146,59 +149,16 @@ func (that *PayController) Manual(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	user, err := model.MemberCache(ctx)
-	if err != nil {
-		helper.Print(ctx, false, err.Error())
-		return
-	}
-
 	if bid == "" || bankCode == "" {
 		helper.Print(ctx, false, helper.BankcardIDErr)
 		return
 	}
 
-	model.Manual(ctx, id, amount, bid, bankCode, user)
-}
-
-// USDT 发起线下USDT
-func (that *PayController) USDT(ctx *fasthttp.RequestCtx) {
-
-	amount := string(ctx.PostArgs().Peek("amount"))
-	id := string(ctx.PostArgs().Peek("id"))
-	addr := string(ctx.PostArgs().Peek("addr"))
-	protocolType := string(ctx.PostArgs().Peek("protocol_type"))
-	hashID := string(ctx.PostArgs().Peek("hash_id"))
-
-	if protocolType != "TRC20" || addr == "" {
-		helper.Print(ctx, false, helper.ParamErr)
-		return
-	}
-
-	if len(hashID) != 64 {
-		helper.Print(ctx, false, helper.InvalidTransactionHash)
-		return
-	}
-
-	if id != "387901070217440117" {
-		helper.Print(ctx, false, helper.ChannelIDErr)
-		return
-	}
-
-	if !helper.CtypeDigit(amount) {
-		helper.Print(ctx, false, helper.AmountErr)
-		return
-	}
-
-	if addr == "" {
-		helper.Print(ctx, false, helper.ParamErr)
-		return
-	}
-
-	user, err := model.MemberCache(ctx)
+	res, err := model.Manual(ctx, id, amount, bid, bankCode)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return
 	}
 
-	model.USDT(ctx, id, amount, addr, protocolType, hashID, user)
+	helper.Print(ctx, false, res)
 }

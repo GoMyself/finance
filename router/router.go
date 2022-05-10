@@ -135,16 +135,22 @@ func SetupRouter(b BuildInfo) *router.Router {
 	get(nil, "/finance/cate/cache", cateCtl.Cache)
 	// [前台] 通道列表数据缓存
 	//get(nil, "/finance/channel/cache", channelCtl.Cache)
-	// [前台] usdt汇率
-	get(nil, "/finance/usdt/rate", usdtCtl.GetRate)
 	// [前台] 线下转卡-发起存款
 	post(nil, "/finance/manual", payCtl.Manual)
 	// [前台] 线下转卡-银行卡列表
 	post(nil, "/finance/bankcard/list", bankCardCtl.BankCards)
 	// [前台] 线下USDT-发起存款
-	post(nil, "/finance/usdt", payCtl.USDT)
+	post(nil, "/finance/usdt/pay", usdtCtl.Pay)
+
+	/*
+		// [前台] usdt汇率
+		get(nil, "/finance/usdt/rate", usdtCtl.GetRate)
+		// [前台] 线下USDT-获取trc收款地址
+		get(nil, "/finance/usdt/address/trc", usdtCtl.GetTRC)
+	*/
+
 	// [前台] 线下USDT-获取trc收款地址
-	get(nil, "/finance/usdt/address/trc", usdtCtl.GetTRC)
+	get(nil, "/finance/usdt/info", usdtCtl.Info)
 
 	// [商户后台] 财务管理-渠道管理-通道优惠管理-通道优惠存款
 	get(route_merchant_group, "/promo/detail", promoCtl.Detail)
@@ -289,22 +295,28 @@ func SetupRouter(b BuildInfo) *router.Router {
 	// [商户后台] 财务管理-存款管理-线下USDT-审核
 	post(route_merchant_group, "/deposit/usdt/review", depositCtl.OfflineUSDTReview)
 
-	// [商户后台] 财务管理-渠道管理-usdt汇率设置
-	post(route_merchant_group, "/usdt/setrate", usdtCtl.SetRate)
-	// [商户后台] 财务管理-渠道管理-usdt汇率获取
-	get(route_merchant_group, "/usdt/getrate", usdtCtl.GetRate)
 	// [商户后台] 财务管理-存款管理-线下转卡-添加银行卡
-	post(route_merchant_group, "/bankcard/add", bankCardCtl.Insert)
+	post(route_merchant_group, "/bankcard/insert", bankCardCtl.Insert)
 	// [商户后台] 财务管理-存款管理-线下转卡-列表银行卡
 	post(route_merchant_group, "/bankcard/list", bankCardCtl.List)
 	// [商户后台] 财务管理-存款管理-线下转卡-更新银行卡
 	post(route_merchant_group, "/bankcard/update", bankCardCtl.Update)
 	// [商户后台] 财务管理-存款管理-线下转卡-删除银行卡
 	get(route_merchant_group, "/bankcard/delete", bankCardCtl.Delete)
-	// [商户后台] 财务管理-存款管理-线下usdt-设置收款地址
-	post(route_merchant_group, "/usdt/settrc", usdtCtl.SetTRC)
-	// [商户后台] 财务管理-存款管理-线下usdt-获取收款地址
-	get(route_merchant_group, "/usdt/gettrc", usdtCtl.GetTRC)
+
+	/*
+		// [商户后台] 财务管理-渠道管理-usdt汇率设置
+		post(route_merchant_group, "/usdt/setrate", usdtCtl.SetRate)
+		// [商户后台] 财务管理-渠道管理-usdt汇率获取
+		get(route_merchant_group, "/usdt/getrate", usdtCtl.GetRate)
+		// [商户后台] 财务管理-存款管理-线下usdt-设置收款地址
+		post(route_merchant_group, "/usdt/settrc", usdtCtl.SetTRC)
+		// [商户后台] 财务管理-存款管理-线下usdt-获取收款地址
+		get(route_merchant_group, "/usdt/gettrc", usdtCtl.GetTRC)
+	*/
+
+	get(route_merchant_group, "/usdt/info", usdtCtl.Info)
+	post(route_merchant_group, "/usdt/update", usdtCtl.Update)
 
 	// [商户后台] 风控管理-风控配置-接单控制-关闭自动派单
 	get(route_merchant_group, "/risks/close", risksCtl.CloseAuto)

@@ -10,6 +10,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fastjson"
+	"lukechampine.com/frand"
 )
 
 /*
@@ -272,7 +273,10 @@ func Tunnel(fctx *fasthttp.RequestCtx, id string) (string, error) {
 		base.Set("bank", fastjson.MustParse(banks))
 	}
 
-	return base.String(), nil
+	str := base.String()
+	base = nil
+
+	return str, nil
 }
 
 func Cate(fctx *fasthttp.RequestCtx) (string, error) {
@@ -521,5 +525,36 @@ func CreateChannelType() {
 
 	if err != nil {
 		fmt.Println("pipe.Exec = ", err.Error())
+	}
+}
+
+//生成随机唯一 码
+func CreateCode() {
+
+	total := 30000
+	vec := map[string]bool{}
+
+	for true {
+
+		code := frand.Intn(899999) + 100000
+		key := fmt.Sprintf("%d", code)
+
+		if _, ok := vec[key]; !ok {
+			vec[key] = true
+		}
+
+		if len(vec) >= total {
+			break
+		}
+	}
+
+	pipe := meta.MerchantRedis.Pipeline()
+	for code, _ := range vec {
+		pipe.LPush(ctx, "manual:code", code)
+	}
+	_, err := pipe.Exec(ctx)
+	pipe.Close()
+	if err != nil {
+		fmt.Println("CreateCode pipe.Exec = ", err.Error())
 	}
 }

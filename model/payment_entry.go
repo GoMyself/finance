@@ -10,7 +10,6 @@ import (
 
 	g "github.com/doug-martin/goqu/v9"
 	"github.com/shopspring/decimal"
-	"lukechampine.com/frand"
 
 	"github.com/valyala/fasthttp"
 )
@@ -277,29 +276,8 @@ func BankCards(channelBankID string) (BankCard, error) {
 func DepositManualRemark(cardID string) (string, error) {
 
 	code := 0
-	for true {
-
-		code = frand.Intn(899999) + 100000
-		key := ManualRemarkCodeKey(cardID, code)
-
-		rs, err := meta.MerchantRedis.Exists(ctx, key).Result()
-		if err != nil {
-			return "", err
-		}
-
-		if rs == 1 {
-			continue
-		}
-
-		meta.MerchantRedis.Set(ctx, key, 1, 72*time.Hour)
-		break
-	}
 
 	return strconv.Itoa(code), nil
-}
-
-func ManualRemarkCodeKey(bankcardID string, code int) string {
-	return fmt.Sprintf("MR:%s:%d", bankcardID, code)
 }
 
 func PushWithdrawSuccess(uid string, amount float64) error {

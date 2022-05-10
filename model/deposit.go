@@ -872,70 +872,73 @@ func DepositManualReview(ctx *fasthttp.RequestCtx, did, remark, name, uid string
 	}
 	defer depositUnLock(did)
 
-	if state == DepositSuccess {
+	/*
+		if state == DepositSuccess {
 
-		// 清除未未成功的订单计数
-		_ = CacheDepositProcessingRem(deposit.UID)
-		// 银行卡今日款收款金额 key
-		key := BankCardTotalKey(deposit.BankcardID)
-		// 银行卡附言码
-		markKey := DepositManualRemarkCodeKey(deposit.BankcardID, deposit.ReviewRemark)
+			// 清除未未成功的订单计数
+			_ = CacheDepositProcessingRem(deposit.UID)
+			// 银行卡今日款收款金额 key
+			key := BankCardTotalKey(deposit.BankcardID)
+			// 银行卡附言码
+			markKey := DepositManualRemarkCodeKey(deposit.BankcardID, deposit.ReviewRemark)
 
-		pipe := meta.MerchantRedis.TxPipeline()
-		defer pipe.Close()
+			pipe := meta.MerchantRedis.TxPipeline()
+			defer pipe.Close()
 
-		pipe.IncrByFloat(ctx, key, deposit.Amount)
-		// 设置过期时间为今日结束时间 23:59:59
-		endTime := helper.DayTET(0, loc)
-		pipe.PExpireAt(ctx, key, endTime)
-		// 存款成功 移除银行卡附言码
-		pipe.Unlink(ctx, markKey)
-		// 获取最新的银行卡收款金额 判断是否超额
-		cmd := pipe.Get(ctx, key)
+			pipe.IncrByFloat(ctx, key, deposit.Amount)
+			// 设置过期时间为今日结束时间 23:59:59
+			endTime := helper.DayTET(0, loc)
+			pipe.PExpireAt(ctx, key, endTime)
+			// 存款成功 移除银行卡附言码
+			pipe.Unlink(ctx, markKey)
+			// 获取最新的银行卡收款金额 判断是否超额
+			cmd := pipe.Get(ctx, key)
 
-		_, err := pipe.Exec(ctx)
-		if err != nil {
-			return pushLog(err, helper.ESErr)
-		}
-
-		// 判断是否需要关卡
-		rs, err := cmd.Result()
-		if err != nil {
-			return pushLog(err, helper.ESErr)
-		}
-
-		money, err := decimal.NewFromString(rs)
-		if err != nil {
-			return errors.New(helper.FormatErr)
-		}
-
-		bankcard, err := BankCardByID(deposit.BankcardID)
-		if err != nil {
-			return err
-		}
-
-		if money.GreaterThanOrEqual(decimal.NewFromFloat(bankcard.MaxAmount)) {
-
-			rec := g.Record{
-				"state": 0,
+			_, err := pipe.Exec(ctx)
+			if err != nil {
+				return pushLog(err, helper.ESErr)
 			}
 
-			err := BankCardUpdate(deposit.BankcardID, rec)
+			// 判断是否需要关卡
+			rs, err := cmd.Result()
+			if err != nil {
+				return pushLog(err, helper.ESErr)
+			}
+
+			money, err := decimal.NewFromString(rs)
+			if err != nil {
+				return errors.New(helper.FormatErr)
+			}
+
+			bankcard, err := BankCardByID(deposit.BankcardID)
 			if err != nil {
 				return err
 			}
 
-			// 线下转卡的paymentID  304314961990368154 刷新渠道下银行列表
-			_ = CacheRefreshPaymentBanks("304314961990368154")
+			if money.GreaterThanOrEqual(decimal.NewFromFloat(bankcard.MaxAmount)) {
 
-			// 写入关卡日志系统日志
-			logMsg := fmt.Sprintf("系统关闭银行卡: 【bankcardID: %s, 时间: %s】", deposit.BankcardID, TimeFormat(ctx.Time().Unix()))
-			defer SystemLogWrite(logMsg, ctx)
+				rec := g.Record{
+					"state": 0,
+				}
+
+				err := BankCardUpdate(deposit.BankcardID, rec)
+				if err != nil {
+					return err
+				}
+
+				// 线下转卡的paymentID  304314961990368154 刷新渠道下银行列表
+				_ = CacheRefreshPaymentBanks("304314961990368154")
+
+				// 写入关卡日志系统日志
+				logMsg := fmt.Sprintf("系统关闭银行卡: 【bankcardID: %s, 时间: %s】", deposit.BankcardID, TimeFormat(ctx.Time().Unix()))
+				defer SystemLogWrite(logMsg, ctx)
+			}
+
 		}
 
-	}
-
-	return DepositUpPointReview(did, uid, name, remark, state)
+		return DepositUpPointReview(did, uid, name, remark, state)
+	*/
+	return nil
 }
 
 func DepositUpPointReview(did, uid, name, remark string, state int) error {

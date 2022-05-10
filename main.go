@@ -71,7 +71,7 @@ func main() {
 
 	if os.Args[3] == "config" {
 		fmt.Println("config load")
-		model.ConfigToRedis()
+		model.CreateCode()
 		model.CreateChannelType()
 		return
 	}
