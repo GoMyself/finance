@@ -4,7 +4,6 @@ import (
 	"finance/contrib/helper"
 	"finance/contrib/validator"
 	"finance/model"
-	"fmt"
 
 	g "github.com/doug-martin/goqu/v9"
 	"github.com/valyala/fasthttp"
@@ -58,8 +57,8 @@ func (that *BankCardController) Insert(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	content := fmt.Sprintf("添加银行卡【卡号: %s，最大限额：%.4f, 持卡人姓名：%s】", cardNo, maxAmount, realName)
-	defer model.SystemLogWrite(content, ctx)
+	//content := fmt.Sprintf("添加银行卡【卡号: %s，最大限额：%.4f, 持卡人姓名：%s】", cardNo, maxAmount, realName)
+	//defer model.SystemLogWrite(content, ctx)
 
 	helper.Print(ctx, true, helper.Success)
 }
@@ -73,13 +72,15 @@ func (that *BankCardController) Delete(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	card, err := model.BankCardByID(id)
-	if err != nil {
-		helper.Print(ctx, false, err.Error())
-		return
-	}
+	/*
+		card, err := model.BankCardByID(id)
+		if err != nil {
+			helper.Print(ctx, false, err.Error())
+			return
+		}
+	*/
 
-	err = model.BankCardDelete(id)
+	err := model.BankCardDelete(id)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return
@@ -88,8 +89,8 @@ func (that *BankCardController) Delete(ctx *fasthttp.RequestCtx) {
 	// 线下转卡的paymentID  304314961990368154 刷新渠道下银行列表
 	_ = model.CacheRefreshPaymentBanks("304314961990368154")
 
-	content := fmt.Sprintf("删除银行卡【卡号: %s，最大限额：%.4f, 持卡人姓名：%s】", card.CardNo, card.MaxAmount, card.RealName)
-	defer model.SystemLogWrite(content, ctx)
+	//content := fmt.Sprintf("删除银行卡【卡号: %s，最大限额：%.4f, 持卡人姓名：%s】", card.CardNo, card.MaxAmount, card.RealName)
+	//defer model.SystemLogWrite(content, ctx)
 
 	helper.Print(ctx, true, helper.Success)
 }
@@ -173,10 +174,10 @@ func (that *BankCardController) Update(ctx *fasthttp.RequestCtx) {
 		"state": state,
 	}
 
-	maxAmountLog := ""
+	//maxAmountLog := ""
 	if maxAmount > 0 {
 		rec["max_amount"] = maxAmount
-		maxAmountLog = fmt.Sprintf(", 最大限额:%.4f-> %.4f,", bankcard.MaxAmount, maxAmount)
+		//maxAmountLog = fmt.Sprintf(", 最大限额:%.4f-> %.4f,", bankcard.MaxAmount, maxAmount)
 	}
 
 	if remark != "" {
@@ -194,9 +195,9 @@ func (that *BankCardController) Update(ctx *fasthttp.RequestCtx) {
 		_ = model.CacheRefreshPaymentBanks("304314961990368154")
 	}
 
-	content := fmt.Sprintf("编辑银行卡【卡号: %s, %s 持卡人姓名:%s，状态: %d->%d】",
-		bankcard.CardNo, maxAmountLog, bankcard.RealName, bankcard.State, state)
-	defer model.SystemLogWrite(content, ctx)
+	//content := fmt.Sprintf("编辑银行卡【卡号: %s, %s 持卡人姓名:%s，状态: %d->%d】",
+	//	bankcard.CardNo, maxAmountLog, bankcard.RealName, bankcard.State, state)
+	//defer model.SystemLogWrite(content, ctx)
 
 	helper.Print(ctx, true, helper.Success)
 }

@@ -4,7 +4,6 @@ import (
 	"finance/contrib/helper"
 	"finance/contrib/validator"
 	"finance/model"
-	"fmt"
 
 	"github.com/valyala/fasthttp"
 )
@@ -50,8 +49,8 @@ func (that *TunnelController) Update(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	content := fmt.Sprintf("编辑【通道名称: %s】", tunnel.Name)
-	defer model.SystemLogWrite(content, ctx)
+	//content := fmt.Sprintf("编辑【通道名称: %s】", tunnel.Name)
+	//defer model.SystemLogWrite(content, ctx)
 
 	fields := map[string]string{
 		"id":   param.ID,

@@ -61,8 +61,8 @@ func (that *LockController) MemberInsert(ctx *fasthttp.RequestCtx) {
 	//
 
 	// 写入系统日志
-	logMsg := fmt.Sprintf("锁定【会员账号: %s】", param.Username)
-	defer model.SystemLogWrite(logMsg, ctx)
+	//logMsg := fmt.Sprintf("锁定【会员账号: %s】", param.Username)
+	//defer model.SystemLogWrite(logMsg, ctx)
 
 	fields := map[string]string{
 		"id":           helper.GenId(),
@@ -142,8 +142,8 @@ func (that *LockController) UpdateState(ctx *fasthttp.RequestCtx) {
 		return
 	}
 	// 写入系统日志
-	logMsg := fmt.Sprintf("启用【会员账号: %s】", info.Username)
-	defer model.SystemLogWrite(logMsg, ctx)
+	//logMsg := fmt.Sprintf("启用【会员账号: %s】", info.Username)
+	//defer model.SystemLogWrite(logMsg, ctx)
 
 	fields := map[string]string{
 		"id":           id,

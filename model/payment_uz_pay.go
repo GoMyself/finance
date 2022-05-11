@@ -4,9 +4,10 @@ import (
 	"errors"
 	"finance/contrib/helper"
 	"fmt"
-	"github.com/valyala/fasthttp"
 	"sort"
 	"time"
+
+	"github.com/valyala/fasthttp"
 )
 
 //UzPayment 渠道
@@ -22,7 +23,7 @@ type uzConf struct {
 	PayNotify      string
 	PayReturn      string
 	WithdrawNotify string
-	Channel        map[paymentChannel]paymentChannel
+	Channel        map[string]string
 }
 
 type uzPayResp struct {
@@ -67,11 +68,11 @@ func (that *UzPayment) New() {
 		Domain:         "https://www.uz-pay.com",
 		PayNotify:      "%s/finance/callback/uzd",
 		WithdrawNotify: "%s/finance/callback/uzw",
-		Channel: map[paymentChannel]paymentChannel{
-			momo:   momo,   // momo
-			zalo:   zalo,   // zalo
-			online: online, // online
-			remit:  remit,  // unionpay
+		Channel: map[string]string{
+			"momo":   "momo",   // momo
+			"zalo":   "zalo",   // zalo
+			"online": "online", // online
+			"remit":  "remit",  // unionpay
 		},
 	}
 }
@@ -82,7 +83,7 @@ func (that *UzPayment) Name() string {
 }
 
 //Pay 发起支付
-func (that *UzPayment) Pay(log *paymentTDLog, ch paymentChannel, amount, bid string) (paymentDepositResp, error) {
+func (that *UzPayment) Pay(log *paymentTDLog, ch string, amount, bid string) (paymentDepositResp, error) {
 
 	data := paymentDepositResp{}
 

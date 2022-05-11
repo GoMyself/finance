@@ -72,6 +72,7 @@ func SetupRouter(b BuildInfo) *router.Router {
 	lockCtl := new(controller.LockController)
 	usdtCtl := new(controller.UsdtController)
 	bankCardCtl := new(controller.BankCardController)
+	manualCtl := new(controller.ManualController)
 
 	route_callback_group := route.Group("/finance/callback")
 	route_merchant_group := route.Group("/merchant/finance")
@@ -136,18 +137,11 @@ func SetupRouter(b BuildInfo) *router.Router {
 	// [前台] 通道列表数据缓存
 	//get(nil, "/finance/channel/cache", channelCtl.Cache)
 	// [前台] 线下转卡-发起存款
-	post(nil, "/finance/manual", payCtl.Manual)
+	post(nil, "/finance/manual/pay", manualCtl.Pay)
 	// [前台] 线下转卡-银行卡列表
 	post(nil, "/finance/bankcard/list", bankCardCtl.BankCards)
 	// [前台] 线下USDT-发起存款
 	post(nil, "/finance/usdt/pay", usdtCtl.Pay)
-
-	/*
-		// [前台] usdt汇率
-		get(nil, "/finance/usdt/rate", usdtCtl.GetRate)
-		// [前台] 线下USDT-获取trc收款地址
-		get(nil, "/finance/usdt/address/trc", usdtCtl.GetTRC)
-	*/
 
 	// [前台] 线下USDT-获取trc收款地址
 	get(nil, "/finance/usdt/info", usdtCtl.Info)
@@ -155,9 +149,9 @@ func SetupRouter(b BuildInfo) *router.Router {
 	// [商户后台] 财务管理-渠道管理-通道优惠管理-通道优惠存款
 	get(route_merchant_group, "/promo/detail", promoCtl.Detail)
 	// [商户后台] 财务管理-渠道管理-通道优惠管理-开启/关闭优惠状态
-	get(route_merchant_group, "/promo/updatestate", promoCtl.UpdateState)
+	get(route_merchant_group, "/promo/update/state", promoCtl.UpdateState)
 	// [商户后台] 财务管理-渠道管理-通道优惠管理-设置通道优惠比例
-	post(route_merchant_group, "/promo/updatequota", promoCtl.UpdateQuota)
+	post(route_merchant_group, "/promo/update/quota", promoCtl.UpdateQuota)
 
 	// [商户后台] 财务管理-渠道管理-新增
 	post(route_merchant_group, "/cate/insert", cateCtl.Insert)
@@ -168,7 +162,7 @@ func SetupRouter(b BuildInfo) *router.Router {
 	// [商户后台] 财务管理-渠道管理-列表
 	post(route_merchant_group, "/cate/list", cateCtl.List)
 	// [商户后台] 财务管理-渠道管理-启用/停用
-	post(route_merchant_group, "/cate/updatestate", cateCtl.UpdateState)
+	post(route_merchant_group, "/cate/update/state", cateCtl.UpdateState)
 	// [商户后台] 渠道列表数据缓存
 	get(route_merchant_group, "/cate/cache", cateCtl.Cache)
 	// [商户后台] 财务管理-提款渠道
@@ -185,7 +179,7 @@ func SetupRouter(b BuildInfo) *router.Router {
 	// [商户后台] 通道列表数据缓存
 	//get(route_merchant_group, "/channel/cache", channelCtl.Cache)
 	// [商户后台] 财务管理-渠道管理-通道管理-启用/停用
-	post(route_merchant_group, "/channel/updatestate", channelCtl.UpdateState)
+	post(route_merchant_group, "/channel/update/state", channelCtl.UpdateState)
 
 	// [商户后台] 财务管理-渠道管理-会员等级通道-新增
 	post(route_merchant_group, "/vip/insert", vipCtl.Insert)
@@ -207,7 +201,7 @@ func SetupRouter(b BuildInfo) *router.Router {
 	// [商户后台] 财务管理-渠道管理-通道银行管理-列表
 	post(route_merchant_group, "/bank/list", bankCtl.List)
 	// [商户后台] 财务管理-渠道管理-通道银行管理-启用/停用
-	post(route_merchant_group, "/bank/updatestate", bankCtl.UpdateState)
+	post(route_merchant_group, "/bank/update/state", bankCtl.UpdateState)
 
 	// [商户后台] 财务管理-渠道管理-会员信用等级-新增
 	post(route_merchant_group, "/credit/insert", creditCtl.Insert)
@@ -216,7 +210,7 @@ func SetupRouter(b BuildInfo) *router.Router {
 	// [商户后台] 财务管理-渠道管理-会员信用等级-列表
 	post(route_merchant_group, "/credit/list", creditCtl.List)
 	// [商户后台] 财务管理-渠道管理-会员信用等级-启用/停用
-	post(route_merchant_group, "/credit/updatestate", creditCtl.UpdateState)
+	post(route_merchant_group, "/credit/update/state", creditCtl.UpdateState)
 
 	// [商户后台] 财务管理-渠道管理-会员信用等级-新增会员
 	post(route_merchant_group, "/membercredit/insert", creditCtl.MemberInsert)
@@ -230,7 +224,7 @@ func SetupRouter(b BuildInfo) *router.Router {
 	// [商户后台] 财务管理-渠道管理-会员锁定-列表
 	post(route_merchant_group, "/memberlock/list", lockCtl.MemberList)
 	// [商户后台] 财务管理-渠道管理-会员锁定-启用
-	post(route_merchant_group, "/memberlock/updatestate", lockCtl.UpdateState)
+	post(route_merchant_group, "/memberlock/update/state", lockCtl.UpdateState)
 
 	// [商户后台] 财务管理-渠道管理-通道类型管理-列表
 	get(route_merchant_group, "/tunnel/list", tunnelCtl.List)

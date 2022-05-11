@@ -61,16 +61,18 @@ func (that *CreditLevelController) Insert(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	cateName, channelName, err := model.TunnelAndChannelGetName(param.CateID, param.ChannelID)
-	if err != nil {
-		helper.Print(ctx, false, err.Error())
-		return
-	}
+	/*
+		cateName, channelName, err := model.TunnelAndChannelGetName(param.CateID, param.ChannelID)
+		if err != nil {
+			helper.Print(ctx, false, err.Error())
+			return
+		}
 
-	// 写入系统日志
-	logMsg := fmt.Sprintf("新增【信用等级: %s；渠道名称: %s；通道名称: %s；存款金额最小值: %s；存款金额最大值: %s】",
-		param.CreditLevel, cateName, channelName, param.FMin, param.FMax)
-	defer model.SystemLogWrite(logMsg, ctx)
+		// 写入系统日志
+		logMsg := fmt.Sprintf("新增【信用等级: %s；渠道名称: %s；通道名称: %s；存款金额最小值: %s；存款金额最大值: %s】",
+			param.CreditLevel, cateName, channelName, param.FMin, param.FMax)
+		defer model.SystemLogWrite(logMsg, ctx)
+	*/
 
 	fields := map[string]string{
 		"id":         helper.GenId(),
@@ -116,17 +118,18 @@ func (that *CreditLevelController) Update(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	cateName, channelName, err := model.TunnelAndChannelGetName(credit.CateID, credit.ChannelID)
-	if err != nil {
-		helper.Print(ctx, false, err.Error())
-		return
-	}
+	/*
+		cateName, channelName, err := model.TunnelAndChannelGetName(credit.CateID, credit.ChannelID)
+		if err != nil {
+			helper.Print(ctx, false, err.Error())
+			return
+		}
 
-	// 写入系统日志
-	logMsg := fmt.Sprintf("编辑【信用等级: %d；渠道名称: %s；通道名称: %s；存款金额最小值: %s；存款金额最大值: %s】",
-		credit.Level, cateName, channelName, param.FMin, param.FMax)
-	defer model.SystemLogWrite(logMsg, ctx)
-
+		// 写入系统日志
+		logMsg := fmt.Sprintf("编辑【信用等级: %d；渠道名称: %s；通道名称: %s；存款金额最小值: %s；存款金额最大值: %s】",
+			credit.Level, cateName, channelName, param.FMin, param.FMax)
+		defer model.SystemLogWrite(logMsg, ctx)
+	*/
 	fields := map[string]string{
 		"id":   param.ID,
 		"fmin": param.FMin,
@@ -194,20 +197,23 @@ func (that *CreditLevelController) UpdateState(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	cateName, channelName, err := model.TunnelAndChannelGetName(credit.CateID, credit.ChannelID)
-	if err != nil {
-		helper.Print(ctx, false, err.Error())
-		return
-	}
+	/*
+		cateName, channelName, err := model.TunnelAndChannelGetName(credit.CateID, credit.ChannelID)
+		if err != nil {
+			helper.Print(ctx, false, err.Error())
+			return
+		}
 
-	keyword := "启用"
-	if param.State == "0" {
-		keyword = "禁用"
-	}
-	// 写入系统日志
-	logMsg := fmt.Sprintf("%s【信用等级: %d；渠道名称: %s；通道名称: %s；存款金额最小值: %d；存款金额最大值: %d】",
-		keyword, credit.Level, cateName, channelName, credit.Fmin, credit.Fmax)
-	defer model.SystemLogWrite(logMsg, ctx)
+
+			keyword := "启用"
+			if param.State == "0" {
+				keyword = "禁用"
+			}
+			// 写入系统日志
+			logMsg := fmt.Sprintf("%s【信用等级: %d；渠道名称: %s；通道名称: %s；存款金额最小值: %d；存款金额最大值: %d】",
+				keyword, credit.Level, cateName, channelName, credit.Fmin, credit.Fmax)
+			defer model.SystemLogWrite(logMsg, ctx)
+	*/
 
 	err = model.CreditLevelUpdateState(param.ID, param.State, credit.PaymentID)
 	if err != nil {
@@ -252,15 +258,17 @@ func (that *CreditLevelController) MemberInsert(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	cateName, channelName, err := model.TunnelAndChannelGetName(creditLevel.CateID, creditLevel.ChannelID)
-	if err != nil {
-		helper.Print(ctx, false, err.Error())
-		return
-	}
+	/*
+		cateName, channelName, err := model.TunnelAndChannelGetName(creditLevel.CateID, creditLevel.ChannelID)
+		if err != nil {
+			helper.Print(ctx, false, err.Error())
+			return
+		}
 
-	logMsg := fmt.Sprintf("新增【会员账号: %s；信用等级: %d；渠道名称: %s；通道名称: %s】",
-		param.Users, creditLevel.Level, cateName, channelName)
-	defer model.SystemLogWrite(logMsg, ctx)
+		logMsg := fmt.Sprintf("新增【会员账号: %s；信用等级: %d；渠道名称: %s；通道名称: %s】",
+			param.Users, creditLevel.Level, cateName, channelName)
+		defer model.SystemLogWrite(logMsg, ctx)
+	*/
 
 	err = model.MemberCreditLevelInsert(param.CreditLevelID, ctx.Time(), users)
 	if err != nil {
@@ -342,15 +350,17 @@ func (that *CreditLevelController) MemberDelete(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	cateName, channelName, err := model.TunnelAndChannelGetName(creditLevel.CateID, creditLevel.ChannelID)
-	if err != nil {
-		helper.Print(ctx, false, err.Error())
-		return
-	}
+	/*
+		cateName, channelName, err := model.TunnelAndChannelGetName(creditLevel.CateID, creditLevel.ChannelID)
+		if err != nil {
+			helper.Print(ctx, false, err.Error())
+			return
+		}
 
-	logMsg := fmt.Sprintf("批量删除【会员账号：%d;信用等级: %d；渠道名称:%s；通道名称:%s】",
-		len(id), creditLevel.Level, cateName, channelName)
-	defer model.SystemLogWrite(logMsg, ctx)
+		logMsg := fmt.Sprintf("批量删除【会员账号：%d;信用等级: %d；渠道名称:%s；通道名称:%s】",
+			len(id), creditLevel.Level, cateName, channelName)
+		defer model.SystemLogWrite(logMsg, ctx)
+	*/
 
 	err = model.MemberCreditLevelDelete(id)
 	if err != nil {

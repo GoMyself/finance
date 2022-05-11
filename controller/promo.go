@@ -4,7 +4,7 @@ import (
 	"finance/contrib/helper"
 	"finance/contrib/validator"
 	"finance/model"
-	"fmt"
+
 	g "github.com/doug-martin/goqu/v9"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fastjson"
@@ -81,8 +81,8 @@ func (that *PromoController) UpdateQuota(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	logMsg := fmt.Sprintf("设置【通道名称: %s】", tunnel.Name)
-	defer model.SystemLogWrite(logMsg, ctx)
+	//logMsg := fmt.Sprintf("设置【通道名称: %s】", tunnel.Name)
+	//defer model.SystemLogWrite(logMsg, ctx)
 
 	recs := g.Record{
 		"content": content,

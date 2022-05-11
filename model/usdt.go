@@ -78,9 +78,15 @@ func UsdtPay(fctx *fasthttp.RequestCtx, pid, amount, addr, protocolType, hashID 
 		return "", errors.New(helper.ChannelNotExist)
 	}
 
-	ch := paymentChannelMatch(p.ChannelID)
+	//ch := paymentChannelMatch(p.ChannelID)
+
+	ch, err := ChannelTypeById(p.ChannelID)
+	if err != nil {
+		return "", errors.New(helper.ChannelNotExist)
+	}
+
 	pLog.Merchant = "线下USDT"
-	pLog.Channel = string(ch)
+	pLog.Channel = ch["name"]
 
 	usdt_info_temp, err := UsdtInfo()
 	if err != nil {

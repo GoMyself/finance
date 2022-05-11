@@ -4,12 +4,13 @@ import (
 	"errors"
 	"finance/contrib/helper"
 	"fmt"
-	"github.com/valyala/fasthttp"
-	"github.com/wenzhenxi/gorsa"
 	"net/url"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/valyala/fasthttp"
+	"github.com/wenzhenxi/gorsa"
 )
 
 const (
@@ -30,7 +31,7 @@ type jybPayConf struct {
 	Key            string
 	PayNotify      string
 	WithdrawNotify string
-	Channel        map[paymentChannel]string
+	Channel        map[string]string
 }
 
 type JybPayment struct {
@@ -66,12 +67,12 @@ func (that *JybPayment) New() {
 		Domain:         apiUrl,
 		PayNotify:      "%s/finance/callback/jybd",
 		WithdrawNotify: "%s/finance/callback/jybw",
-		Channel: map[paymentChannel]string{
-			remit:      jybRemit,
-			momo:       jybMomo,
-			zalo:       jybZalo,
-			viettelpay: jybViettelpay,
-			online:     jybOnline,
+		Channel: map[string]string{
+			"remit":      jybRemit,
+			"momo":       jybMomo,
+			"zalo":       jybZalo,
+			"viettelpay": jybViettelpay,
+			"online":     jybOnline,
 		},
 	}
 }
@@ -80,7 +81,7 @@ func (that *JybPayment) Name() string {
 	return that.Conf.Name
 }
 
-func (that *JybPayment) Pay(log *paymentTDLog, ch paymentChannel, amount, bid string) (paymentDepositResp, error) {
+func (that *JybPayment) Pay(log *paymentTDLog, ch, amount, bid string) (paymentDepositResp, error) {
 
 	data := paymentDepositResp{}
 

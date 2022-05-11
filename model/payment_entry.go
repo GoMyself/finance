@@ -21,7 +21,7 @@ type Payment interface {
 	// New 初始化 通道配置
 	New()
 	// Pay 发起支付
-	Pay(log *paymentTDLog, ch paymentChannel, amount, bid string) (paymentDepositResp, error)
+	Pay(log *paymentTDLog, paymentChannel, amount, bid string) (paymentDepositResp, error)
 	// Withdraw 发起代付
 	Withdraw(log *paymentTDLog, param WithdrawAutoParam) (paymentWithdrawalRsp, error)
 	// PayCallBack 支付回调
@@ -84,9 +84,13 @@ func Pay(pLog *paymentTDLog, user Member, p FPay, amount, bid string) (paymentDe
 		return data, errors.New(helper.NoPayChannel)
 	}
 
-	ch := paymentChannelMatch(p.ChannelID)
+	ch, err := ChannelTypeById(p.ChannelID)
+	if err != nil {
+		return data, errors.New(helper.ChannelNotExist)
+	}
+
 	pLog.Merchant = payment.Name()
-	pLog.Channel = string(ch)
+	pLog.Channel = ch["name"]
 
 	// 检查存款金额是否符合范围
 	a, ok := validator.CheckFloatScope(amount, p.Fmin, p.Fmax)
@@ -97,8 +101,8 @@ func Pay(pLog *paymentTDLog, user Member, p FPay, amount, bid string) (paymentDe
 	amount = a.String()
 
 	// online, remit, unionPay 需要判断是否传银行卡信息
-	switch ch {
-	case online, remit, unionpay:
+	switch ch["name"] {
+	case "online", "remit", "unionpay":
 		if bid == "0" || bid == "" {
 			return data, errors.New(helper.BankNameOrCodeErr)
 		}
@@ -110,12 +114,12 @@ func Pay(pLog *paymentTDLog, user Member, p FPay, amount, bid string) (paymentDe
 	pLog.OrderID = helper.GenId()
 
 	// 检查用户的存款行为是否过于频繁
-	err := cacheDepositProcessing(user.UID, time.Now().Unix())
+	err = cacheDepositProcessing(user.UID, time.Now().Unix())
 	if err != nil {
 		return data, err
 	}
 	// 向渠道方发送存款订单请求
-	data, err = payment.Pay(pLog, ch, amount, bid)
+	data, err = payment.Pay(pLog, ch["name"], amount, bid)
 	if err != nil {
 		return data, err
 	}
@@ -211,7 +215,8 @@ func paymentPushLog(data *paymentTDLog) {
 	_ = meta.Zlog.Post(esPrefixIndex(paymentLogTag), logInfo)
 }
 
-func paymentChannelMatch(cid string) paymentChannel {
+/*
+func paymentChannelMatch(cid string) string {
 
 	if v, ok := channels[cid]; ok {
 		return v
@@ -219,6 +224,7 @@ func paymentChannelMatch(cid string) paymentChannel {
 
 	return ""
 }
+*/
 
 // 金额对比
 func compareAmount(compare, compared string, cent int64) error {

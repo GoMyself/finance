@@ -28,7 +28,7 @@ func main() {
 	cfg := conf{}
 	argc := len(os.Args)
 	if argc != 4 {
-		fmt.Printf("%s <etcds> <cfgPath> <sock5|config>\r\n", os.Args[0])
+		fmt.Printf("%s <etcds> <cfgPath> <sock5|load>\r\n", os.Args[0])
 		return
 	}
 
@@ -69,10 +69,10 @@ func main() {
 		mt = nil
 	}()
 
-	if os.Args[3] == "config" {
-		fmt.Println("config load")
+	if os.Args[3] == "load" {
+		fmt.Println("load")
 		model.CreateCode()
-		model.CreateChannelType()
+		model.ChannelTypeCreateCache()
 		return
 	}
 

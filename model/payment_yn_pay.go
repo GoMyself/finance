@@ -4,13 +4,14 @@ import (
 	"errors"
 	"finance/contrib/helper"
 	"fmt"
-	"github.com/shopspring/decimal"
-	"github.com/valyala/fasthttp"
 	"net/url"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/shopspring/decimal"
+	"github.com/valyala/fasthttp"
 )
 
 type ynConf struct {
@@ -21,7 +22,7 @@ type ynConf struct {
 	Domain         string
 	PayNotify      string
 	WithdrawNotify string
-	Channel        map[paymentChannel]string
+	Channel        map[string]string
 }
 
 type YNPayment struct {
@@ -83,9 +84,9 @@ func (that *YNPayment) New() {
 		Domain:         "http://18.163.8.208:8083",
 		PayNotify:      "%s/finance/callback/ynd",
 		WithdrawNotify: "%s/finance/callback/ynw",
-		Channel: map[paymentChannel]string{
-			auto:     "ZK",   // 复制转卡
-			unionpay: "QRZK", // 扫码转卡
+		Channel: map[string]string{
+			"auto":     "ZK",   // 复制转卡
+			"unionpay": "QRZK", // 扫码转卡
 		},
 	}
 }
@@ -94,7 +95,7 @@ func (that *YNPayment) Name() string {
 	return that.Conf.Name
 }
 
-func (that *YNPayment) Pay(log *paymentTDLog, ch paymentChannel, amount, bid string) (paymentDepositResp, error) {
+func (that *YNPayment) Pay(log *paymentTDLog, ch string, amount, bid string) (paymentDepositResp, error) {
 
 	data := paymentDepositResp{}
 

@@ -78,7 +78,7 @@ func (that *USDTPayment) Name() string {
 	return that.Conf.Name
 }
 
-func (that *USDTPayment) Pay(log *paymentTDLog, ch paymentChannel, amount, bid string) (paymentDepositResp, error) {
+func (that *USDTPayment) Pay(log *paymentTDLog, ch, amount, bid string) (paymentDepositResp, error) {
 
 	data := paymentDepositResp{}
 

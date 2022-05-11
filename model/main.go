@@ -284,6 +284,7 @@ func PushWithdrawNotify(format, username, amount string) error {
 	return nil
 }
 
+/*
 func SystemLogWrite(content string, ctx *fasthttp.RequestCtx) {
 
 	admin, err := AdminToken(ctx)
@@ -313,6 +314,7 @@ func SystemLogWrite(content string, ctx *fasthttp.RequestCtx) {
 		fmt.Println("zLog post err: ", err.Error())
 	}
 }
+*/
 
 func TimeFormat(t int64) string {
 	return time.Unix(t, 0).In(loc).Format("2006-01-02 15:04:05")

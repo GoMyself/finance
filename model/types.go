@@ -114,6 +114,7 @@ const (
 	TransactionEVOJackpot            = 623 //头奖(EVO)
 )
 
+/*
 type paymentChannel string
 
 var (
@@ -166,6 +167,7 @@ var channels = map[string]paymentChannel{
 	channelWechat:     wechat,
 	channelAuto:       auto,
 }
+*/
 
 type systemLog struct {
 	Title     string `msg:"title"`
@@ -174,20 +176,6 @@ type systemLog struct {
 	Content   string `msg:"content"`
 	IP        string `msg:"ip"`
 	CreatedAt int64  `msg:"created_at"`
-}
-
-type Priv struct {
-	ID        int64  `db:"id" json:"id" redis:"id"`                      //
-	Name      string `db:"name" json:"name" redis:"name"`                //权限名字
-	Module    string `db:"module" json:"module" redis:"module"`          //模块
-	Sortlevel string `db:"sortlevel" json:"sortlevel" redis:"sortlevel"` //
-	State     int    `db:"state" json:"state" redis:"state"`             //0:关闭1:开启
-	Pid       int64  `db:"pid" json:"pid" redis:"pid"`                   //父级ID
-}
-
-type PrivTree struct {
-	*Priv
-	Parent *PrivTree `json:"parent"`
 }
 
 // 发起支付返回结果结构

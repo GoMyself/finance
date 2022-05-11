@@ -4,7 +4,7 @@ import (
 	"finance/contrib/helper"
 	"finance/contrib/validator"
 	"finance/model"
-	"fmt"
+
 	"github.com/valyala/fasthttp"
 )
 
@@ -81,14 +81,16 @@ func (that *ChannelBankController) Insert(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	cateName, channelName, err := model.TunnelAndChannelGetName(cateID, channelID)
-	if err != nil {
-		helper.Print(ctx, false, err.Error())
-		return
-	}
+	/*
+		cateName, channelName, err := model.TunnelAndChannelGetName(cateID, channelID)
+		if err != nil {
+			helper.Print(ctx, false, err.Error())
+			return
+		}
 
-	logMsg := fmt.Sprintf("新增【渠道名称: %s；通道名称: %s；银行名称: %s】", cateName, channelName, name)
-	defer model.SystemLogWrite(logMsg, ctx)
+		logMsg := fmt.Sprintf("新增【渠道名称: %s；通道名称: %s；银行名称: %s】", cateName, channelName, name)
+		defer model.SystemLogWrite(logMsg, ctx)
+	*/
 
 	fields := map[string]string{
 		"id":         helper.GenId(),
@@ -99,7 +101,7 @@ func (that *ChannelBankController) Insert(ctx *fasthttp.RequestCtx) {
 		"code":       bankCode,
 		"sort":       sort,
 	}
-	err = model.ChannelBankInsert(fields)
+	err := model.ChannelBankInsert(fields)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return
@@ -158,15 +160,16 @@ func (that *ChannelBankController) Update(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	cateName, channelName, err := model.TunnelAndChannelGetName(bank.CateID, channelID)
-	if err != nil {
-		helper.Print(ctx, false, err.Error())
-		return
-	}
+	/*
+		cateName, channelName, err := model.TunnelAndChannelGetName(bank.CateID, channelID)
+		if err != nil {
+			helper.Print(ctx, false, err.Error())
+			return
+		}
 
-	logMsg := fmt.Sprintf("编辑【渠道名称: %s；通道名称: %s；银行名称: %s】", cateName, channelName, name)
-	defer model.SystemLogWrite(logMsg, ctx)
-
+		logMsg := fmt.Sprintf("编辑【渠道名称: %s；通道名称: %s；银行名称: %s】", cateName, channelName, name)
+		defer model.SystemLogWrite(logMsg, ctx)
+	*/
 	fields := map[string]string{
 		"id":         ID,
 		"bank_id":    bankID,
@@ -244,21 +247,22 @@ func (that *ChannelBankController) UpdateState(ctx *fasthttp.RequestCtx) {
 		helper.Print(ctx, false, helper.ChannelNotExist)
 		return
 	}
+	/*
+		cateName, channelName, err := model.TunnelAndChannelGetName(bank.CateID, channelIDMap[bank.PaymentID])
+		if err != nil {
+			helper.Print(ctx, false, err.Error())
+			return
+		}
 
-	cateName, channelName, err := model.TunnelAndChannelGetName(bank.CateID, channelIDMap[bank.PaymentID])
-	if err != nil {
-		helper.Print(ctx, false, err.Error())
-		return
-	}
 
-	keyword := "开启"
-	if param.State == "0" {
-		keyword = "关闭"
-	}
+			keyword := "开启"
+			if param.State == "0" {
+				keyword = "关闭"
+			}
 
-	logMsg := fmt.Sprintf("%s【渠道名称: %s；通道名称: %s；银行名称: %s】", keyword, cateName, channelName, bank.Name)
-	defer model.SystemLogWrite(logMsg, ctx)
-
+			logMsg := fmt.Sprintf("%s【渠道名称: %s；通道名称: %s；银行名称: %s】", keyword, cateName, channelName, bank.Name)
+			defer model.SystemLogWrite(logMsg, ctx)
+	*/
 	err = model.ChannelBankSet(param.ID, param.State, bank.PaymentID)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())

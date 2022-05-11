@@ -4,10 +4,11 @@ import (
 	"errors"
 	"finance/contrib/helper"
 	"fmt"
-	"github.com/valyala/fasthttp"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/valyala/fasthttp"
 )
 
 const (
@@ -25,7 +26,7 @@ type vtPayConf struct {
 	Domain         string
 	PayNotify      string
 	WithdrawNotify string
-	Channel        map[paymentChannel]string
+	Channel        map[string]string
 }
 
 type VtPayment struct {
@@ -44,12 +45,12 @@ func (that *VtPayment) New() {
 		Domain:         apiUrl,
 		PayNotify:      "%s/finance/callback/vtd",
 		WithdrawNotify: "%s/finance/callback/vtw",
-		Channel: map[paymentChannel]string{
-			momo:       vtMomo,
-			unionpay:   vtBankQr,
-			online:     vtOnline,
-			zalo:       vtZaloPay,
-			viettelpay: vtViettelPay,
+		Channel: map[string]string{
+			"momo":       vtMomo,
+			"unionpay":   vtBankQr,
+			"online":     vtOnline,
+			"zalo":       vtZaloPay,
+			"viettelpay": vtViettelPay,
 		},
 	}
 }
@@ -58,7 +59,7 @@ func (that *VtPayment) Name() string {
 	return that.Conf.Name
 }
 
-func (that *VtPayment) Pay(log *paymentTDLog, ch paymentChannel, amount, bid string) (paymentDepositResp, error) {
+func (that *VtPayment) Pay(log *paymentTDLog, ch string, amount, bid string) (paymentDepositResp, error) {
 
 	data := paymentDepositResp{}
 

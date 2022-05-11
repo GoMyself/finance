@@ -4,7 +4,6 @@ import (
 	"finance/contrib/helper"
 	"finance/contrib/validator"
 	"finance/model"
-	"fmt"
 	"strconv"
 
 	g "github.com/doug-martin/goqu/v9"
@@ -107,21 +106,24 @@ func (that *DepositController) Review(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	deposit, err := model.DepositFindOne(param.ID)
-	if err != nil {
-		helper.Print(ctx, false, err.Error())
-		return
-	}
+	/*
+		deposit, err := model.DepositFindOne(param.ID)
+		if err != nil {
+			helper.Print(ctx, false, err.Error())
+			return
+		}
 
-	keyword := "通过"
-	if param.State == strconv.Itoa(model.DepositCancelled) {
-		keyword = "拒绝"
-	}
 
-	// 写入系统日志
-	logMsg := fmt.Sprintf("%s【订单号: %s；会员账号: %s；金额: %.4f；审核时间: %s】",
-		keyword, param.ID, deposit.Username, deposit.Amount, model.TimeFormat(ctx.Time().Unix()))
-	defer model.SystemLogWrite(logMsg, ctx)
+			keyword := "通过"
+			if param.State == strconv.Itoa(model.DepositCancelled) {
+				keyword = "拒绝"
+			}
+
+			// 写入系统日志
+			logMsg := fmt.Sprintf("%s【订单号: %s；会员账号: %s；金额: %.4f；审核时间: %s】",
+				keyword, param.ID, deposit.Username, deposit.Amount, model.TimeFormat(ctx.Time().Unix()))
+			defer model.SystemLogWrite(logMsg, ctx)
+	*/
 
 	err = model.DepositReview(param.ID, param.Remark, param.State, admin["name"], admin["id"])
 	if err != nil {
@@ -384,11 +386,13 @@ func (that *DepositController) Manual(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	// 写入系统日志
-	logMsg := fmt.Sprintf("补单【订单号: %s；会员账号: %s；渠道单号: %s；通道名称: %s；订单金额: %.4f；到账金额: %s; 订单时间: %s；补单时间: %s】",
-		param.ID, deposit.Username, deposit.OID, channel.Name, deposit.Amount, param.RealAmount, model.TimeFormat(deposit.CreatedAt),
-		model.TimeFormat(ctx.Time().Unix()))
-	defer model.SystemLogWrite(logMsg, ctx)
+	/*
+		// 写入系统日志
+		logMsg := fmt.Sprintf("补单【订单号: %s；会员账号: %s；渠道单号: %s；通道名称: %s；订单金额: %.4f；到账金额: %s; 订单时间: %s；补单时间: %s】",
+			param.ID, deposit.Username, deposit.OID, channel.Name, deposit.Amount, param.RealAmount, model.TimeFormat(deposit.CreatedAt),
+			model.TimeFormat(ctx.Time().Unix()))
+		defer model.SystemLogWrite(logMsg, ctx)
+	*/
 
 	err = model.DepositManual(param.ID, param.RealAmount, param.Remark, admin["name"], admin["id"])
 	if err != nil {
@@ -420,9 +424,11 @@ func (that *DepositController) Reduce(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	// 写入系统日志
-	logMsg := fmt.Sprintf("提交【会员账号:%s；调整金额:%s】", param.Username, param.Amount)
-	defer model.SystemLogWrite(logMsg, ctx)
+	/*
+		// 写入系统日志
+		logMsg := fmt.Sprintf("提交【会员账号:%s；调整金额:%s】", param.Username, param.Amount)
+		defer model.SystemLogWrite(logMsg, ctx)
+	*/
 
 	err = model.DepositReduce(param.Username, param.Amount, param.Remark, admin["name"], admin["id"])
 	if err != nil {
@@ -545,9 +551,11 @@ func (that *DepositController) OfflineToReview(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	// 写入系统日志
-	logMsg := fmt.Sprintf("线下转卡【订单id:%s；到账金额:%.4f】", id, amount)
-	defer model.SystemLogWrite(logMsg, ctx)
+	/*
+		// 写入系统日志
+		logMsg := fmt.Sprintf("线下转卡【订单id:%s；到账金额:%.4f】", id, amount)
+		defer model.SystemLogWrite(logMsg, ctx)
+	*/
 
 	rec := g.Record{
 		"amount":        amount,
@@ -593,15 +601,17 @@ func (that *DepositController) OfflineReview(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	keyword := "通过"
-	if state == model.DepositCancelled {
-		keyword = "拒绝"
-	}
+	/*
+		keyword := "通过"
+		if state == model.DepositCancelled {
+			keyword = "拒绝"
+		}
 
-	// 写入系统日志
-	logMsg := fmt.Sprintf("线下转卡:%s【订单号: %s；会员账号: %s；金额: %.4f；审核时间: %s】",
-		keyword, id, deposit.Username, deposit.Amount, model.TimeFormat(ctx.Time().Unix()))
-	defer model.SystemLogWrite(logMsg, ctx)
+		// 写入系统日志
+		logMsg := fmt.Sprintf("线下转卡:%s【订单号: %s；会员账号: %s；金额: %.4f；审核时间: %s】",
+			keyword, id, deposit.Username, deposit.Amount, model.TimeFormat(ctx.Time().Unix()))
+		defer model.SystemLogWrite(logMsg, ctx)
+	*/
 
 	err = model.DepositManualReview(ctx, id, remark, admin["name"], admin["id"], state, deposit)
 	if err != nil {
@@ -644,9 +654,11 @@ func (that *DepositController) OfflineUSDT(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	// 写入系统日志
-	logMsg := fmt.Sprintf("线下转卡【订单id:%s；到账金额USDT:%.4f】", id, usdtAmount)
-	defer model.SystemLogWrite(logMsg, ctx)
+	/*
+		// 写入系统日志
+		logMsg := fmt.Sprintf("线下转卡【订单id:%s；到账金额USDT:%.4f】", id, usdtAmount)
+		defer model.SystemLogWrite(logMsg, ctx)
+	*/
 
 	usdt_info_temp, err := model.UsdtInfo()
 	if err != nil {
@@ -709,15 +721,17 @@ func (that *DepositController) OfflineUSDTReview(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	keyword := "通过"
-	if state == model.DepositCancelled {
-		keyword = "拒绝"
-	}
+	/*
+		keyword := "通过"
+		if state == model.DepositCancelled {
+			keyword = "拒绝"
+		}
 
-	// 写入系统日志
-	logMsg := fmt.Sprintf("线下转卡:%s【订单号: %s；会员账号: %s；金额: %.4f；审核时间: %s】",
-		keyword, id, deposit.Username, deposit.Amount, model.TimeFormat(ctx.Time().Unix()))
-	defer model.SystemLogWrite(logMsg, ctx)
+		// 写入系统日志
+		logMsg := fmt.Sprintf("线下转卡:%s【订单号: %s；会员账号: %s；金额: %.4f；审核时间: %s】",
+			keyword, id, deposit.Username, deposit.Amount, model.TimeFormat(ctx.Time().Unix()))
+		defer model.SystemLogWrite(logMsg, ctx)
+	*/
 
 	err = model.DepositUSDTReview(id, remark, admin["name"], admin["id"], deposit.UID, state)
 	if err != nil {

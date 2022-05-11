@@ -3,7 +3,6 @@ package controller
 import (
 	"finance/contrib/helper"
 	"finance/model"
-	"fmt"
 
 	"github.com/valyala/fasthttp"
 )
@@ -92,12 +91,13 @@ func (that *PayController) Pay(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	// usdt支付走if里面的代码
-	if _, ok := coinPay[id]; ok {
-		model.CoinPay(ctx, id, amount, user)
-		return
-	}
-
+	/*
+		// usdt支付走if里面的代码
+		if _, ok := coinPay[id]; ok {
+			model.CoinPay(ctx, id, amount, user)
+			return
+		}
+	*/
 	helper.PrintJson(ctx, false, "404")
 }
 
@@ -127,38 +127,4 @@ func (that *PayController) Cate(ctx *fasthttp.RequestCtx) {
 	}
 
 	helper.PrintJson(ctx, true, data)
-}
-
-// Manual 发起线下转卡
-func (that *PayController) Manual(ctx *fasthttp.RequestCtx) {
-
-	id := string(ctx.PostArgs().Peek("id"))
-	amount := string(ctx.PostArgs().Peek("amount"))
-	bid := string(ctx.PostArgs().Peek("bankcard_id"))
-	bankCode := string(ctx.PostArgs().Peek("bank_code"))
-	fmt.Println("id:", id)
-	fmt.Println("Manual: ", string(ctx.PostBody()))
-
-	if id != "767158011957916898" {
-		helper.Print(ctx, false, helper.ChannelIDErr)
-		return
-	}
-
-	if !helper.CtypeDigit(amount) {
-		helper.Print(ctx, false, helper.AmountErr)
-		return
-	}
-
-	if bid == "" || bankCode == "" {
-		helper.Print(ctx, false, helper.BankcardIDErr)
-		return
-	}
-
-	res, err := model.Manual(ctx, id, amount, bid, bankCode)
-	if err != nil {
-		helper.Print(ctx, false, err.Error())
-		return
-	}
-
-	helper.Print(ctx, false, res)
 }

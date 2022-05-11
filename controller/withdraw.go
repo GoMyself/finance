@@ -809,9 +809,11 @@ func (that *WithdrawController) ReviewReject(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	logMsg := fmt.Sprintf("拒绝【订单号:%s；会员账号:%s；订单金额:%.4f；申请时间:%s；完成时间:%s】",
-		withdraw.ID, withdraw.Username, withdraw.Amount, model.TimeFormat(withdraw.CreatedAt), model.TimeFormat(ctx.Time().Unix()))
-	defer model.SystemLogWrite(logMsg, ctx)
+	/*
+		logMsg := fmt.Sprintf("拒绝【订单号:%s；会员账号:%s；订单金额:%.4f；申请时间:%s；完成时间:%s】",
+			withdraw.ID, withdraw.Username, withdraw.Amount, model.TimeFormat(withdraw.CreatedAt), model.TimeFormat(ctx.Time().Unix()))
+		defer model.SystemLogWrite(logMsg, ctx)
+	*/
 
 	record := g.Record{
 		"withdraw_remark": param.Remark,
@@ -897,9 +899,11 @@ func (that *WithdrawController) Review(ctx *fasthttp.RequestCtx) {
 			return
 		}
 
-		logMsg := fmt.Sprintf("人工出款【订单号:%s；会员账号:%s；订单金额:%.4f；申请时间:%s；完成时间:%s】",
-			withdraw.ID, withdraw.Username, withdraw.Amount, model.TimeFormat(withdraw.CreatedAt), model.TimeFormat(ctx.Time().Unix()))
-		defer model.SystemLogWrite(logMsg, ctx)
+		/*
+			logMsg := fmt.Sprintf("人工出款【订单号:%s；会员账号:%s；订单金额:%.4f；申请时间:%s；完成时间:%s】",
+				withdraw.ID, withdraw.Username, withdraw.Amount, model.TimeFormat(withdraw.CreatedAt), model.TimeFormat(ctx.Time().Unix()))
+			defer model.SystemLogWrite(logMsg, ctx)
+		*/
 
 		record["pid"] = "0"
 		record["automatic"] = "0"

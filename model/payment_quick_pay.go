@@ -4,12 +4,13 @@ import (
 	"errors"
 	"finance/contrib/helper"
 	"fmt"
-	"github.com/valyala/fasthttp"
 	"net/url"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/valyala/fasthttp"
 )
 
 //QuickPayment quick支付
@@ -47,7 +48,7 @@ type quickConf struct {
 	PayNotify      string
 	PayReturn      string
 	WithdrawNotify string
-	Channel        map[paymentChannel]string
+	Channel        map[string]string
 }
 
 const (
@@ -91,11 +92,11 @@ func (that *QuickPayment) New() {
 		PayNotify:      "%s/finance/callback/quickd",
 		PayReturn:      "",
 		WithdrawNotify: "%s/finance/callback/quickw",
-		Channel: map[paymentChannel]string{
-			momo:     quickMomo,     // momo
-			zalo:     quickZalo,     // zalo
-			online:   quickOnline,   // online
-			unionpay: quickUnionpay, // unionpay
+		Channel: map[string]string{
+			"momo":     quickMomo,     // momo
+			"zalo":     quickZalo,     // zalo
+			"online":   quickOnline,   // online
+			"unionpay": quickUnionpay, // unionpay
 		},
 	}
 }
@@ -106,7 +107,7 @@ func (that *QuickPayment) Name() string {
 }
 
 //Pay 发起支付
-func (that *QuickPayment) Pay(log *paymentTDLog, ch paymentChannel, amount, bid string) (paymentDepositResp, error) {
+func (that *QuickPayment) Pay(log *paymentTDLog, ch, amount, bid string) (paymentDepositResp, error) {
 
 	data := paymentDepositResp{}
 

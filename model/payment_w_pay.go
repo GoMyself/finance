@@ -5,11 +5,12 @@ import (
 	"errors"
 	"finance/contrib/helper"
 	"fmt"
-	"github.com/valyala/fasthttp"
 	"net/url"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/valyala/fasthttp"
 )
 
 const (
@@ -28,7 +29,7 @@ type wPayConf struct {
 	Key            string
 	PayNotify      string
 	WithdrawNotify string
-	Channel        map[paymentChannel]string
+	Channel        map[string]string
 }
 
 type WPayment struct {
@@ -60,11 +61,11 @@ func (that *WPayment) New() {
 		Domain:         apiUrl,
 		PayNotify:      "%s/finance/callback/wd",
 		WithdrawNotify: "%s/finance/callback/ww",
-		Channel: map[paymentChannel]string{
-			momo:     wMomo,
-			unionpay: wUnionPay,
-			online:   wOnline,
-			remit:    wRemit,
+		Channel: map[string]string{
+			"momo":     wMomo,
+			"unionpay": wUnionPay,
+			"online":   wOnline,
+			"remit":    wRemit,
 		},
 	}
 }
@@ -73,7 +74,7 @@ func (that *WPayment) Name() string {
 	return that.Conf.Name
 }
 
-func (that *WPayment) Pay(log *paymentTDLog, ch paymentChannel, amount, bid string) (paymentDepositResp, error) {
+func (that *WPayment) Pay(log *paymentTDLog, ch string, amount, bid string) (paymentDepositResp, error) {
 
 	data := paymentDepositResp{}
 

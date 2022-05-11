@@ -149,8 +149,8 @@ func (that *ChannelController) Insert(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	content := fmt.Sprintf("新增【渠道名称: %s；通道名称: %s；最小充值金额: %s；最大充值金额: %s】", cate.Name, channel.Name, param.FMin, param.FMax)
-	defer model.SystemLogWrite(content, ctx)
+	//content := fmt.Sprintf("新增【渠道名称: %s；通道名称: %s；最小充值金额: %s；最大充值金额: %s】", cate.Name, channel.Name, param.FMin, param.FMax)
+	//defer model.SystemLogWrite(content, ctx)
 
 	fields := map[string]string{
 		"id":          helper.GenLongId(),
@@ -251,8 +251,8 @@ func (that *ChannelController) Update(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	content := fmt.Sprintf("编辑【渠道名称: %s；通道名称: %s；最小充值金额: %s；最大充值金额: %s】", cate.Name, channel.Name, param.FMin, param.FMax)
-	defer model.SystemLogWrite(content, ctx)
+	//content := fmt.Sprintf("编辑【渠道名称: %s；通道名称: %s；最小充值金额: %s；最大充值金额: %s】", cate.Name, channel.Name, param.FMin, param.FMax)
+	//defer model.SystemLogWrite(content, ctx)
 
 	fields := map[string]string{
 		"id":          param.ID,
@@ -357,13 +357,15 @@ func (that *ChannelController) UpdateState(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	keyword := "开启"
-	if param.State == "0" {
-		keyword = "关闭"
-	}
+	/*
+		keyword := "开启"
+		if param.State == "0" {
+			keyword = "关闭"
+		}
 
-	content := fmt.Sprintf("%s【渠道名称: %s ；通道名称: %s】", keyword, cate.Name, channel.Name)
-	defer model.SystemLogWrite(content, ctx)
+		content := fmt.Sprintf("%s【渠道名称: %s ；通道名称: %s】", keyword, cate.Name, channel.Name)
+		defer model.SystemLogWrite(content, ctx)
+	*/
 
 	err = model.ChannelSet(param.ID, param.State)
 	if err != nil {

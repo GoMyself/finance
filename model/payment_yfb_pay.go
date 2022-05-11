@@ -5,11 +5,12 @@ import (
 	"errors"
 	"finance/contrib/helper"
 	"fmt"
-	"github.com/valyala/fasthttp"
 	"net/url"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/valyala/fasthttp"
 )
 
 const (
@@ -30,7 +31,7 @@ type yfbConf struct {
 	PayNotify      string
 	PayReturn      string
 	WithdrawNotify string
-	Channel        map[paymentChannel]string
+	Channel        map[string]string
 }
 
 type fypPayResp struct {
@@ -79,20 +80,20 @@ func (that *YfbPayment) New() {
 		Secret:         paySecret,
 		PayNotify:      "%s/finance/callback/yfbd",
 		WithdrawNotify: "%s/finance/callback/yfbw",
-		Channel: map[paymentChannel]string{
-			momo:       yfbMomo,
-			zalo:       yfbZalo,
-			online:     yfbOnline,
-			remit:      yfbRemit,
-			unionpay:   yfbUnionPay,
-			viettelpay: yfbViettelPay,
+		Channel: map[string]string{
+			"momo":       yfbMomo,
+			"zalo":       yfbZalo,
+			"online":     yfbOnline,
+			"remit":      yfbRemit,
+			"unionpay":   yfbUnionPay,
+			"viettelpay": yfbViettelPay,
 		},
 	}
 
 }
 
 //Pay 发起支付请求
-func (that *YfbPayment) Pay(log *paymentTDLog, ch paymentChannel, amount, bid string) (paymentDepositResp, error) {
+func (that *YfbPayment) Pay(log *paymentTDLog, ch string, amount, bid string) (paymentDepositResp, error) {
 	data := paymentDepositResp{}
 
 	cno, ok := that.conf.Channel[ch]

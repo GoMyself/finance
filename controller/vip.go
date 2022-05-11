@@ -68,15 +68,18 @@ func (that *VipController) Insert(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	cateName, channelName, err := model.TunnelAndChannelGetName(param.CateID, param.ChannelID)
-	if err != nil {
-		helper.Print(ctx, false, err.Error())
-		return
-	}
+	/*
+		cateName, channelName, err := model.TunnelAndChannelGetName(param.CateID, param.ChannelID)
+		if err != nil {
+			helper.Print(ctx, false, err.Error())
+			return
+		}
 
-	logMsg := fmt.Sprintf("新增【渠道名称: %s；通道名称: %s；会员等级: %d；存款金额最小值: %s；存款金额最大值: %s】",
-		cateName, channelName, param.Vip-1, param.FMin, param.FMax)
-	defer model.SystemLogWrite(logMsg, ctx)
+
+			logMsg := fmt.Sprintf("新增【渠道名称: %s；通道名称: %s；会员等级: %d；存款金额最小值: %s；存款金额最大值: %s】",
+				cateName, channelName, param.Vip-1, param.FMin, param.FMax)
+			defer model.SystemLogWrite(logMsg, ctx)
+	*/
 
 	fields := map[string]string{
 		"id":         helper.GenId(),
@@ -133,17 +136,20 @@ func (that *VipController) Update(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	cateName, channelName, err := model.TunnelAndChannelGetName(vip.CateID, channelIDMap[vip.PaymentID])
-	if err != nil {
-		helper.Print(ctx, false, err.Error())
-		return
-	}
+	/*
+		cateName, channelName, err := model.TunnelAndChannelGetName(vip.CateID, channelIDMap[vip.PaymentID])
+		if err != nil {
+			helper.Print(ctx, false, err.Error())
+			return
+		}
 
-	level, _ := strconv.Atoi(vip.Vip)
-	logMsg := fmt.Sprintf("编辑【渠道名称: %s；通道名称: %s；会员等级: %d；存款金额最小值: %s；存款金额最大值: %s】",
-		cateName, channelName, level-1, param.FMin, param.FMax)
-	defer model.SystemLogWrite(logMsg, ctx)
+		level, _ := strconv.Atoi(vip.Vip)
 
+
+			logMsg := fmt.Sprintf("编辑【渠道名称: %s；通道名称: %s；会员等级: %d；存款金额最小值: %s；存款金额最大值: %s】",
+				cateName, channelName, level-1, param.FMin, param.FMax)
+			defer model.SystemLogWrite(logMsg, ctx)
+	*/
 	fields := map[string]string{
 		"id":   param.ID,
 		"fmin": param.FMin,
@@ -201,17 +207,19 @@ func (that *VipController) Delete(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	cateName, channelName, err := model.TunnelAndChannelGetName(vip.CateID, channelIDMap[vip.PaymentID])
-	if err != nil {
-		helper.Print(ctx, false, err.Error())
-		return
-	}
+	/*
+		cateName, channelName, err := model.TunnelAndChannelGetName(vip.CateID, channelIDMap[vip.PaymentID])
+		if err != nil {
+			helper.Print(ctx, false, err.Error())
+			return
+		}
 
-	level, _ := strconv.Atoi(vip.Vip)
-	logMsg := fmt.Sprintf("删除【渠道名称: %s；通道名称: %s；会员等级: %d；存款金额最小值: %s；存款金额最大值: %s】",
-		cateName, channelName, level-1, vip.Fmin, vip.Fmax)
-	defer model.SystemLogWrite(logMsg, ctx)
 
+			level, _ := strconv.Atoi(vip.Vip)
+			logMsg := fmt.Sprintf("删除【渠道名称: %s；通道名称: %s；会员等级: %d；存款金额最小值: %s；存款金额最大值: %s】",
+				cateName, channelName, level-1, vip.Fmin, vip.Fmax)
+			defer model.SystemLogWrite(logMsg, ctx)
+	*/
 	err = model.VipDelete(id)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())

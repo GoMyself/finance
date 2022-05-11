@@ -85,8 +85,8 @@ func (that *CateController) Insert(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	content := fmt.Sprintf("新增【渠道名称: %s】", param.CateName)
-	defer model.SystemLogWrite(content, ctx)
+	//content := fmt.Sprintf("新增【渠道名称: %s】", param.CateName)
+	//defer model.SystemLogWrite(content, ctx)
 
 	if param.Comment != "" {
 		if !validator.CheckStringLength(param.Comment, 0, 20) {
@@ -120,8 +120,8 @@ func (that *CateController) Update(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	content := fmt.Sprintf("编辑【渠道名称: %s】", param.CateName)
-	defer model.SystemLogWrite(content, ctx)
+	//content := fmt.Sprintf("编辑【渠道名称: %s】", param.CateName)
+	//defer model.SystemLogWrite(content, ctx)
 
 	if param.ID == "0" {
 		helper.Print(ctx, false, helper.IDErr)
@@ -199,13 +199,14 @@ func (that *CateController) UpdateState(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	keyword := "开启"
-	if param.State == "0" {
-		keyword = "关闭"
-	}
-	content := fmt.Sprintf("%s【商户ID: %s ；渠道名称: %s】", keyword, cate.MerchantId, cate.Name)
-	defer model.SystemLogWrite(content, ctx)
-
+	/*
+		keyword := "开启"
+		if param.State == "0" {
+			keyword = "关闭"
+		}
+		content := fmt.Sprintf("%s【商户ID: %s ；渠道名称: %s】", keyword, cate.MerchantId, cate.Name)
+		defer model.SystemLogWrite(content, ctx)
+	*/
 	err = model.CateSet(param.ID, param.State)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())

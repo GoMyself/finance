@@ -22,15 +22,6 @@ type ChannelDevice struct {
 	DeviceId  string `db:"device_id" json:"device_id"`
 }
 
-// ChannelData 财务管理-渠道管理-列表 response structure
-/*
-type ChannelData struct {
-	D []Payment_t `json:"d"`
-	T int64       `json:"t"`
-	S uint16      `json:"s"`
-}
-*/
-
 type channelCate struct {
 	PaymentID string `db:"id" json:"id"`
 	CateID    string `db:"cate_id" json:"cate_id"`

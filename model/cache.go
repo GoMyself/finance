@@ -493,41 +493,6 @@ func Create(level string) {
 	fmt.Println("paymentIds = ", paymentIds)
 }
 
-func CreateChannelType() {
-
-	var reocrd []Tunnel_t
-
-	query, _, _ := dialect.From("f_channel_type").Select("id", "name", "sort", "promo_state").ToSQL()
-	err := meta.MerchantDB.Select(&reocrd, query)
-	if err != nil {
-		fmt.Println("CreateChannelType meta.MerchantDB.Select = ", err.Error())
-		return
-	}
-
-	pipe := meta.MerchantRedis.TxPipeline()
-
-	for _, value := range reocrd {
-
-		key := "p:c:t:" + value.ID
-		val := map[string]interface{}{
-			"promo_state": value.PromoState,
-			"sort":        value.Sort,
-			"name":        value.Name,
-			"id":          value.ID,
-		}
-
-		pipe.Unlink(ctx, key)
-		pipe.HMSet(ctx, key, val)
-		pipe.Persist(ctx, key)
-	}
-	_, err = pipe.Exec(ctx)
-	pipe.Close()
-
-	if err != nil {
-		fmt.Println("pipe.Exec = ", err.Error())
-	}
-}
-
 //生成随机唯一 码
 func CreateCode() {
 
