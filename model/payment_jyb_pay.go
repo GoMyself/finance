@@ -81,7 +81,7 @@ func (that *JybPayment) Name() string {
 	return that.Conf.Name
 }
 
-func (that *JybPayment) Pay(log *paymentTDLog, ch, amount, bid string) (paymentDepositResp, error) {
+func (that *JybPayment) Pay(orderId, ch, amount, bid string) (paymentDepositResp, error) {
 
 	data := paymentDepositResp{}
 
@@ -93,7 +93,7 @@ func (that *JybPayment) Pay(log *paymentTDLog, ch, amount, bid string) (paymentD
 	now := time.Now()
 	recs := map[string]string{
 		"merchno":         that.Conf.AppID, // 商户编号
-		"orderId":         log.OrderID,     // 商户订单号
+		"orderId":         orderId,         // 商户订单号
 		"payType":         cno,             // 纯数字格式; MomoPay:0 | ZaloPay:1 | 银行扫码:2 | 直連:3 | 网关:4 |VTPay:5
 		"requestCurrency": "3",
 		"amount":          fmt.Sprintf("%s000.00", amount),                  // 订单金额
@@ -133,7 +133,7 @@ func (that *JybPayment) Pay(log *paymentTDLog, ch, amount, bid string) (paymentD
 	//	return data, err
 	//}
 	data.Addr = uri
-	data.OrderID = log.OrderID
+	data.OrderID = orderId
 	data.IsForm = "1"
 	for k, v := range recs {
 		data.Data[k] = v
@@ -142,7 +142,7 @@ func (that *JybPayment) Pay(log *paymentTDLog, ch, amount, bid string) (paymentD
 	return data, nil
 }
 
-func (that *JybPayment) Withdraw(log *paymentTDLog, arg WithdrawAutoParam) (paymentWithdrawalRsp, error) {
+func (that *JybPayment) Withdraw(arg WithdrawAutoParam) (paymentWithdrawalRsp, error) {
 
 	data := paymentWithdrawalRsp{}
 	params := map[string]string{
@@ -170,7 +170,7 @@ func (that *JybPayment) Withdraw(log *paymentTDLog, arg WithdrawAutoParam) (paym
 	headers := map[string]string{
 		"Content-Type": "application/x-www-form-urlencoded",
 	}
-	v, err := httpDoTimeout([]byte(formData.Encode()), "POST", uri, headers, time.Second*8, log)
+	v, err := httpDoTimeout([]byte(formData.Encode()), "POST", uri, headers, time.Second*8)
 	if err != nil {
 		return data, err
 	}
@@ -190,16 +190,16 @@ func (that *JybPayment) Withdraw(log *paymentTDLog, arg WithdrawAutoParam) (paym
 	return data, nil
 }
 
-func (that *JybPayment) PayCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
+func (that *JybPayment) PayCallBack(fctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
 
 	params := make(map[string]string)
-	ctx.PostArgs().VisitAll(func(key, value []byte) {
+	fctx.PostArgs().VisitAll(func(key, value []byte) {
 		params[string(key)] = string(value)
 	})
 
 	data := paymentCallbackResp{
 		State: DepositConfirming,
-		Sign:  string(ctx.PostArgs().Peek("sign")),
+		Sign:  string(fctx.PostArgs().Peek("sign")),
 	}
 
 	if !valid(params, []string{"merchno", "orderId", "amount", "requestCurrency", "payType", "apiVersion", "status", "sign"}) {
@@ -223,16 +223,16 @@ func (that *JybPayment) PayCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackRe
 	return data, nil
 }
 
-func (that *JybPayment) WithdrawCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
+func (that *JybPayment) WithdrawCallBack(fctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
 
 	params := make(map[string]string)
-	ctx.PostArgs().VisitAll(func(key, value []byte) {
+	fctx.PostArgs().VisitAll(func(key, value []byte) {
 		params[string(key)] = string(value)
 	})
 
 	data := paymentCallbackResp{
 		State: WithdrawDealing,
-		Sign:  string(ctx.PostArgs().Peek("sign")),
+		Sign:  string(fctx.PostArgs().Peek("sign")),
 	}
 
 	if !valid(params, []string{"timestamp", "orderNo", "merchno", "orderId", "amount", "tradeType", "account", "cardNo", "bankName",

@@ -21,13 +21,13 @@ type Payment interface {
 	// New 初始化 通道配置
 	New()
 	// Pay 发起支付
-	Pay(log *paymentTDLog, paymentChannel, amount, bid string) (paymentDepositResp, error)
+	Pay(orderId, paymentChannel, amount, bid string) (paymentDepositResp, error)
 	// Withdraw 发起代付
-	Withdraw(log *paymentTDLog, param WithdrawAutoParam) (paymentWithdrawalRsp, error)
+	Withdraw(param WithdrawAutoParam) (paymentWithdrawalRsp, error)
 	// PayCallBack 支付回调
-	PayCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackResp, error)
+	PayCallBack(fctx *fasthttp.RequestCtx) (paymentCallbackResp, error)
 	// WithdrawCallBack 代付回调
-	WithdrawCallBack(*fasthttp.RequestCtx) (paymentCallbackResp, error)
+	WithdrawCallBack(fctx *fasthttp.RequestCtx) (paymentCallbackResp, error)
 }
 
 //New 初始化配置
@@ -75,7 +75,7 @@ func NewPayment() {
 }
 
 //Pay 发起支付公共入口
-func Pay(pLog *paymentTDLog, user Member, p FPay, amount, bid string) (paymentDepositResp, error) {
+func Pay(user Member, p FPay, amount, bid string) (paymentDepositResp, error) {
 
 	data := paymentDepositResp{}
 
@@ -84,13 +84,13 @@ func Pay(pLog *paymentTDLog, user Member, p FPay, amount, bid string) (paymentDe
 		return data, errors.New(helper.NoPayChannel)
 	}
 
+	fmt.Println("Pay payment = ", payment)
 	ch, err := ChannelTypeById(p.ChannelID)
 	if err != nil {
 		return data, errors.New(helper.ChannelNotExist)
 	}
 
-	pLog.Merchant = payment.Name()
-	pLog.Channel = ch["name"]
+	fmt.Println("Pay ch = ", ch)
 
 	// 检查存款金额是否符合范围
 	a, ok := validator.CheckFloatScope(amount, p.Fmin, p.Fmax)
@@ -111,7 +111,9 @@ func Pay(pLog *paymentTDLog, user Member, p FPay, amount, bid string) (paymentDe
 	}
 
 	// 生成我方存款订单号
-	pLog.OrderID = helper.GenId()
+	orderId := helper.GenId()
+
+	fmt.Println("Pay orderId = ", orderId)
 
 	// 检查用户的存款行为是否过于频繁
 	err = cacheDepositProcessing(user.UID, time.Now().Unix())
@@ -119,7 +121,8 @@ func Pay(pLog *paymentTDLog, user Member, p FPay, amount, bid string) (paymentDe
 		return data, err
 	}
 	// 向渠道方发送存款订单请求
-	data, err = payment.Pay(pLog, ch["name"], amount, bid)
+	data, err = payment.Pay(orderId, ch["name"], amount, bid)
+	fmt.Println("Pay  payment.Pay err = ", err)
 	if err != nil {
 		return data, err
 	}
@@ -136,7 +139,7 @@ func WithdrawGetPayment(cateID string) (Payment, error) {
 	return p, errors.New(helper.CateNotExist)
 }
 
-func httpDoTimeout(requestBody []byte, method string, requestURI string, headers map[string]string, timeout time.Duration, log *paymentTDLog) ([]byte, error) {
+func httpDoTimeout(requestBody []byte, method string, requestURI string, headers map[string]string, timeout time.Duration) ([]byte, error) {
 
 	req := fasthttp.AcquireRequest()
 	resp := fasthttp.AcquireResponse()
@@ -166,10 +169,12 @@ func httpDoTimeout(requestBody []byte, method string, requestURI string, headers
 	code := resp.StatusCode()
 	respBody := resp.Body()
 
-	log.RequestURL = requestURI
-	log.RequestBody = string(requestBody)
-	log.ResponseBody = string(respBody)
-	log.ResponseCode = code
+	/*
+		log.RequestURL = requestURI
+		log.RequestBody = string(requestBody)
+		log.ResponseBody = string(respBody)
+		log.ResponseCode = code
+	*/
 
 	if err != nil {
 		return nil, fmt.Errorf("send http request error: [%v]", err)
@@ -183,7 +188,7 @@ func httpDoTimeout(requestBody []byte, method string, requestURI string, headers
 }
 
 // 写入日志
-func paymentPushLog(data *paymentTDLog) {
+func paymentPushLog(data paymentTDLog) {
 
 	if data.Error == "" {
 		data.Level = "info"
@@ -260,9 +265,9 @@ func valid(p map[string]string, key []string) bool {
 }
 
 // BankCards 获取返回前台的银行卡
-func BankCards(channelBankID string) (BankCard, error) {
+func BankCards(channelBankID string) (Bankcard_t, error) {
 
-	card := BankCard{}
+	card := Bankcard_t{}
 	ex := g.Ex{
 		"channel_bank_id": channelBankID,
 		"state":           1,
@@ -272,7 +277,7 @@ func BankCards(channelBankID string) (BankCard, error) {
 		Limit(1).Where(ex).ToSQL()
 	err := meta.MerchantDB.Get(&card, query)
 	if err != nil {
-		return BankCard{}, err
+		return card, err
 	}
 
 	return card, nil

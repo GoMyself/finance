@@ -67,7 +67,7 @@ func (that *FyPayment) Name() string {
 	return that.Conf.Name
 }
 
-func (that *FyPayment) Pay(log *paymentTDLog, ch, amount, bid string) (paymentDepositResp, error) {
+func (that *FyPayment) Pay(orderId, ch, amount, bid string) (paymentDepositResp, error) {
 
 	data := paymentDepositResp{}
 
@@ -78,7 +78,7 @@ func (that *FyPayment) Pay(log *paymentTDLog, ch, amount, bid string) (paymentDe
 
 	params := map[string]string{
 		"uid":        that.Conf.AppID,                                  // 商户 ID
-		"orderid":    log.OrderID,                                      // 订单号
+		"orderid":    orderId,                                          // 订单号
 		"channel":    cno,                                              // 支付类型
 		"notify_url": fmt.Sprintf(that.Conf.PayNotify, meta.Fcallback), // 异步通知地址
 		"return_url": fmt.Sprintf(that.Conf.PayNotify, meta.Fcallback), // 同步返回地址
@@ -102,9 +102,11 @@ func (that *FyPayment) Pay(log *paymentTDLog, ch, amount, bid string) (paymentDe
 	headers := map[string]string{}
 	uri := fmt.Sprintf("%s/pay", that.Conf.Domain)
 
-	v, err := httpDoTimeout([]byte(formData.Encode()), "POST", uri, headers, time.Second*8, log)
+	v, err := httpDoTimeout([]byte(formData.Encode()), "POST", uri, headers, time.Second*8)
 	if err != nil {
-		return data, err
+		fmt.Println("fy uri = ", uri)
+		fmt.Println("fy httpDoTimeout err = ", err)
+		return data, errors.New(helper.PayServerErr)
 	}
 
 	// 处理返回结果
@@ -122,7 +124,7 @@ func (that *FyPayment) Pay(log *paymentTDLog, ch, amount, bid string) (paymentDe
 	return data, nil
 }
 
-func (that *FyPayment) Withdraw(log *paymentTDLog, arg WithdrawAutoParam) (paymentWithdrawalRsp, error) {
+func (that *FyPayment) Withdraw(arg WithdrawAutoParam) (paymentWithdrawalRsp, error) {
 
 	data := paymentWithdrawalRsp{}
 	params := map[string]string{
@@ -151,7 +153,7 @@ func (that *FyPayment) Withdraw(log *paymentTDLog, arg WithdrawAutoParam) (payme
 	uri := fmt.Sprintf("%s/applyfor", that.Conf.Domain)
 	headers := map[string]string{}
 
-	v, err := httpDoTimeout([]byte(formData.Encode()), "POST", uri, headers, time.Second*8, log)
+	v, err := httpDoTimeout([]byte(formData.Encode()), "POST", uri, headers, time.Second*8)
 	if err != nil {
 		return data, err
 	}
@@ -171,11 +173,11 @@ func (that *FyPayment) Withdraw(log *paymentTDLog, arg WithdrawAutoParam) (payme
 	return data, nil
 }
 
-func (that *FyPayment) PayCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
+func (that *FyPayment) PayCallBack(fctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
 
-	status := string(ctx.FormValue("status"))
-	sign := string(ctx.FormValue("sign"))
-	result := ctx.FormValue("result")
+	status := string(fctx.FormValue("status"))
+	sign := string(fctx.FormValue("sign"))
+	result := fctx.FormValue("result")
 
 	data := paymentCallbackResp{
 		State: DepositConfirming,
@@ -213,11 +215,11 @@ func (that *FyPayment) PayCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackRes
 	return data, nil
 }
 
-func (that *FyPayment) WithdrawCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
+func (that *FyPayment) WithdrawCallBack(fctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
 
-	status := string(ctx.FormValue("status"))
-	sign := string(ctx.FormValue("sign"))
-	result := ctx.FormValue("result")
+	status := string(fctx.FormValue("status"))
+	sign := string(fctx.FormValue("sign"))
+	result := fctx.FormValue("result")
 
 	data := paymentCallbackResp{
 		State: WithdrawDealing,
@@ -236,7 +238,7 @@ func (that *FyPayment) WithdrawCallBack(ctx *fasthttp.RequestCtx) (paymentCallba
 	// check signature
 	args := map[string]string{
 		"status": status,
-		"result": string(ctx.FormValue("result")),
+		"result": string(fctx.FormValue("result")),
 	}
 
 	if that.sign(args) != data.Sign {

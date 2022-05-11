@@ -59,7 +59,7 @@ func (that *VtPayment) Name() string {
 	return that.Conf.Name
 }
 
-func (that *VtPayment) Pay(log *paymentTDLog, ch string, amount, bid string) (paymentDepositResp, error) {
+func (that *VtPayment) Pay(orderId, ch, amount, bid string) (paymentDepositResp, error) {
 
 	data := paymentDepositResp{}
 
@@ -70,7 +70,7 @@ func (that *VtPayment) Pay(log *paymentTDLog, ch string, amount, bid string) (pa
 
 	recs := map[string]string{
 		"merchantNo": that.Conf.MerchantNo,                             // 商户编号
-		"orderNo":    log.OrderID,                                      // 商户订单号
+		"orderNo":    orderId,                                          // 商户订单号
 		"channel":    cno,                                              // 纯数字格式; MomoPay:0 | ZaloPay:1 | 银行扫码:2 | 直連:3 | 网关:4 |VTPay:5
 		"amount":     fmt.Sprintf("%s000", amount),                     // 订单金额
 		"bankCode":   bid,                                              // 银行编号VCB
@@ -82,12 +82,12 @@ func (that *VtPayment) Pay(log *paymentTDLog, ch string, amount, bid string) (pa
 	uri := fmt.Sprintf("%s/vtpay/request?%s", that.Conf.Domain, paramEncode(recs))
 	fmt.Println(uri)
 	data.Addr = uri
-	data.OrderID = log.OrderID
+	data.OrderID = orderId
 
 	return data, nil
 }
 
-func (that *VtPayment) Withdraw(log *paymentTDLog, arg WithdrawAutoParam) (paymentWithdrawalRsp, error) {
+func (that *VtPayment) Withdraw(arg WithdrawAutoParam) (paymentWithdrawalRsp, error) {
 
 	data := paymentWithdrawalRsp{}
 	params := map[string]string{
@@ -110,9 +110,12 @@ func (that *VtPayment) Withdraw(log *paymentTDLog, arg WithdrawAutoParam) (payme
 	headers := map[string]string{
 		"Content-Type": "application/x-www-form-urlencoded",
 	}
-	v, err := httpDoTimeout([]byte(formData.Encode()), "POST", uri, headers, time.Second*8, log)
+	v, err := httpDoTimeout([]byte(formData.Encode()), "POST", uri, headers, time.Second*8)
 	if err != nil {
-		return data, err
+		fmt.Println("vt uri = ", uri)
+		fmt.Println("vt httpDoTimeout err = ", err)
+
+		return data, errors.New(helper.PayServerErr)
 	}
 
 	var res wPayWithdrawResp
@@ -130,16 +133,16 @@ func (that *VtPayment) Withdraw(log *paymentTDLog, arg WithdrawAutoParam) (payme
 	return data, nil
 }
 
-func (that *VtPayment) PayCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
+func (that *VtPayment) PayCallBack(fctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
 
 	params := make(map[string]string)
-	ctx.PostArgs().VisitAll(func(key, value []byte) {
+	fctx.PostArgs().VisitAll(func(key, value []byte) {
 		params[string(key)] = string(value)
 	})
 
 	data := paymentCallbackResp{
 		State: DepositConfirming,
-		Sign:  string(ctx.PostArgs().Peek("sign")),
+		Sign:  string(fctx.PostArgs().Peek("sign")),
 	}
 
 	if !valid(params, []string{"merchantNo", "orderNo", "referenceNo", "amount", "channel", "successAmount", "sign"}) {
@@ -158,16 +161,16 @@ func (that *VtPayment) PayCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackRes
 	return data, nil
 }
 
-func (that *VtPayment) WithdrawCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
+func (that *VtPayment) WithdrawCallBack(fctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
 
 	params := make(map[string]string)
-	ctx.PostArgs().VisitAll(func(key, value []byte) {
+	fctx.PostArgs().VisitAll(func(key, value []byte) {
 		params[string(key)] = string(value)
 	})
 
 	data := paymentCallbackResp{
 		State: WithdrawDealing,
-		Sign:  string(ctx.PostArgs().Peek("sign")),
+		Sign:  string(fctx.PostArgs().Peek("sign")),
 	}
 
 	if !valid(params, []string{"merchantNo", "status", "amount", "orderNo", "referenceNo", "sign"}) {

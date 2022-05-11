@@ -9,18 +9,20 @@ import (
 	g "github.com/doug-martin/goqu/v9"
 )
 
-type BankCard struct {
-	ID            string  `db:"id"              json:"id"             ` //
-	ChannelBankID string  `db:"channel_bank_id" json:"channel_bank_id"` //
-	Name          string  `db:"name"            json:"name"           ` //
-	CardNo        string  `db:"card_no"         json:"card_no"        ` //
-	RealName      string  `db:"real_name"       json:"real_name"      ` //
-	BankAddr      string  `db:"bank_addr"       json:"bank_addr"      ` //
-	State         int     `db:"state"           json:"state"          ` //
-	MaxAmount     float64 `db:"max_amount"      json:"max_amount"     ` //
-	Remark        string  `db:"remark"          json:"remark"         ` //
-	Money         float64 `db:"-"               json:"money"          ` // 今日存款金额
-	Prefix        string  `db:"prefix" json:"prefix"`
+type Bankcard_t struct {
+	Id                    string `db:"id" json:"id"`
+	ChannelBankId         string `db:"channel_bank_id" json:"channel_bank_id"`                 // t_channel_bank的id
+	BanklcardName         string `db:"banklcard_name" json:"banklcard_name"`                   // 银行名称
+	BanklcardNo           string `db:"banklcard_no" json:"banklcard_no"`                       // 银行卡号
+	AccountName           string `db:"account_name" json:"account_name"`                       // 持卡人姓名
+	BankcardAddr          string `db:"bankcard_addr" json:"bankcard_addr"`                     // 开户行地址
+	State                 string `db:"state" json:"state"`                                     // 状态：0 关闭  1 开启
+	Remark                string `db:"remark" json:"remark"`                                   // 备注
+	Prefix                string `db:"prefix" json:"prefix"`                                   // 商户前缀
+	DailyMaxAmount        string `db:"daily_max_amount" json:"daily_max_amount"`               // 当天最大收款限额
+	DailyFinishAmount     string `db:"daily_finish_amount" json:"daily_finish_amount"`         // 当天已收款总额
+	TotalMaxAmount        string `db:"total_max_amount" json:"total_max_amount"`               // 累计最大收款限额
+	TotalFinishAmountCopy string `db:"total_finish_amountCopy" json:"total_finish_amountCopy"` // 累计已收款总额
 }
 
 // BankCardListForDeposit 银行卡信息 线下转卡 订单列表
@@ -32,10 +34,10 @@ type BankCardListForDeposit struct {
 	BankAddr string `db:"bank_addr" json:"bank_addr"`
 }
 
-func BankCardInsert(recs BankCard) error {
+func BankCardInsert(recs Bankcard_t) error {
 
 	if meta.Lang == "vn" {
-		if !validator.CheckStringVName(recs.RealName) {
+		if !validator.CheckStringVName(recs.AccountName) {
 			return errors.New(helper.ParamErr)
 		}
 	}
@@ -67,9 +69,9 @@ func BankCardDelete(id string) error {
 }
 
 //BankCardList 银行卡列表
-func BankCardList(ex g.Ex) ([]BankCard, error) {
+func BankCardList(ex g.Ex) ([]Bankcard_t, error) {
 
-	var data []BankCard
+	var data []Bankcard_t
 
 	ex["prefix"] = meta.Prefix
 
@@ -82,9 +84,9 @@ func BankCardList(ex g.Ex) ([]BankCard, error) {
 	return data, nil
 }
 
-func BankCardByID(id string) (BankCard, error) {
+func BankCardByID(id string) (Bankcard_t, error) {
 
-	var bc BankCard
+	var bc Bankcard_t
 	ex := g.Ex{
 		"id": id,
 	}
@@ -115,9 +117,9 @@ func BankCardUpdate(id string, record g.Record) error {
 	return nil
 }
 
-func BankCardByCol(col, val string) (BankCard, error) {
+func BankCardByCol(col, val string) (Bankcard_t, error) {
 
-	var bc BankCard
+	var bc Bankcard_t
 	ex := g.Ex{
 		col:      val,
 		"prefix": meta.Prefix,
@@ -146,50 +148,3 @@ func BankCardExistByEx(ex g.Ex) (bool, error) {
 
 	return bc > 0, nil
 }
-
-/*
-func BankCardOpenCondition(id, channelBankID string, max float64) error {
-
-	key := BankCardTotalKey(id)
-	rs, err := meta.MerchantRedis.Get(ctx, key).Result()
-	if err != nil && err != redis.Nil {
-		return pushLog(err, helper.RedisErr)
-	}
-
-	money := decimal.Zero
-	if err != redis.Nil {
-		money, err = decimal.NewFromString(rs)
-		if err != nil {
-			return errors.New(helper.FormatErr)
-		}
-	}
-
-	if money.GreaterThanOrEqual(decimal.NewFromFloat(max)) {
-		return errors.New(helper.ChangeDepositLimitBeforeActive)
-	}
-
-	ex := g.Ex{
-		"channel_bank_id": channelBankID,
-		"state":           1,
-		"id":              g.Op{"neq": id},
-		"prefix":          meta.Prefix,
-	}
-
-	b, err := BankCardExistByEx(ex)
-	if err != nil {
-		return err
-	}
-
-	if b {
-		return errors.New(helper.OnlyOneBankcardActivePerBank)
-	}
-
-	return nil
-}
-*/
-/*
-func BankCardTotalKey(bankID string) string {
-	timeStr := time.Now().In(loc).Format("2006-01-02")
-	return fmt.Sprintf("BT:%s:%s", bankID, timeStr)
-}
-*/

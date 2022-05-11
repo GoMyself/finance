@@ -111,14 +111,15 @@ func RisksOpenAuto(uid string) error {
 			return pushLog(err, helper.RedisErr)
 		}
 
-		// 所有未派发提款订单加入队列
-		for _, v := range ids {
-			param := map[string]interface{}{
-				"id": v,
+		/*
+			// 所有未派发提款订单加入队列
+			for _, v := range ids {
+				param := map[string]interface{}{
+					"id": v,
+				}
+				_, _ = BeanPut("risk", param, 0)
 			}
-			_, _ = BeanPut("risk", param, 0)
-		}
-
+		*/
 		return nil
 	}
 

@@ -83,7 +83,7 @@ func (that *UzPayment) Name() string {
 }
 
 //Pay 发起支付
-func (that *UzPayment) Pay(log *paymentTDLog, ch string, amount, bid string) (paymentDepositResp, error) {
+func (that *UzPayment) Pay(orderId, ch, amount, bid string) (paymentDepositResp, error) {
 
 	data := paymentDepositResp{}
 
@@ -100,7 +100,7 @@ func (that *UzPayment) Pay(log *paymentTDLog, ch string, amount, bid string) (pa
 		"uid":           that.Conf.AppID,
 		"userid":        "125423",
 		"amount":        fmt.Sprintf("%s000", amount),
-		"orderid":       log.OrderID, //贵司订单编号
+		"orderid":       orderId, //贵司订单编号
 		"cate":          string(cno),
 		"userip":        "203.208.43.98",
 		"from_bankflag": bid,
@@ -120,9 +120,11 @@ func (that *UzPayment) Pay(log *paymentTDLog, ch string, amount, bid string) (pa
 	}
 	query := fmt.Sprintf("%s/Api/collection", that.Conf.Domain)
 
-	res, err := httpDoTimeout(body, "POST", query, header, time.Second*8, log)
+	res, err := httpDoTimeout(body, "POST", query, header, time.Second*8)
 	if err != nil {
-		return data, err
+		fmt.Println("uz uri = ", query)
+		fmt.Println("uz httpDoTimeout err = ", err)
+		return data, errors.New(helper.PayServerErr)
 	}
 
 	var rp uzPayResp
@@ -139,13 +141,13 @@ func (that *UzPayment) Pay(log *paymentTDLog, ch string, amount, bid string) (pa
 	}
 
 	data.Addr = rp.Info.QrURL
-	data.OrderID = log.OrderID
+	data.OrderID = orderId
 
 	return data, nil
 }
 
 //Withdraw 发起提现
-func (that *UzPayment) Withdraw(log *paymentTDLog, arg WithdrawAutoParam) (paymentWithdrawalRsp, error) {
+func (that *UzPayment) Withdraw(arg WithdrawAutoParam) (paymentWithdrawalRsp, error) {
 
 	data := paymentWithdrawalRsp{}
 
@@ -175,7 +177,7 @@ func (that *UzPayment) Withdraw(log *paymentTDLog, arg WithdrawAutoParam) (payme
 
 	uri := fmt.Sprintf("%s/Api/withdraw", that.Conf.Domain)
 
-	v, err := httpDoTimeout(body, "POST", uri, headers, time.Second*8, log)
+	v, err := httpDoTimeout(body, "POST", uri, headers, time.Second*8)
 	if err != nil {
 		return data, err
 	}
@@ -196,15 +198,15 @@ func (that *UzPayment) Withdraw(log *paymentTDLog, arg WithdrawAutoParam) (payme
 }
 
 //PayCallBack 支付回调
-func (that *UzPayment) PayCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
+func (that *UzPayment) PayCallBack(fctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
 
 	data := paymentCallbackResp{
 		State: DepositConfirming,
-		Sign:  string(ctx.PostArgs().Peek("sign")),
+		Sign:  string(fctx.PostArgs().Peek("sign")),
 	}
 
 	param := uzPayCallBack{}
-	if err := helper.JsonUnmarshal(ctx.PostBody(), &param); err != nil {
+	if err := helper.JsonUnmarshal(fctx.PostBody(), &param); err != nil {
 		return data, fmt.Errorf("param format err: %s", err.Error())
 	}
 
@@ -243,15 +245,15 @@ func (that *UzPayment) PayCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackRes
 }
 
 //WithdrawCallBack 提现回调
-func (that *UzPayment) WithdrawCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
+func (that *UzPayment) WithdrawCallBack(fctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
 
 	data := paymentCallbackResp{
 		State: WithdrawDealing,
-		Sign:  string(ctx.PostArgs().Peek("sign")),
+		Sign:  string(fctx.PostArgs().Peek("sign")),
 	}
 
 	param := uzPayCallBack{}
-	if err := helper.JsonUnmarshal(ctx.PostBody(), &param); err != nil {
+	if err := helper.JsonUnmarshal(fctx.PostBody(), &param); err != nil {
 		return data, fmt.Errorf("param format err: %s", err.Error())
 	}
 

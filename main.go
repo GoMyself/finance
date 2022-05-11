@@ -55,7 +55,7 @@ func main() {
 	mt.Fcallback = cfg.Fcallback
 	mt.IsDev = cfg.IsDev
 
-	mt.MQPool = conn.InitBeanstalk(cfg.Beanstalkd.Addr, 15, cfg.Beanstalkd.MaxIdle, cfg.Beanstalkd.MaxCap)
+	//mt.MQPool = conn.InitBeanstalk(cfg.Beanstalkd.Addr, 15, cfg.Beanstalkd.MaxIdle, cfg.Beanstalkd.MaxCap)
 
 	mt.Finance = content
 
@@ -71,6 +71,11 @@ func main() {
 
 	if os.Args[3] == "load" {
 		fmt.Println("load")
+
+		for i := 0; i < 10; i++ {
+			level := fmt.Sprintf("%d", i)
+			model.Create(level)
+		}
 		model.CreateCode()
 		model.ChannelTypeCreateCache()
 		return

@@ -78,12 +78,12 @@ func (that *USDTPayment) Name() string {
 	return that.Conf.Name
 }
 
-func (that *USDTPayment) Pay(log *paymentTDLog, ch, amount, bid string) (paymentDepositResp, error) {
+func (that *USDTPayment) Pay(orderId, ch, amount, bid string) (paymentDepositResp, error) {
 
 	data := paymentDepositResp{}
 
 	params := map[string]string{
-		"order_id":    log.OrderID,                          // 订单号
+		"order_id":    orderId,                              // 订单号
 		"shop_name":   that.Conf.AppID,                      // 商户号
 		"method":      "walletpay.create_order",             // 调用的方法
 		"time":        fmt.Sprintf("%d", time.Now().Unix()), // 时间戳
@@ -98,7 +98,7 @@ func (that *USDTPayment) Pay(log *paymentTDLog, ch, amount, bid string) (payment
 	formData.Set("access_tonken", that.sign(params))
 
 	uri := fmt.Sprintf("%s?%s", that.Conf.Domain, formData.Encode())
-	v, err := httpDoTimeout(nil, "GET", uri, nil, time.Second*8, log)
+	v, err := httpDoTimeout(nil, "GET", uri, nil, time.Second*8)
 	if err != nil {
 		return data, err
 	}
@@ -118,12 +118,12 @@ func (that *USDTPayment) Pay(log *paymentTDLog, ch, amount, bid string) (payment
 	return data, nil
 }
 
-func (that *USDTPayment) Withdraw(log *paymentTDLog, arg WithdrawAutoParam) (paymentWithdrawalRsp, error) {
+func (that *USDTPayment) Withdraw(arg WithdrawAutoParam) (paymentWithdrawalRsp, error) {
 
 	return paymentWithdrawalRsp{}, nil
 }
 
-func (that *USDTPayment) PayCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
+func (that *USDTPayment) PayCallBack(fctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
 
 	//access_tonken	是	string	授权码
 	//incharge_id	是	string	交易流水
@@ -133,7 +133,7 @@ func (that *USDTPayment) PayCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackR
 	//none	是	string	第三发系统的交易单号
 	//hash	是	string	区块链单号
 	params := map[string]string{}
-	ctx.QueryArgs().VisitAll(func(key, value []byte) {
+	fctx.QueryArgs().VisitAll(func(key, value []byte) {
 		params[string(key)] = string(value)
 	})
 
@@ -163,7 +163,7 @@ func (that *USDTPayment) PayCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackR
 	return data, nil
 }
 
-func (that *USDTPayment) WithdrawCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
+func (that *USDTPayment) WithdrawCallBack(fctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
 	return paymentCallbackResp{}, nil
 }
 

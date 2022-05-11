@@ -93,7 +93,7 @@ func (that *YfbPayment) New() {
 }
 
 //Pay 发起支付请求
-func (that *YfbPayment) Pay(log *paymentTDLog, ch string, amount, bid string) (paymentDepositResp, error) {
+func (that *YfbPayment) Pay(orderId, ch, amount, bid string) (paymentDepositResp, error) {
 	data := paymentDepositResp{}
 
 	cno, ok := that.conf.Channel[ch]
@@ -104,7 +104,7 @@ func (that *YfbPayment) Pay(log *paymentTDLog, ch string, amount, bid string) (p
 	now := time.Now()
 	params := map[string]string{
 		"merchantNo": that.conf.AppID,                                  // 商户编号
-		"orderNo":    log.OrderID,                                      // 商户订单号
+		"orderNo":    orderId,                                          // 商户订单号
 		"channelNo":  cno,                                              // 纯数字格式; MomoPay:0 | ZaloPay:1 | 银行扫码:2 | 直連:3 | 网关:4 |VTPay:5
 		"amount":     fmt.Sprintf("%s000", amount),                     // 订单金额
 		"bankName":   bid,                                              // 银行名称 (用于银行扫码（通道2）,直連（通道3） 的收款账户分配)
@@ -126,9 +126,12 @@ func (that *YfbPayment) Pay(log *paymentTDLog, ch string, amount, bid string) (p
 
 	uri := fmt.Sprintf("%s/order/create", that.conf.Domain)
 
-	res, err := httpDoTimeout([]byte(formData.Encode()), "POST", uri, nil, time.Second*8, log)
+	res, err := httpDoTimeout([]byte(formData.Encode()), "POST", uri, nil, time.Second*8)
 	if err != nil {
-		return data, err
+		fmt.Println("yfb uri = ", uri)
+		fmt.Println("yfb httpDoTimeout err = ", err)
+
+		return data, errors.New(helper.PayServerErr)
 	}
 
 	var rp fypPayResp
@@ -147,7 +150,7 @@ func (that *YfbPayment) Pay(log *paymentTDLog, ch string, amount, bid string) (p
 }
 
 //Withdraw 发起提现
-func (that *YfbPayment) Withdraw(log *paymentTDLog, arg WithdrawAutoParam) (paymentWithdrawalRsp, error) {
+func (that *YfbPayment) Withdraw(arg WithdrawAutoParam) (paymentWithdrawalRsp, error) {
 
 	data := paymentWithdrawalRsp{}
 
@@ -181,7 +184,7 @@ func (that *YfbPayment) Withdraw(log *paymentTDLog, arg WithdrawAutoParam) (paym
 
 	uri := fmt.Sprintf("%s/payout/create", that.conf.Domain)
 
-	v, err := httpDoTimeout([]byte(formData.Encode()), "POST", uri, nil, time.Second*8, log)
+	v, err := httpDoTimeout([]byte(formData.Encode()), "POST", uri, nil, time.Second*8)
 	if err != nil {
 		return data, err
 	}
@@ -202,12 +205,12 @@ func (that *YfbPayment) Withdraw(log *paymentTDLog, arg WithdrawAutoParam) (paym
 }
 
 //PayCallBack 支付回调
-func (that *YfbPayment) PayCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
+func (that *YfbPayment) PayCallBack(fctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
 
-	status := string(ctx.PostArgs().Peek("status"))   // PAID(已付); MANUAL PAID (已补单)
-	orderNo := string(ctx.PostArgs().Peek("orderNo")) // 商户单号
-	amount := string(ctx.PostArgs().Peek("amount"))   // 订单金额
-	sign := string(ctx.PostArgs().Peek("sign"))       // 签名
+	status := string(fctx.PostArgs().Peek("status"))   // PAID(已付); MANUAL PAID (已补单)
+	orderNo := string(fctx.PostArgs().Peek("orderNo")) // 商户单号
+	amount := string(fctx.PostArgs().Peek("amount"))   // 订单金额
+	sign := string(fctx.PostArgs().Peek("sign"))       // 签名
 
 	data := paymentCallbackResp{
 		State: DepositConfirming,
@@ -224,16 +227,16 @@ func (that *YfbPayment) PayCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackRe
 	// check signature
 	args := map[string]string{
 		"status":    status,
-		"tradeNo":   string(ctx.PostArgs().Peek("tradeNo")),
+		"tradeNo":   string(fctx.PostArgs().Peek("tradeNo")),
 		"orderNo":   orderNo,
-		"userNo":    string(ctx.PostArgs().Peek("userNo")),
-		"userName":  string(ctx.PostArgs().Peek("userName")),
-		"channelNo": string(ctx.PostArgs().Peek("channelNo")),
+		"userNo":    string(fctx.PostArgs().Peek("userNo")),
+		"userName":  string(fctx.PostArgs().Peek("userName")),
+		"channelNo": string(fctx.PostArgs().Peek("channelNo")),
 		"amount":    amount,
-		"discount":  string(ctx.PostArgs().Peek("discount")),
-		"lucky":     string(ctx.PostArgs().Peek("lucky")),
-		"paid":      string(ctx.PostArgs().Peek("paid")),
-		"extra":     string(ctx.PostArgs().Peek("extra")),
+		"discount":  string(fctx.PostArgs().Peek("discount")),
+		"lucky":     string(fctx.PostArgs().Peek("lucky")),
+		"paid":      string(fctx.PostArgs().Peek("paid")),
+		"extra":     string(fctx.PostArgs().Peek("extra")),
 	}
 
 	if that.sign(args, "deposit") != data.Sign {
@@ -247,12 +250,12 @@ func (that *YfbPayment) PayCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackRe
 }
 
 //WithdrawCallBack 提款回调
-func (that *YfbPayment) WithdrawCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
+func (that *YfbPayment) WithdrawCallBack(fctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
 
-	status := string(ctx.PostArgs().Peek("status"))   // PAID(已付); MANUAL PAID (已补单)
-	orderNo := string(ctx.PostArgs().Peek("orderNo")) // 商户单号
-	amount := string(ctx.PostArgs().Peek("amount"))   // 订单金额
-	sign := string(ctx.PostArgs().Peek("sign"))       // 签名
+	status := string(fctx.PostArgs().Peek("status"))   // PAID(已付); MANUAL PAID (已补单)
+	orderNo := string(fctx.PostArgs().Peek("orderNo")) // 商户单号
+	amount := string(fctx.PostArgs().Peek("amount"))   // 订单金额
+	sign := string(fctx.PostArgs().Peek("sign"))       // 签名
 
 	data := paymentCallbackResp{
 		State: WithdrawDealing,
@@ -271,17 +274,17 @@ func (that *YfbPayment) WithdrawCallBack(ctx *fasthttp.RequestCtx) (paymentCallb
 	// check signature
 	args := map[string]string{
 		"status":      status,
-		"tradeNo":     string(ctx.PostArgs().Peek("tradeNo")),
+		"tradeNo":     string(fctx.PostArgs().Peek("tradeNo")),
 		"orderNo":     orderNo,
 		"amount":      amount,
-		"name":        string(ctx.PostArgs().Peek("name")),
-		"bankName":    string(ctx.PostArgs().Peek("bankName")),
-		"bankAccount": string(ctx.PostArgs().Peek("bankAccount")),
-		"bankBranch":  string(ctx.PostArgs().Peek("bankBranch")),
-		"memo":        string(ctx.PostArgs().Peek("memo")),
-		"mobile":      string(ctx.PostArgs().Peek("mobile")),
-		"fee":         string(ctx.PostArgs().Peek("fee")),
-		"extra":       string(ctx.PostArgs().Peek("extra")),
+		"name":        string(fctx.PostArgs().Peek("name")),
+		"bankName":    string(fctx.PostArgs().Peek("bankName")),
+		"bankAccount": string(fctx.PostArgs().Peek("bankAccount")),
+		"bankBranch":  string(fctx.PostArgs().Peek("bankBranch")),
+		"memo":        string(fctx.PostArgs().Peek("memo")),
+		"mobile":      string(fctx.PostArgs().Peek("mobile")),
+		"fee":         string(fctx.PostArgs().Peek("fee")),
+		"extra":       string(fctx.PostArgs().Peek("extra")),
 	}
 
 	if that.sign(args, "withdraw") != data.Sign {

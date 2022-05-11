@@ -1,9 +1,9 @@
 package model
 
 import (
+	"errors"
 	"finance/contrib/helper"
 	"fmt"
-	"strconv"
 
 	g "github.com/doug-martin/goqu/v9"
 	"github.com/valyala/fasthttp"
@@ -11,45 +11,37 @@ import (
 )
 
 // NewestPay 调用与pid对应的渠道, 发起充值(代付)请求
-func NewestPay(ctx *fasthttp.RequestCtx, pid, amount, bid string, user Member) {
+func NewestPay(fctx *fasthttp.RequestCtx, pid, amount, bid string) (map[string]string, error) {
 
-	var (
-		err  error
-		data paymentDepositResp
-	)
-	pLog := &paymentTDLog{
-		Lable:    paymentLogTag,
-		Flag:     "deposit",
-		Username: user.Username,
+	res := map[string]string{}
+	var data paymentDepositResp
+
+	user, err := MemberCache(fctx)
+	if err != nil {
+		return res, err
 	}
-	// 记录请求日志
-	defer func() {
-		if err != nil {
-			pLog.Error = fmt.Sprintf("{req: %s, err: %s}", ctx.PostArgs().String(), err.Error())
-		}
-		paymentPushLog(pLog)
-	}()
 
 	p, err := CachePayment(pid)
 	if err != nil {
-		helper.Print(ctx, false, helper.ChannelNotExist)
-		return
+		return res, errors.New(helper.ChannelNotExist)
 	}
 
-	data, err = Pay(pLog, user, p, amount, bid)
+	data, err = Pay(user, p, amount, bid)
 	if err != nil {
-		// 兼容日志写入 如果输出的不是标准提示 则使用标准提示输出 记录原始错误信息
-		if _, e := strconv.Atoi(err.Error()); e == nil {
-			helper.Print(ctx, false, err.Error())
-			return
-		}
-
-		helper.Print(ctx, false, helper.ChannelBusyTryOthers)
-		return
+		/*
+			// 兼容日志写入 如果输出的不是标准提示 则使用标准提示输出 记录原始错误信息
+			if _, e := strconv.Atoi(err.Error()); e == nil {
+				helper.Print(ctx, false, err.Error())
+				return
+			}
+		*/
+		//helper.Print(ctx, false, helper.ChannelBusyTryOthers)
+		return res, err
 	}
 
+	ts := fctx.Time().In(loc).Unix()
 	d := g.Record{
-		"id":                pLog.OrderID,
+		"id":                data.OrderID,
 		"prefix":            meta.Prefix,
 		"oid":               data.OrderID,
 		"uid":               user.UID,
@@ -68,7 +60,7 @@ func NewestPay(ctx *fasthttp.RequestCtx, pid, amount, bid string, user Member) {
 		"state":             DepositConfirming,
 		"finance_type":      TransactionDeposit,
 		"automatic":         "1",
-		"created_at":        fmt.Sprintf("%d", ctx.Time().Unix()),
+		"created_at":        fmt.Sprintf("%d", ts),
 		"created_uid":       "0",
 		"created_name":      "",
 		"confirm_at":        "0",
@@ -83,20 +75,17 @@ func NewestPay(ctx *fasthttp.RequestCtx, pid, amount, bid string, user Member) {
 	// 请求成功插入订单
 	err = deposit(d)
 	if err != nil {
-		pLog.Error = fmt.Sprintf("insert into table error: [%v]", err)
-		helper.Print(ctx, false, helper.DBErr)
-		return
+		fmt.Println("insert into table error: = ", err)
+		return res, errors.New(helper.DBErr)
 	}
 
 	// 记录存款行为
-	_ = cacheDepositProcessingInsert(user.UID, pLog.OrderID, ctx.Time().Unix())
+	_ = cacheDepositProcessingInsert(user.UID, data.OrderID, ts)
 
-	res := payCommRes{
-		ID:  pLog.OrderID,
-		URL: data.Addr,
-	}
+	res["id"] = data.OrderID
+	res["url"] = data.Addr
 
-	helper.Print(ctx, true, res)
+	return res, nil
 }
 
 /*
@@ -261,7 +250,7 @@ func DepositCallBack(ctx *fasthttp.RequestCtx, payment_id string) {
 		return
 	}
 
-	pLog := &paymentTDLog{
+	pLog := paymentTDLog{
 		Merchant:   p.Name(),
 		Flag:       "deposit callback",
 		Lable:      paymentLogTag,

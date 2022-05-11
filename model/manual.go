@@ -20,33 +20,34 @@ func ManualPay(fctx *fasthttp.RequestCtx, pid, amount, bankcardID, bankCode stri
 		return res, err
 	}
 
-	pLog := &paymentTDLog{
-		Lable:    paymentLogTag,
-		Flag:     "deposit",
-		Username: user.Username,
-	}
-	// 记录请求日志
-	defer func() {
-		if err != nil {
-			pLog.Error = fmt.Sprintf("{req: %s, err: %s}", fctx.PostArgs().String(), err.Error())
+	/*
+		pLog := paymentTDLog{
+			Lable:    paymentLogTag,
+			Flag:     "deposit",
+			Username: user.Username,
 		}
-		paymentPushLog(pLog)
-	}()
-
+		// 记录请求日志
+		defer func() {
+			if err != nil {
+				pLog.Error = fmt.Sprintf("{req: %s, err: %s}", fctx.PostArgs().String(), err.Error())
+			}
+			paymentPushLog(pLog)
+		}()
+	*/
 	p, err := CachePayment(pid)
 	if err != nil {
 		return res, errors.New(helper.ChannelNotExist)
 	}
+	/*
+		ch, err := ChannelTypeById(p.ChannelID)
+		if err != nil {
+			fmt.Println("Manual ChannelTypeById = ", err.Error())
+			return res, err
+		}
 
-	ch, err := ChannelTypeById(p.ChannelID)
-	if err != nil {
-		fmt.Println("Manual ChannelTypeById = ", err.Error())
-		return res, err
-	}
-
-	pLog.Merchant = "线下转卡"
-	pLog.Channel = ch["name"]
-
+		pLog.Merchant = "线下转卡"
+		pLog.Channel = ch["name"]
+	*/
 	// 检查存款金额是否符合范围
 	a, ok := validator.CheckFloatScope(amount, p.Fmin, p.Fmax)
 	if !ok {
@@ -74,12 +75,12 @@ func ManualPay(fctx *fasthttp.RequestCtx, pid, amount, bankcardID, bankCode stri
 	amount = a.Truncate(0).String()
 
 	// 生成我方存款订单号
-	pLog.OrderID = helper.GenId()
+	orderId := helper.GenId()
 
 	d := g.Record{
-		"id":            pLog.OrderID,
+		"id":            orderId,
 		"prefix":        meta.Prefix,
-		"oid":           pLog.OrderID,
+		"oid":           orderId,
 		"uid":           user.UID,
 		"top_uid":       user.TopUID,
 		"top_name":      user.TopName,
@@ -100,11 +101,11 @@ func ManualPay(fctx *fasthttp.RequestCtx, pid, amount, bankcardID, bankCode stri
 		"confirm_uid":   "0",
 		"confirm_name":  "",
 		"review_remark": "",
-		"manual_remark": fmt.Sprintf(`{"manual_remark": "%s", "real_name":"%s", "bank_addr":"%s", "name":"%s"}`, code, card.RealName, card.BankAddr, card.Name),
-		"bankcard_id":   card.ID,
+		"manual_remark": fmt.Sprintf(`{"manual_remark": "%s", "real_name":"%s", "bank_addr":"%s", "name":"%s"}`, code, card.AccountName, card.BankcardAddr, card.BanklcardName),
+		"bankcard_id":   card.Id,
 		"flag":          DepositFlagManual,
 		"bank_code":     bankCode,
-		"bank_no":       card.CardNo,
+		"bank_no":       card.BanklcardNo,
 		"level":         user.Level,
 	}
 
@@ -116,14 +117,14 @@ func ManualPay(fctx *fasthttp.RequestCtx, pid, amount, bankcardID, bankCode stri
 	}
 
 	// 记录存款行为
-	_ = cacheDepositProcessingInsert(user.UID, pLog.OrderID, fctx.Time().Unix())
+	_ = cacheDepositProcessingInsert(user.UID, orderId, fctx.Time().In(loc).Unix())
 
 	res = map[string]string{
-		"id":           pLog.OrderID,
-		"name":         card.Name,
-		"cardNo":       card.CardNo,
-		"realname":     card.RealName,
-		"bankAddr":     card.BankAddr,
+		"id":           orderId,
+		"name":         card.BanklcardName,
+		"cardNo":       card.BanklcardNo,
+		"realname":     card.AccountName,
+		"bankAddr":     card.BankcardAddr,
 		"manualRemark": code,
 	}
 

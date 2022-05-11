@@ -514,6 +514,7 @@ func CreateCode() {
 	}
 
 	pipe := meta.MerchantRedis.Pipeline()
+	pipe.Del(ctx, "manual:code")
 	for code, _ := range vec {
 		pipe.LPush(ctx, "manual:code", code)
 	}

@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/beanstalkd/go-beanstalk"
 	"github.com/nats-io/nats.go"
 
 	g "github.com/doug-martin/goqu/v9"
@@ -25,7 +24,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/olivere/elastic/v7"
 	"github.com/shopspring/decimal"
-	cpool "github.com/silenceper/pool"
 	"github.com/spaolacci/murmur3"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fasthttp/fasthttpproxy"
@@ -46,15 +44,15 @@ type MetaTable struct {
 	MerchantDB    *sqlx.DB
 	MerchantRedis *redis.Client
 	ES            *elastic.Client
-	MQPool        cpool.Pool
-	Nats          *nats.Conn
-	Prefix        string
-	Lang          string
-	Fcallback     string
-	IsDev         bool
-	EsPrefix      string
-	MerchantInfo  map[string]string
-	Finance       map[string]map[string]interface{}
+	//MQPool        cpool.Pool
+	Nats         *nats.Conn
+	Prefix       string
+	Lang         string
+	Fcallback    string
+	IsDev        bool
+	EsPrefix     string
+	MerchantInfo map[string]string
+	Finance      map[string]map[string]interface{}
 }
 
 var grpc_t struct {
@@ -82,7 +80,7 @@ var (
 	colCreditLevel       = helper.EnumFields(CreditLevel{})
 	colMemberCreditLevel = helper.EnumFields(MemberCreditLevel{})
 	colMemberLock        = helper.EnumFields(MemberLock{})
-	colBankCard          = helper.EnumFields(BankCard{})
+	colBankCard          = helper.EnumFields(Bankcard_t{})
 	colsWithdraw         = helper.EnumFields(Withdraw{})
 	colsMember           = helper.EnumFields(Member{})
 	colsMemberBankcard   = helper.EnumFields(MemberBankCard{})
@@ -132,7 +130,8 @@ func Constructor(mt *MetaTable, socks5, c string) {
 		"13": "USDT2",
 		"17": "VTPAY",
 		"18": "918PAY",
-		"19": "DBPAY",
+		"19": "VNPAY",
+		"20": "DBPAY",
 	}
 
 	cateToRedis()
@@ -145,14 +144,14 @@ func Constructor(mt *MetaTable, socks5, c string) {
 
 	client.UseService(&grpc_t)
 
-	if socks5 != "0.0.0.0" {
-		fc = &fasthttp.Client{
-			MaxConnsPerHost: 60000,
-			TLSConfig:       &tls.Config{InsecureSkipVerify: true},
-			ReadTimeout:     time.Second * 10,
-			WriteTimeout:    time.Second * 10,
-		}
+	fc = &fasthttp.Client{
+		MaxConnsPerHost: 60000,
+		TLSConfig:       &tls.Config{InsecureSkipVerify: true},
+		ReadTimeout:     time.Second * 10,
+		WriteTimeout:    time.Second * 10,
+	}
 
+	if socks5 != "0.0.0.0" {
 		fc.Dial = fasthttpproxy.FasthttpHTTPDialer(socks5)
 	}
 
@@ -200,7 +199,7 @@ func pushLog(err error, code string) error {
 func Close() {
 	_ = meta.MerchantDB.Close()
 	_ = meta.MerchantRedis.Close()
-	meta.MQPool.Release()
+	//meta.MQPool.Release()
 }
 
 func AdminToken(ctx *fasthttp.RequestCtx) (map[string]string, error) {
@@ -322,34 +321,6 @@ func TimeFormat(t int64) string {
 
 func esPrefixIndex(index string) string {
 	return meta.EsPrefix + index
-}
-
-func BeanPut(name string, param map[string]interface{}, delay int) (string, error) {
-
-	m := &fasthttp.Args{}
-	for k, v := range param {
-		if _, ok := v.(string); ok {
-			m.Set(k, v.(string))
-		}
-	}
-
-	c, err := meta.MQPool.Get()
-	if err != nil {
-		return "sys", err
-	}
-
-	if conn, ok := c.(*beanstalk.Conn); ok {
-
-		tube := &beanstalk.Tube{Conn: conn, Name: name}
-		_, err = tube.Put(m.QueryString(), 1, time.Duration(delay)*time.Second, 10*time.Minute)
-		if err != nil {
-			meta.MQPool.Put(c)
-			return "sys", err
-		}
-	}
-
-	//将连接放回连接池中
-	return "", meta.MQPool.Put(c)
 }
 
 func Lock(id string) error {

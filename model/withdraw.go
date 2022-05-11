@@ -171,15 +171,17 @@ func WithdrawUserInsert(amount, bid string, fctx *fasthttp.RequestCtx) (string, 
 	if uid != "0" {
 		_ = SetRisksOrder(uid, withdrawId, 1)
 	} else {
-		// 自动派单模式
-		exist, _ := meta.MerchantRedis.Get(ctx, risksState).Result()
-		if exist == "1" {
-			// 无风控人员可以分配
-			param := map[string]interface{}{
-				"id": withdrawId,
+		/*
+			// 自动派单模式
+			exist, _ := meta.MerchantRedis.Get(ctx, risksState).Result()
+			if exist == "1" {
+				// 无风控人员可以分配
+				param := map[string]interface{}{
+					"id": withdrawId,
+				}
+				_, _ = BeanPut("risk", param, 10)
 			}
-			_, _ = BeanPut("risk", param, 10)
-		}
+		*/
 	}
 
 	// 发送消息通知

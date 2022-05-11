@@ -522,25 +522,26 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 		return pushLog(err, helper.DBErr)
 	}
 
-	// 存款成功发送到队列
-	if DepositSuccess == state && cashType == TransactionDeposit {
-		param := map[string]interface{}{
-			"bean_ty":            "4",
-			"username":           order.Username,
-			"amount":             strconv.FormatFloat(order.Amount, 'f', -1, 64),
-			"deposit_created_at": strconv.FormatInt(order.CreatedAt, 10),
-			"deposit_success_at": strconv.FormatInt(now.Unix(), 10),
+	/*
+		// 存款成功发送到队列
+		if DepositSuccess == state && cashType == TransactionDeposit {
+			param := map[string]interface{}{
+				"bean_ty":            "4",
+				"username":           order.Username,
+				"amount":             strconv.FormatFloat(order.Amount, 'f', -1, 64),
+				"deposit_created_at": strconv.FormatInt(order.CreatedAt, 10),
+				"deposit_success_at": strconv.FormatInt(now.Unix(), 10),
+			}
+
+			_, err = BeanPut("promo", param, 0)
+			if err != nil {
+				fmt.Println("user invite BeanPut err:", err.Error())
+			}
+
+			// 发送通知 存款成功
+			PushDepositSuccess(order.UID, order.Amount)
 		}
-
-		_, err = BeanPut("promo", param, 0)
-		if err != nil {
-			fmt.Println("user invite BeanPut err:", err.Error())
-		}
-
-		// 发送通知 存款成功
-		PushDepositSuccess(order.UID, order.Amount)
-	}
-
+	*/
 	return nil
 }
 
@@ -1044,21 +1045,22 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 		return pushLog(err, helper.DBErr)
 	}
 
-	// 存款成功发送到队列
-	if DepositSuccess == state {
-		param := map[string]interface{}{
-			"bean_ty":            "4",
-			"username":           order.Username,
-			"amount":             strconv.FormatFloat(order.Amount, 'f', -1, 64),
-			"deposit_created_at": strconv.FormatInt(order.CreatedAt, 10),
-			"deposit_success_at": strconv.FormatInt(now.Unix(), 10),
+	/*
+		// 存款成功发送到队列
+		if DepositSuccess == state {
+			param := map[string]interface{}{
+				"bean_ty":            "4",
+				"username":           order.Username,
+				"amount":             strconv.FormatFloat(order.Amount, 'f', -1, 64),
+				"deposit_created_at": strconv.FormatInt(order.CreatedAt, 10),
+				"deposit_success_at": strconv.FormatInt(now.Unix(), 10),
+			}
+			_, err = BeanPut("promo", param, 0)
+			if err != nil {
+				fmt.Println("user invite BeanPut err:", err.Error())
+			}
 		}
-		_, err = BeanPut("promo", param, 0)
-		if err != nil {
-			fmt.Println("user invite BeanPut err:", err.Error())
-		}
-	}
-
+	*/
 	return nil
 }
 

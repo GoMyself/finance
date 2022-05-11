@@ -39,19 +39,21 @@ func (that *BankCardController) Insert(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	bankCard := model.BankCard{
-		ID:            helper.GenId(),
-		ChannelBankID: channelBankID,
-		Name:          bank.Name,
-		CardNo:        cardNo,
-		RealName:      realName,
-		BankAddr:      bankAddr,
-		State:         0,
-		Remark:        remark,
-		MaxAmount:     maxAmount,
+	bc := model.Bankcard_t{
+		/*
+			ID:            helper.GenId(),
+			ChannelBankID: channelBankID,
+			Name:          bank.Name,
+			CardNo:        cardNo,
+			RealName:      realName,
+			BankAddr:      bankAddr,
+			State:         0,
+			Remark:        remark,
+			MaxAmount:     maxAmount,
+		*/
 	}
 
-	err = model.BankCardInsert(bankCard)
+	err = model.BankCardInsert(bc)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return

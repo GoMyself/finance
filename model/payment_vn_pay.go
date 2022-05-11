@@ -93,10 +93,10 @@ func (that *VnPayment) Name() string {
 	return that.Conf.Name
 }
 
-func (that *VnPayment) Pay(log *paymentTDLog, ch string, amount, bid string) (paymentDepositResp, error) {
+func (that *VnPayment) Pay(orderId, ch, amount, bid string) (paymentDepositResp, error) {
 
 	data := paymentDepositResp{}
-	fmt.Println(ch)
+	fmt.Println("vnpay ch = ", ch)
 	cno, ok := that.Conf.Channel[ch]
 	if !ok {
 		return data, errors.New(helper.ChannelNotExist)
@@ -108,7 +108,7 @@ func (that *VnPayment) Pay(log *paymentTDLog, ch string, amount, bid string) (pa
 	recs := map[string]string{
 		"merchantNo":  that.Conf.MerchanNo,                              // 商户编号
 		"channelCode": bid,                                              // 银行名称 (用于银行扫码（通道2）,直連（通道3） 的收款账户分配)
-		"orderNo":     log.OrderID,                                      // 商户订单号
+		"orderNo":     orderId,                                          // 商户订单号
 		"currency":    "VND",                                            //
 		"amount":      fmt.Sprintf("%s000.00", amount),                  // 订单金额
 		"notifyUrl":   fmt.Sprintf(that.Conf.PayNotify, meta.Fcallback), // 异步通知地址
@@ -146,10 +146,13 @@ func (that *VnPayment) Pay(log *paymentTDLog, ch string, amount, bid string) (pa
 		path = "/v1/api/pay/scan/"
 	}
 
-	uri := fmt.Sprintf("%s%s%s/%s/%s", that.Conf.Domain, path, that.Conf.AppID, that.Conf.Merchan, log.OrderID)
-	v, err := httpDoTimeout(body, "POST", uri, header, time.Second*8, log)
+	uri := fmt.Sprintf("%s%s%s/%s/%s", that.Conf.Domain, path, that.Conf.AppID, that.Conf.Merchan, orderId)
+
+	v, err := httpDoTimeout(body, "POST", uri, header, time.Second*8)
 	if err != nil {
-		return data, err
+		fmt.Println("vnpay uri = ", uri)
+		fmt.Println("vnpay httpDoTimeout err = ", err)
+		return data, errors.New(helper.PayServerErr)
 	}
 
 	if err = helper.JsonUnmarshal(v, &res); err != nil {
@@ -166,7 +169,7 @@ func (that *VnPayment) Pay(log *paymentTDLog, ch string, amount, bid string) (pa
 	return data, nil
 }
 
-func (that *VnPayment) Withdraw(log *paymentTDLog, arg WithdrawAutoParam) (paymentWithdrawalRsp, error) {
+func (that *VnPayment) Withdraw(arg WithdrawAutoParam) (paymentWithdrawalRsp, error) {
 
 	data := paymentWithdrawalRsp{}
 	params := map[string]string{
@@ -196,7 +199,7 @@ func (that *VnPayment) Withdraw(log *paymentTDLog, arg WithdrawAutoParam) (payme
 		"Timestamp":    tp,
 		"x-Request-Id": helper.GenId(),
 	}
-	v, err := httpDoTimeout(body, "POST", uri, header, time.Second*8, log)
+	v, err := httpDoTimeout(body, "POST", uri, header, time.Second*8)
 	if err != nil {
 		return data, err
 	}
@@ -216,20 +219,20 @@ func (that *VnPayment) Withdraw(log *paymentTDLog, arg WithdrawAutoParam) (payme
 	return data, nil
 }
 
-func (that *VnPayment) PayCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
+func (that *VnPayment) PayCallBack(fctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
 
 	data := paymentCallbackResp{
 		State: DepositConfirming,
 	}
 
 	var p fastjson.Parser
-	v, err := p.ParseBytes(ctx.PostBody())
+	v, err := p.ParseBytes(fctx.PostBody())
 	if err != nil {
-		fmt.Println("PayCallBack content error : ", err, string(ctx.PostBody()))
+		fmt.Println("PayCallBack content error : ", err, string(fctx.PostBody()))
 	}
 	fmt.Println(v.String())
 	params := vnPayCallBack{}
-	if err := helper.JsonUnmarshal(ctx.PostBody(), &params); err != nil {
+	if err := helper.JsonUnmarshal(fctx.PostBody(), &params); err != nil {
 		return data, fmt.Errorf("param format err: %s", err.Error())
 	}
 	fmt.Println(params)
@@ -265,13 +268,13 @@ func (that *VnPayment) PayCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackRes
 	return data, nil
 }
 
-func (that *VnPayment) WithdrawCallBack(ctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
+func (that *VnPayment) WithdrawCallBack(fctx *fasthttp.RequestCtx) (paymentCallbackResp, error) {
 
 	data := paymentCallbackResp{
 		State: WithdrawDealing,
 	}
 	params := vnPayCallBack{}
-	if err := helper.JsonUnmarshal(ctx.PostBody(), &params); err != nil {
+	if err := helper.JsonUnmarshal(fctx.PostBody(), &params); err != nil {
 		return data, fmt.Errorf("param format err: %s", err.Error())
 	}
 

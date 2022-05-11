@@ -60,18 +60,20 @@ func UsdtPay(fctx *fasthttp.RequestCtx, pid, amount, addr, protocolType, hashID 
 		return "", err
 	}
 
-	pLog := &paymentTDLog{
-		Lable:    paymentLogTag,
-		Flag:     "deposit",
-		Username: user.Username,
-	}
-	// 记录请求日志
-	defer func() {
-		if err != nil {
-			pLog.Error = fmt.Sprintf("{req: %s, err: %s, user: %s}", fctx.PostArgs().String(), err.Error(), user.Username)
+	/*
+		pLog := &paymentTDLog{
+			Lable:    paymentLogTag,
+			Flag:     "deposit",
+			Username: user.Username,
 		}
-		paymentPushLog(pLog)
-	}()
+		// 记录请求日志
+		defer func() {
+			if err != nil {
+				pLog.Error = fmt.Sprintf("{req: %s, err: %s, user: %s}", fctx.PostArgs().String(), err.Error(), user.Username)
+			}
+			paymentPushLog(pLog)
+		}()
+	*/
 
 	p, err := CachePayment(pid)
 	if err != nil {
@@ -79,15 +81,15 @@ func UsdtPay(fctx *fasthttp.RequestCtx, pid, amount, addr, protocolType, hashID 
 	}
 
 	//ch := paymentChannelMatch(p.ChannelID)
+	/*
+		ch, err := ChannelTypeById(p.ChannelID)
+		if err != nil {
+			return "", errors.New(helper.ChannelNotExist)
+		}
 
-	ch, err := ChannelTypeById(p.ChannelID)
-	if err != nil {
-		return "", errors.New(helper.ChannelNotExist)
-	}
-
-	pLog.Merchant = "线下USDT"
-	pLog.Channel = ch["name"]
-
+		pLog.Merchant = "线下USDT"
+		pLog.Channel = ch["name"]
+	*/
 	usdt_info_temp, err := UsdtInfo()
 	if err != nil {
 		return "", err
@@ -107,7 +109,7 @@ func UsdtPay(fctx *fasthttp.RequestCtx, pid, amount, addr, protocolType, hashID 
 	usdtAmount := dm.Mul(decimal.NewFromInt(1000)).DivRound(usdt_rate, 3).String()
 
 	// 生成我方存款订单号
-	pLog.OrderID = helper.GenId()
+	orderID := helper.GenId()
 
 	// 检查用户的存款行为是否过于频繁
 	err = cacheDepositProcessing(user.UID, time.Now().Unix())
@@ -116,9 +118,9 @@ func UsdtPay(fctx *fasthttp.RequestCtx, pid, amount, addr, protocolType, hashID 
 	}
 
 	d := g.Record{
-		"id":                pLog.OrderID,
+		"id":                orderID,
 		"prefix":            meta.Prefix,
-		"oid":               pLog.OrderID,
+		"oid":               orderID,
 		"uid":               user.UID,
 		"top_uid":           user.TopUID,
 		"top_name":          user.TopName,
@@ -156,7 +158,7 @@ func UsdtPay(fctx *fasthttp.RequestCtx, pid, amount, addr, protocolType, hashID 
 	}
 
 	// 记录存款行为
-	_ = cacheDepositProcessingInsert(user.UID, pLog.OrderID, fctx.Time().In(loc).Unix())
+	_ = cacheDepositProcessingInsert(user.UID, orderID, fctx.Time().In(loc).Unix())
 
-	return pLog.OrderID, nil
+	return orderID, nil
 }
