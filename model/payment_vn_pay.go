@@ -81,10 +81,10 @@ func (that *VnPayment) New() {
 		PayNotify:      "%s/finance/callback/vnd",
 		WithdrawNotify: "%s/finance/callback/vnw",
 		Channel: map[string]string{
-			"online":   p3Online,
-			"offline":  p3Offline,
-			"momo":     p3MOMO,
-			"unionpay": p3QR,
+			"online":     p3Online,
+			"offline":    p3Offline,
+			"momo":       p3MOMO,
+			"QR Banking": p3QR,
 		},
 	}
 }
@@ -155,7 +155,7 @@ func (that *VnPayment) Pay(orderId, ch, amount, bid string) (paymentDepositResp,
 		fmt.Println("vnpay body = ", string(v))
 		return data, errors.New(helper.PayServerErr)
 	}
-
+	fmt.Println("vnpay body = ", string(v))
 	if err = helper.JsonUnmarshal(v, &res); err != nil {
 		return data, fmt.Errorf("json format err: %s", err.Error())
 	}
