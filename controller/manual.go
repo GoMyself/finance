@@ -119,3 +119,106 @@ func (that *ManualController) List(ctx *fasthttp.RequestCtx) {
 
 	helper.Print(ctx, true, data)
 }
+
+// OfflineToReview 修改订单状态 确认金额
+func (that *ManualController) Confirm(ctx *fasthttp.RequestCtx) {
+
+	id := string(ctx.PostArgs().Peek("id"))
+	remark := string(ctx.PostArgs().Peek("remark"))
+	amount := ctx.PostArgs().GetUfloatOrZero("amount")
+
+	if !validator.CheckStringDigit(id) {
+		helper.Print(ctx, false, helper.ParamErr)
+		return
+	}
+
+	if remark != "" {
+		remark = validator.FilterInjection(remark)
+	}
+
+	if amount <= 0 {
+		helper.Print(ctx, false, helper.AmountErr)
+		return
+	}
+
+	deposit, err := model.DepositFindOne(id)
+	if err != nil {
+		helper.Print(ctx, false, err.Error())
+		return
+	}
+
+	if deposit.State != model.DepositConfirming {
+		helper.Print(ctx, false, helper.RecordNotExistErr)
+		return
+	}
+
+	/*
+		// 写入系统日志
+		logMsg := fmt.Sprintf("线下转卡【订单id:%s；到账金额:%.4f】", id, amount)
+		defer model.SystemLogWrite(logMsg, ctx)
+	*/
+
+	rec := g.Record{
+		"amount":        amount,
+		"review_remark": remark,
+		"state":         model.DepositReviewing,
+	}
+
+	err = model.DepositRecordUpdate(id, rec)
+	if err != nil {
+		helper.Print(ctx, false, err.Error())
+		return
+	}
+
+	helper.Print(ctx, true, helper.Success)
+}
+
+//OfflineReview 线下转卡-审核
+func (that *ManualController) Review(ctx *fasthttp.RequestCtx) {
+
+	remark := string(ctx.PostArgs().Peek("remark"))
+	state := ctx.PostArgs().GetUintOrZero("state")
+	id := string(ctx.PostArgs().Peek("id"))
+
+	if remark == "" || !validator.CheckStringDigit(id) {
+		helper.Print(ctx, false, helper.ParamErr)
+		return
+	}
+
+	if state != model.DepositSuccess && state != model.DepositCancelled {
+		helper.Print(ctx, false, helper.StateParamErr)
+		return
+	}
+
+	admin, err := model.AdminToken(ctx)
+	if err != nil || len(admin["id"]) < 1 {
+		helper.Print(ctx, false, helper.AccessTokenExpires)
+		return
+	}
+
+	deposit, err := model.DepositFindOne(id)
+	if err != nil {
+		helper.Print(ctx, false, err.Error())
+		return
+	}
+
+	/*
+		keyword := "通过"
+		if state == model.DepositCancelled {
+			keyword = "拒绝"
+		}
+
+		// 写入系统日志
+		logMsg := fmt.Sprintf("线下转卡:%s【订单号: %s；会员账号: %s；金额: %.4f；审核时间: %s】",
+			keyword, id, deposit.Username, deposit.Amount, model.TimeFormat(ctx.Time().Unix()))
+		defer model.SystemLogWrite(logMsg, ctx)
+	*/
+
+	err = model.ManualReview(id, remark, admin["name"], admin["id"], state, deposit)
+	if err != nil {
+		helper.Print(ctx, false, err.Error())
+		return
+	}
+
+	helper.Print(ctx, true, helper.Success)
+}
