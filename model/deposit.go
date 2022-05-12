@@ -1064,58 +1064,6 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 	return nil
 }
 
-// DepositManualList 线下转卡订单列表
-func DepositManualList(ex g.Ex, startTime, endTime string, page, pageSize int) (FDepositData, error) {
-
-	ex["prefix"] = meta.Prefix
-
-	data := FDepositData{}
-
-	if startTime != "" && endTime != "" {
-
-		startAt, err := helper.TimeToLoc(startTime, loc)
-		if err != nil {
-			return data, errors.New(helper.DateTimeErr)
-		}
-
-		endAt, err := helper.TimeToLoc(endTime, loc)
-		if err != nil {
-			return data, errors.New(helper.DateTimeErr)
-		}
-
-		ex["created_at"] = g.Op{"between": exp.NewRangeVal(startAt, endAt)}
-	}
-
-	if page == 1 {
-
-		total := depositTotal{}
-		countQuery, _, _ := dialect.From("tbl_deposit").Select(g.COUNT(1).As("t"), g.SUM("amount").As("s")).Where(ex).ToSQL()
-		err := meta.MerchantDB.Get(&total, countQuery)
-		if err != nil {
-			return data, pushLog(err, helper.DBErr)
-		}
-
-		if total.T.Int64 < 1 {
-			return data, nil
-		}
-
-		data.Agg = map[string]string{
-			"amount": fmt.Sprintf("%.4f", total.S.Float64),
-		}
-		data.T = total.T.Int64
-	}
-
-	offset := uint((page - 1) * pageSize)
-	query, _, _ := dialect.From("tbl_deposit").Select(colsDeposit...).
-		Where(ex).Offset(offset).Limit(uint(pageSize)).Order(g.C("created_at").Desc()).ToSQL()
-	err := meta.MerchantDB.Select(&data.D, query)
-	if err != nil {
-		return data, pushLog(err, helper.DBErr)
-	}
-
-	return data, nil
-}
-
 func DepositManualRemarkCodeKey(bankcardID, code string) string {
 	return fmt.Sprintf("MR:%s:%s", bankcardID, code)
 }

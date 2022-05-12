@@ -277,7 +277,9 @@ func SetupRouter(b BuildInfo) *router.Router {
 	// [商户后台] 财务管理-存款管理-USDT存款
 	post(route_merchant_group, "/deposit/usdt/list", depositCtl.USDTList)
 	// [商户后台] 财务管理-存款管理-线下转卡-入款订单
-	post(route_merchant_group, "/deposit/manual/list", depositCtl.Offline)
+	post(route_merchant_group, "/manual/list", manualCtl.List)
+	//post(route_merchant_group, "/deposit/manual/list", depositCtl.Offline)
+
 	// [商户后台] 财务管理-存款管理-线下转卡-确认金额待审核
 	post(route_merchant_group, "/deposit/manual/reviewing", depositCtl.OfflineToReview)
 	// [商户后台] 财务管理-存款管理-线下转卡-审核

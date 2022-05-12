@@ -237,7 +237,7 @@ func CoinPay(ctx *fasthttp.RequestCtx, pid, amount string, user Member) {
 }
 */
 // DepositCallBack 存款回调
-func DepositCallBack(ctx *fasthttp.RequestCtx, payment_id string) {
+func DepositCallBack(fctx *fasthttp.RequestCtx, payment_id string) {
 
 	var (
 		err  error
@@ -254,15 +254,15 @@ func DepositCallBack(ctx *fasthttp.RequestCtx, payment_id string) {
 		Merchant:   p.Name(),
 		Flag:       "deposit callback",
 		Lable:      paymentLogTag,
-		RequestURL: string(ctx.RequestURI()),
+		RequestURL: string(fctx.RequestURI()),
 	}
 
-	if string(ctx.Method()) == fasthttp.MethodGet {
-		pLog.RequestBody = ctx.QueryArgs().String()
+	if string(fctx.Method()) == fasthttp.MethodGet {
+		pLog.RequestBody = fctx.QueryArgs().String()
 	}
 
-	if string(ctx.Method()) == fasthttp.MethodPost {
-		pLog.RequestBody = ctx.PostArgs().String()
+	if string(fctx.Method()) == fasthttp.MethodPost {
+		pLog.RequestBody = fctx.PostArgs().String()
 	}
 
 	// 记录请求日志
@@ -271,15 +271,15 @@ func DepositCallBack(ctx *fasthttp.RequestCtx, payment_id string) {
 			pLog.Error = err.Error()
 		}
 
-		pLog.ResponseBody = string(ctx.Response.Body())
-		pLog.ResponseCode = ctx.Response.StatusCode()
+		pLog.ResponseBody = string(fctx.Response.Body())
+		pLog.ResponseCode = fctx.Response.StatusCode()
 		paymentPushLog(pLog)
 	}()
 
 	// 获取并校验回调参数
-	data, err = p.PayCallBack(ctx)
+	data, err = p.PayCallBack(fctx)
 	if err != nil {
-		ctx.SetBody([]byte(`failed`))
+		fctx.SetBody([]byte(`failed`))
 		return
 	}
 
@@ -287,7 +287,7 @@ func DepositCallBack(ctx *fasthttp.RequestCtx, payment_id string) {
 	order, err := depositFind(data.OrderID)
 	if err != nil {
 		err = fmt.Errorf("query order error: [%v]", err)
-		ctx.SetBody([]byte(`failed`))
+		fctx.SetBody([]byte(`failed`))
 		return
 	}
 
@@ -305,18 +305,18 @@ func DepositCallBack(ctx *fasthttp.RequestCtx, payment_id string) {
 
 	if order.State == DepositSuccess || order.State == DepositCancelled {
 		err = fmt.Errorf("duplicated deposite notify: [%d]", order.State)
-		ctx.SetBody([]byte(`failed`))
+		fctx.SetBody([]byte(`failed`))
 		return
 	}
 
 	// usdt 验证usdt金额
 	if order.PID == "101003754213878523" {
 
-		hashID := string(ctx.QueryArgs().Peek("hash"))
+		hashID := string(fctx.QueryArgs().Peek("hash"))
 		// 记录实际入账金额usdt 和 订单hash
 		err = depositUpdateUsdtAmount(order.ID, data.Amount, hashID, order.Rate)
 		if err != nil {
-			ctx.SetBody([]byte(`failed`))
+			fctx.SetBody([]byte(`failed`))
 			return
 		}
 
@@ -331,7 +331,7 @@ func DepositCallBack(ctx *fasthttp.RequestCtx, payment_id string) {
 		err = compareAmount(data.Amount, orderAmount, data.Cent)
 		if err != nil {
 			err = fmt.Errorf("compare amount error: [err: %v, req: %s, origin: %s]", err, data.Amount, orderAmount)
-			ctx.SetBody([]byte(`failed`))
+			fctx.SetBody([]byte(`failed`))
 			return
 		}
 	}
@@ -340,21 +340,21 @@ func DepositCallBack(ctx *fasthttp.RequestCtx, payment_id string) {
 	err = depositUpdate(data.State, order)
 	if err != nil {
 		err = fmt.Errorf("set order state error: [%v], old state=%d, new state=%d", err, order.State, data.State)
-		ctx.SetBody([]byte(`failed`))
+		fctx.SetBody([]byte(`failed`))
 		return
 	}
 
 	if data.Resp != nil {
-		ctx.SetStatusCode(200)
-		ctx.SetContentType("application/json")
+		fctx.SetStatusCode(200)
+		fctx.SetContentType("application/json")
 		bytes, err := jettison.Marshal(data.Resp)
 		if err != nil {
-			ctx.SetBody([]byte(err.Error()))
+			fctx.SetBody([]byte(err.Error()))
 			return
 		}
-		ctx.SetBody(bytes)
+		fctx.SetBody(bytes)
 		return
 	}
 
-	ctx.SetBody([]byte(`success`))
+	fctx.SetBody([]byte(`success`))
 }
