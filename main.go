@@ -76,8 +76,10 @@ func main() {
 			level := fmt.Sprintf("%d", i)
 			model.Create(level)
 		}
-		model.CreateCode()
+
+		model.TransacCodeCreate()
 		model.ChannelTypeCreateCache()
+		model.BankCardUpdateCache()
 		return
 	}
 

@@ -4,6 +4,7 @@ import (
 	"finance/contrib/helper"
 	"finance/contrib/validator"
 	"finance/model"
+	"fmt"
 
 	g "github.com/doug-martin/goqu/v9"
 	"github.com/valyala/fasthttp"
@@ -14,46 +15,75 @@ type BankCardController struct{}
 //Insert 线下卡转卡 添加银行卡
 func (that *BankCardController) Insert(ctx *fasthttp.RequestCtx) {
 
-	channelBankID := string(ctx.PostArgs().Peek("id"))
-	realName := string(ctx.PostArgs().Peek("real_name"))
-	bankAddr := string(ctx.PostArgs().Peek("bank_addr"))
-	maxAmount := ctx.PostArgs().GetUfloatOrZero("max_amount")
-	cardNo := string(ctx.PostArgs().Peek("card_no"))
+	//fmt.Println("BankCardController Insert = ", string(ctx.PostBody()))
+
+	bank_id := string(ctx.PostArgs().Peek("bank_id"))
+	account_name := string(ctx.PostArgs().Peek("account_name"))
+	bankcard_addr := string(ctx.PostArgs().Peek("bankcard_addr"))
+	banklcard_no := string(ctx.PostArgs().Peek("banklcard_no"))
+
+	total_max_amount := ctx.PostArgs().GetUintOrZero("total_max_amount")
+	daily_max_amount := ctx.PostArgs().GetUintOrZero("daily_max_amount")
+
+	flags := string(ctx.PostArgs().Peek("flags"))
+	code := string(ctx.PostArgs().Peek("code"))
 	remark := string(ctx.PostArgs().Peek("remark"))
 
-	if bankAddr == "" || maxAmount <= 0 || cardNo == "" {
+	if !helper.CtypeDigit(bank_id) {
 		helper.Print(ctx, false, helper.ParamErr)
 		return
 	}
 
+	if !helper.CtypeDigit(banklcard_no) {
+		helper.Print(ctx, false, helper.ParamErr)
+		return
+	}
+
+	if total_max_amount < 1 {
+		helper.Print(ctx, false, helper.ParamErr)
+		return
+	}
+
+	if daily_max_amount < 1 {
+		helper.Print(ctx, false, helper.ParamErr)
+		return
+	}
+
+	if flags != "2" {
+		flags = "1"
+	}
+
 	// 检查该卡号是否已经存在
-	_, err := model.BankCardByCol("card_no", cardNo)
+	_, err := model.BankCardByCol(banklcard_no)
 	if err == nil {
 		helper.Print(ctx, false, helper.BankCardExistErr)
 		return
 	}
 
-	bank, err := model.ChannelBankByID(channelBankID)
+	bank, err := model.ChannelBankByID(bank_id)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return
 	}
 
 	bc := model.Bankcard_t{
-		/*
-			ID:            helper.GenId(),
-			ChannelBankID: channelBankID,
-			Name:          bank.Name,
-			CardNo:        cardNo,
-			RealName:      realName,
-			BankAddr:      bankAddr,
-			State:         0,
-			Remark:        remark,
-			MaxAmount:     maxAmount,
-		*/
+
+		Id:                helper.GenId(),
+		ChannelBankId:     bank_id,
+		BanklcardName:     bank.Name,
+		BanklcardNo:       banklcard_no,
+		AccountName:       account_name,
+		BankcardAddr:      validator.FilterInjection(bankcard_addr),
+		State:             "0",
+		Remark:            validator.FilterInjection(remark),
+		DailyMaxAmount:    fmt.Sprintf("%d", daily_max_amount),
+		DailyFinishAmount: "0",
+		TotalMaxAmount:    "0",
+		TotalFinishAmount: fmt.Sprintf("%d", total_max_amount),
+		Flags:             flags,
 	}
 
-	err = model.BankCardInsert(bc)
+	err = model.BankCardInsert(bc, code)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return
@@ -63,6 +93,7 @@ func (that *BankCardController) Insert(ctx *fasthttp.RequestCtx) {
 	//defer model.SystemLogWrite(content, ctx)
 
 	helper.Print(ctx, true, helper.Success)
+
 }
 
 //Delete 线下卡专卡 删除银行卡
@@ -74,14 +105,6 @@ func (that *BankCardController) Delete(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	/*
-		card, err := model.BankCardByID(id)
-		if err != nil {
-			helper.Print(ctx, false, err.Error())
-			return
-		}
-	*/
-
 	err := model.BankCardDelete(id)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
@@ -91,45 +114,27 @@ func (that *BankCardController) Delete(ctx *fasthttp.RequestCtx) {
 	// 线下转卡的paymentID  304314961990368154 刷新渠道下银行列表
 	_ = model.CacheRefreshPaymentBanks("304314961990368154")
 
-	//content := fmt.Sprintf("删除银行卡【卡号: %s，最大限额：%.4f, 持卡人姓名：%s】", card.CardNo, card.MaxAmount, card.RealName)
-	//defer model.SystemLogWrite(content, ctx)
-
 	helper.Print(ctx, true, helper.Success)
 }
 
 //List 银行卡列表
 func (that *BankCardController) List(ctx *fasthttp.RequestCtx) {
 
-	cardNo := string(ctx.PostArgs().Peek("card_no"))
-	realName := string(ctx.PostArgs().Peek("real_name"))
-	channelBankID := string(ctx.PostArgs().Peek("channel_bank_id"))
-	page := ctx.PostArgs().GetUintOrZero("page")
-	pageSize := ctx.PostArgs().GetUintOrZero("page_size")
-
-	if page == 0 {
-		page = 1
-	}
-
-	if pageSize == 0 {
-		pageSize = 15
-	}
+	banklcardNo := string(ctx.PostArgs().Peek("banklcard_no"))
+	accounName := string(ctx.PostArgs().Peek("account_name"))
+	bankId := string(ctx.PostArgs().Peek("bank_id"))
 
 	ex := g.Ex{}
 
-	if cardNo != "" {
-		ex["card_no"] = cardNo
+	if helper.CtypeDigit(banklcardNo) {
+		ex["banklcard_no"] = validator.FilterInjection(banklcardNo)
+	}
+	if helper.CtypeDigit(bankId) {
+		ex["channel_bank_id"] = bankId
 	}
 
-	if realName != "" {
-		ex["real_name"] = realName
-	}
-
-	if channelBankID != "" {
-		if !validator.CheckStringDigit(channelBankID) {
-			helper.Print(ctx, false, helper.ParamErr)
-			return
-		}
-		ex["channel_bank_id"] = channelBankID
+	if accounName != "" {
+		ex["account_name"] = accounName
 	}
 
 	data, err := model.BankCardList(ex)
@@ -141,102 +146,73 @@ func (that *BankCardController) List(ctx *fasthttp.RequestCtx) {
 	helper.Print(ctx, true, data)
 }
 
-//Update 编辑
-func (that *BankCardController) Update(ctx *fasthttp.RequestCtx) {
+func (that *BankCardController) Rest(ctx *fasthttp.RequestCtx) {
 
-	id := string(ctx.PostArgs().Peek("id"))
-	state := ctx.PostArgs().GetUintOrZero("state")
-	maxAmount := ctx.PostArgs().GetUfloatOrZero("max_amount")
-	remark := string(ctx.PostArgs().Peek("remark"))
+	id := string(ctx.QueryArgs().Peek("id"))
 
-	bankcard, err := model.BankCardByID(id)
-	if err != nil {
-		helper.Print(ctx, false, err.Error())
+	if !helper.CtypeDigit(id) {
+		helper.Print(ctx, false, helper.ParamErr)
 		return
-	}
-
-	// 开启银行卡
-	if bankcard.State == 0 && state == 1 {
-		/*
-			amount := bankcard.MaxAmount
-			if maxAmount > 0 {
-				amount = maxAmount
-			}
-
-
-				err = model.BankCardOpenCondition(bankcard.ID, bankcard.ChannelBankID, amount)
-				if err != nil {
-					helper.Print(ctx, false, err.Error())
-					return
-				}
-		*/
 	}
 
 	rec := g.Record{
-		"state": state,
+		"total_finish_amount": "0",
 	}
 
-	//maxAmountLog := ""
-	if maxAmount > 0 {
-		rec["max_amount"] = maxAmount
-		//maxAmountLog = fmt.Sprintf(", 最大限额:%.4f-> %.4f,", bankcard.MaxAmount, maxAmount)
-	}
-
-	if remark != "" {
-		rec["remark"] = remark
-	}
-
-	err = model.BankCardUpdate(id, rec)
+	err := model.BankCardUpdate(id, rec)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return
 	}
-
-	if bankcard.State != state {
-		// 线下转卡的paymentID  304314961990368154 刷新渠道下银行列表
-		_ = model.CacheRefreshPaymentBanks("304314961990368154")
-	}
-
-	//content := fmt.Sprintf("编辑银行卡【卡号: %s, %s 持卡人姓名:%s，状态: %d->%d】",
-	//	bankcard.CardNo, maxAmountLog, bankcard.RealName, bankcard.State, state)
-	//defer model.SystemLogWrite(content, ctx)
 
 	helper.Print(ctx, true, helper.Success)
 }
 
-//BankCards 银行卡列表 前台
-func (that *BankCardController) BankCards(ctx *fasthttp.RequestCtx) {
+//Update 编辑
+func (that *BankCardController) Update(ctx *fasthttp.RequestCtx) {
 
-	/*
-		channelBankID := string(ctx.PostArgs().Peek("channel_bank_id"))
-		page := ctx.PostArgs().GetUintOrZero("page")
-		pageSize := ctx.PostArgs().GetUintOrZero("page_size")
+	id := string(ctx.PostArgs().Peek("id"))
+	state := string(ctx.PostArgs().Peek("state"))
+	total_max_amount := ctx.PostArgs().GetUintOrZero("total_max_amount")
+	daily_max_amount := ctx.PostArgs().GetUintOrZero("daily_max_amount")
 
-		if page == 0 {
-			page = 1
-		}
+	flags := string(ctx.PostArgs().Peek("flags"))
+	//code := string(ctx.PostArgs().Peek("code"))
+	remark := string(ctx.PostArgs().Peek("remark"))
 
-		if pageSize == 0 {
-			pageSize = 15
-		}
+	if flags != "2" {
+		flags = "1"
+	}
 
-		ex := g.Ex{
-			"state": 1,
-		}
+	if state != "1" {
+		flags = "0"
+	}
 
-		if channelBankID == "" || !validator.CheckStringDigit(channelBankID) {
-			helper.Print(ctx, false, helper.ParamErr)
-			return
-		}
+	if !helper.CtypeDigit(id) {
+		helper.Print(ctx, false, helper.ParamErr)
+		return
+	}
 
-		ex["channel_bank_id"] = channelBankID
+	rec := g.Record{
+		"flags": flags,
+		"state": state,
+	}
 
-		data, err := model.BankCardList(ex)
-		if err != nil {
-			helper.Print(ctx, false, err.Error())
-			return
-		}
+	if remark != "" {
+		rec["remark"] = validator.FilterInjection(remark)
+	}
+	if total_max_amount > 0 {
+		rec["total_max_amount"] = fmt.Sprintf("%d", total_max_amount)
+	}
+	if daily_max_amount > 0 {
+		rec["daily_max_amount"] = fmt.Sprintf("%d", daily_max_amount)
+	}
 
-		helper.Print(ctx, true, data)
-	*/
+	err := model.BankCardUpdate(id, rec)
+	if err != nil {
+		helper.Print(ctx, false, err.Error())
+		return
+	}
+
+	helper.Print(ctx, true, helper.Success)
 }

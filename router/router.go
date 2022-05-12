@@ -138,8 +138,6 @@ func SetupRouter(b BuildInfo) *router.Router {
 	//get(nil, "/finance/channel/cache", channelCtl.Cache)
 	// [前台] 线下转卡-发起存款
 	post(nil, "/finance/manual/pay", manualCtl.Pay)
-	// [前台] 线下转卡-银行卡列表
-	post(nil, "/finance/bankcard/list", bankCardCtl.BankCards)
 	// [前台] 线下USDT-发起存款
 	post(nil, "/finance/usdt/pay", usdtCtl.Pay)
 
@@ -292,7 +290,9 @@ func SetupRouter(b BuildInfo) *router.Router {
 	// [商户后台] 财务管理-存款管理-线下转卡-添加银行卡
 	post(route_merchant_group, "/bankcard/insert", bankCardCtl.Insert)
 	// [商户后台] 财务管理-存款管理-线下转卡-列表银行卡
-	post(route_merchant_group, "/bankcard/list", bankCardCtl.List)
+	get(route_merchant_group, "/bankcard/list", bankCardCtl.List)
+	// [商户后台] 财务管理-存款管理-线下转卡-列表银行卡
+	get(route_merchant_group, "/bankcard/reset", bankCardCtl.Rest)
 	// [商户后台] 财务管理-存款管理-线下转卡-更新银行卡
 	post(route_merchant_group, "/bankcard/update", bankCardCtl.Update)
 	// [商户后台] 财务管理-存款管理-线下转卡-删除银行卡

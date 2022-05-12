@@ -5,14 +5,13 @@ import (
 	"finance/contrib/helper"
 	"finance/contrib/validator"
 	"fmt"
-	"time"
 
 	g "github.com/doug-martin/goqu/v9"
 	"github.com/valyala/fasthttp"
 )
 
 // Manual 调用与pid对应的渠道, 发起充值(代付)请求
-func ManualPay(fctx *fasthttp.RequestCtx, pid, amount, bankcardID, bankCode string) (map[string]string, error) {
+func ManualPay(fctx *fasthttp.RequestCtx, payment_id, amount string) (map[string]string, error) {
 
 	res := map[string]string{}
 	user, err := MemberCache(fctx)
@@ -20,34 +19,12 @@ func ManualPay(fctx *fasthttp.RequestCtx, pid, amount, bankcardID, bankCode stri
 		return res, err
 	}
 
-	/*
-		pLog := paymentTDLog{
-			Lable:    paymentLogTag,
-			Flag:     "deposit",
-			Username: user.Username,
-		}
-		// 记录请求日志
-		defer func() {
-			if err != nil {
-				pLog.Error = fmt.Sprintf("{req: %s, err: %s}", fctx.PostArgs().String(), err.Error())
-			}
-			paymentPushLog(pLog)
-		}()
-	*/
-	p, err := CachePayment(pid)
+	ts := fctx.Time().In(loc).Unix()
+	p, err := CachePayment(payment_id)
 	if err != nil {
 		return res, errors.New(helper.ChannelNotExist)
 	}
-	/*
-		ch, err := ChannelTypeById(p.ChannelID)
-		if err != nil {
-			fmt.Println("Manual ChannelTypeById = ", err.Error())
-			return res, err
-		}
 
-		pLog.Merchant = "线下转卡"
-		pLog.Channel = ch["name"]
-	*/
 	// 检查存款金额是否符合范围
 	a, ok := validator.CheckFloatScope(amount, p.Fmin, p.Fmax)
 	if !ok {
@@ -55,24 +32,26 @@ func ManualPay(fctx *fasthttp.RequestCtx, pid, amount, bankcardID, bankCode stri
 	}
 
 	// 检查用户的存款行为是否过于频繁
-	err = cacheDepositProcessing(user.UID, time.Now().Unix())
+	err = cacheDepositProcessing(user.UID, ts)
 	if err != nil {
 		return res, err
 	}
 
-	// 获取银行卡
-	card, err := BankCards(bankcardID)
+	amount = a.Truncate(0).String()
+
+	bc, err := BankCardBackend()
 	if err != nil {
-		return res, errors.New(helper.ChannelBusyTryOthers)
+		fmt.Println("BankCardBackend err = ", err.Error())
+		return res, errors.New(helper.BankCardNotExist)
 	}
 
 	// 获取附言码
-	code, err := DepositManualRemark(bankcardID)
+	code, err := TransacCodeGet()
 	if err != nil {
 		return res, errors.New(helper.ChannelBusyTryOthers)
 	}
 
-	amount = a.Truncate(0).String()
+	fmt.Println("TransacCodeGet code = ", code)
 
 	// 生成我方存款订单号
 	orderId := helper.GenId()
@@ -94,19 +73,19 @@ func ManualPay(fctx *fasthttp.RequestCtx, pid, amount, bankcardID, bankCode stri
 		"state":         DepositConfirming,
 		"finance_type":  TransactionOfflineDeposit,
 		"automatic":     "0",
-		"created_at":    fctx.Time().In(loc).Unix(),
+		"created_at":    ts,
 		"created_uid":   "0",
 		"created_name":  "",
 		"confirm_at":    "0",
 		"confirm_uid":   "0",
 		"confirm_name":  "",
 		"review_remark": "",
-		"manual_remark": fmt.Sprintf(`{"manual_remark": "%s", "real_name":"%s", "bank_addr":"%s", "name":"%s"}`, code, card.AccountName, card.BankcardAddr, card.BanklcardName),
-		"bankcard_id":   card.Id,
-		"flag":          DepositFlagManual,
-		"bank_code":     bankCode,
-		"bank_no":       card.BanklcardNo,
-		"level":         user.Level,
+		"manual_remark": fmt.Sprintf(`{"manual_remark": "%s", "real_name":"%s", "bank_addr":"%s", "name":"%s"}`, code, bc.AccountName, bc.BankcardAddr, bc.BanklcardName),
+		"bankcard_id":   bc.Id,
+		"flag":          "3",
+		//"bank_code":     bankCode,
+		"bank_no": bc.BanklcardNo,
+		"level":   user.Level,
 	}
 
 	// 请求成功插入订单
@@ -121,10 +100,10 @@ func ManualPay(fctx *fasthttp.RequestCtx, pid, amount, bankcardID, bankCode stri
 
 	res = map[string]string{
 		"id":           orderId,
-		"name":         card.BanklcardName,
-		"cardNo":       card.BanklcardNo,
-		"realname":     card.AccountName,
-		"bankAddr":     card.BankcardAddr,
+		"name":         bc.BanklcardName,
+		"cardNo":       bc.BanklcardNo,
+		"realname":     bc.AccountName,
+		"bankAddr":     bc.BankcardAddr,
 		"manualRemark": code,
 	}
 

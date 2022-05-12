@@ -3,7 +3,6 @@ package controller
 import (
 	"finance/contrib/helper"
 	"finance/model"
-	"fmt"
 
 	"github.com/valyala/fasthttp"
 )
@@ -15,13 +14,12 @@ func (that *ManualController) Pay(ctx *fasthttp.RequestCtx) {
 
 	id := string(ctx.PostArgs().Peek("id"))
 	amount := string(ctx.PostArgs().Peek("amount"))
-	bid := string(ctx.PostArgs().Peek("bankcard_id"))
-	bankCode := string(ctx.PostArgs().Peek("bank_code"))
-	fmt.Println("id:", id)
-	fmt.Println("Manual: ", string(ctx.PostBody()))
 
-	if id != "767158011957916898" {
-		helper.Print(ctx, false, helper.ChannelIDErr)
+	//fmt.Println("id:", id)
+	//fmt.Println("Manual: ", string(ctx.PostBody()))
+
+	if !helper.CtypeDigit(id) {
+		helper.Print(ctx, false, helper.AmountErr)
 		return
 	}
 
@@ -30,16 +28,11 @@ func (that *ManualController) Pay(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if bid == "" || bankCode == "" {
-		helper.Print(ctx, false, helper.BankcardIDErr)
-		return
-	}
-
-	res, err := model.ManualPay(ctx, id, amount, bid, bankCode)
+	res, err := model.ManualPay(ctx, "766870294997073616", amount)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return
 	}
 
-	helper.Print(ctx, false, res)
+	helper.Print(ctx, true, res)
 }
