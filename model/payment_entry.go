@@ -85,6 +85,8 @@ func Pay(user Member, p FPay, amount, bid string) (paymentDepositResp, error) {
 	}
 
 	fmt.Println("Pay payment = ", payment)
+	fmt.Println("Pay p = ", p)
+
 	ch, err := ChannelTypeById(p.ChannelID)
 	if err != nil {
 		return data, errors.New(helper.ChannelNotExist)
@@ -102,7 +104,7 @@ func Pay(user Member, p FPay, amount, bid string) (paymentDepositResp, error) {
 
 	// online, remit, unionPay 需要判断是否传银行卡信息
 	switch ch["name"] {
-	case "online", "remit", "unionpay":
+	case "online", "remit", "unionpay", "chuyển khoản", "QR Banking":
 		if bid == "0" || bid == "" {
 			return data, errors.New(helper.BankNameOrCodeErr)
 		}
@@ -177,11 +179,11 @@ func httpDoTimeout(requestBody []byte, method string, requestURI string, headers
 	*/
 
 	if err != nil {
-		return nil, fmt.Errorf("send http request error: [%v]", err)
+		return respBody, fmt.Errorf("send http request error: [%v]", err)
 	}
 
 	if code != fasthttp.StatusOK {
-		return nil, fmt.Errorf("bad http response code: [%d]", code)
+		return respBody, fmt.Errorf("bad http response code: [%d]", code)
 	}
 
 	return respBody, nil

@@ -114,7 +114,7 @@ func (that *VtPayment) Withdraw(arg WithdrawAutoParam) (paymentWithdrawalRsp, er
 	if err != nil {
 		fmt.Println("vt uri = ", uri)
 		fmt.Println("vt httpDoTimeout err = ", err)
-
+		fmt.Println("vnpay body = ", string(v))
 		return data, errors.New(helper.PayServerErr)
 	}
 

@@ -152,6 +152,7 @@ func (that *VnPayment) Pay(orderId, ch, amount, bid string) (paymentDepositResp,
 	if err != nil {
 		fmt.Println("vnpay uri = ", uri)
 		fmt.Println("vnpay httpDoTimeout err = ", err)
+		fmt.Println("vnpay body = ", string(v))
 		return data, errors.New(helper.PayServerErr)
 	}
 

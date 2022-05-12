@@ -15,9 +15,9 @@ import (
 
 const (
 	wMomo     = "0"
-	wUnionPay = "2"
-	wOnline   = "3"
-	wRemit    = "4"
+	wUnionPay = "2" //扫码
+	wOnline   = "3" //直连
+	wRemit    = "4" //卡转卡
 )
 
 type wPayConf struct {
@@ -62,10 +62,10 @@ func (that *WPayment) New() {
 		PayNotify:      "%s/finance/callback/wd",
 		WithdrawNotify: "%s/finance/callback/ww",
 		Channel: map[string]string{
-			"momo":     wMomo,
-			"unionpay": wUnionPay,
-			"online":   wOnline,
-			"remit":    wRemit,
+			"momo":         wMomo,
+			"QR Banking":   wUnionPay,
+			"online":       wOnline,
+			"chuyển khoản": wRemit,
 		},
 	}
 }
@@ -77,7 +77,6 @@ func (that *WPayment) Name() string {
 func (that *WPayment) Pay(orderId, ch, amount, bid string) (paymentDepositResp, error) {
 
 	data := paymentDepositResp{}
-
 	cno, ok := that.Conf.Channel[ch]
 	if !ok {
 		return data, errors.New(helper.ChannelNotExist)
@@ -114,12 +113,12 @@ func (that *WPayment) Pay(orderId, ch, amount, bid string) (paymentDepositResp, 
 	if err != nil {
 		fmt.Println("w uri = ", uri)
 		fmt.Println("w httpDoTimeout err = ", err)
-
+		fmt.Println("w body = ", string(v))
 		return data, errors.New(helper.PayServerErr)
 	}
 
 	var res wPayResp
-
+	fmt.Println("w body = ", string(v))
 	if err = helper.JsonUnmarshal(v, &res); err != nil {
 		return data, fmt.Errorf("json format err: %s", err.Error())
 	}
@@ -212,7 +211,7 @@ func (that *WPayment) PayCallBack(fctx *fasthttp.RequestCtx) (paymentCallbackRes
 		return data, fmt.Errorf("invalid sign")
 	}
 
-	data.OrderID = params["orderNo"]
+	data.OrderID = params["tradeNo"]
 	data.Amount = params["amount"]
 
 	return data, nil
@@ -247,7 +246,7 @@ func (that *WPayment) WithdrawCallBack(fctx *fasthttp.RequestCtx) (paymentCallba
 		return data, fmt.Errorf("invalid sign")
 	}
 
-	data.OrderID = params["orderNo"]
+	data.OrderID = params["tradeNo"]
 	data.Amount = params["amount"]
 
 	return data, nil

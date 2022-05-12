@@ -75,10 +75,10 @@ func (that *DbPayment) New() {
 		PayNotify:      "%s/finance/callback/dbd",
 		WithdrawNotify: "%s/finance/callback/dbw",
 		Channel: map[string]string{
-			"momo":       dbMomo,
-			"remit":      dbRemit,
-			"online":     dbOnline,
-			"viettelpay": dbViettelpay,
+			"momo":         dbMomo,
+			"chuyển khoản": dbRemit,
+			"online":       dbOnline,
+			"viettelpay":   dbViettelpay,
 		},
 	}
 }
@@ -123,8 +123,9 @@ func (that *DbPayment) Pay(orderId, ch, amount, bid string) (paymentDepositResp,
 	uri := fmt.Sprintf("%s/pay", that.Conf.Domain)
 	v, err := httpDoTimeout([]byte(formData.Encode()), "POST", uri, header, time.Second*8)
 	if err != nil {
-		fmt.Println("vnpay uri = ", uri)
-		fmt.Println("vnpay httpDoTimeout err = ", err)
+		fmt.Println("db pay uri = ", uri)
+		fmt.Println("db pay httpDoTimeout err = ", err)
+		fmt.Println("db pay body = ", string(v))
 		return data, errors.New(helper.PayServerErr)
 	}
 
