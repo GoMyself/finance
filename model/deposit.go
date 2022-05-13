@@ -371,7 +371,7 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 		"review_remark": remark,
 	}
 	query, _, _ := dialect.Update("tbl_deposit").Set(record).Where(ex).ToSQL()
-
+	fmt.Println(query)
 	money := decimal.NewFromFloat(order.Amount)
 	amount := money.String()
 	cashType := TransactionDeposit
@@ -416,6 +416,7 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 				"hand_out_state": AdjustSuccess,
 			}
 			query, _, _ = dialect.Update("tbl_member_adjust").Set(r).Where(g.Ex{"id": order.OID}).ToSQL()
+			fmt.Println(query)
 			_, err = tx.Exec(query)
 			if err != nil {
 				_ = tx.Rollback()
@@ -551,6 +552,7 @@ func DepositOrderFindOne(ex g.Ex) (Deposit, error) {
 	ex["prefix"] = meta.Prefix
 	order := Deposit{}
 	query, _, _ := dialect.From("tbl_deposit").Select(colsDeposit...).Where(ex).Limit(1).ToSQL()
+	fmt.Println(query)
 	err := meta.MerchantDB.Get(&order, query)
 	if err == sql.ErrNoRows {
 		return order, errors.New(helper.OrderNotExist)
@@ -1187,6 +1189,7 @@ func depositFind(id string) (Deposit, error) {
 
 	ex := g.Ex{"id": id}
 	query, _, _ := dialect.From("tbl_deposit").Select(colsDeposit...).Where(ex).Limit(1).ToSQL()
+	fmt.Println(query)
 	err := meta.MerchantDB.Get(&d, query)
 	if err == sql.ErrNoRows {
 		return d, errors.New(helper.OrderNotExist)
