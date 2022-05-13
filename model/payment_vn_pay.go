@@ -231,12 +231,12 @@ func (that *VnPayment) PayCallBack(fctx *fasthttp.RequestCtx) (paymentCallbackRe
 	if err != nil {
 		fmt.Println("PayCallBack content error : ", err, string(fctx.PostBody()))
 	}
-	fmt.Println(v.String())
+	fmt.Println("v:", v.String())
 	params := vnPayCallBack{}
 	if err := helper.JsonUnmarshal(fctx.PostBody(), &params); err != nil {
 		return data, fmt.Errorf("param format err: %s", err.Error())
 	}
-	fmt.Println(params)
+	fmt.Println("params", params)
 
 	data.Sign = params.Sign
 
@@ -258,12 +258,12 @@ func (that *VnPayment) PayCallBack(fctx *fasthttp.RequestCtx) (paymentCallbackRe
 		return data, fmt.Errorf("invalid sign")
 	}
 
-	data.OrderID = params.MerchantOrderNo
+	data.OrderID = params.OrderNo
 	data.Amount = params.Amount
 	resp := &vnPayWithdrawResp{
 		Code: "0000",
 		Msg:  "Success",
-		Data: params.MerchantOrderNo,
+		Data: params.OrderNo,
 	}
 	data.Resp = resp
 	return data, nil
@@ -305,12 +305,12 @@ func (that *VnPayment) WithdrawCallBack(fctx *fasthttp.RequestCtx) (paymentCallb
 		return data, fmt.Errorf("invalid sign")
 	}
 
-	data.OrderID = params.MerchantOrderNo
+	data.OrderID = params.OrderNo
 	data.Amount = params.Amount
 	resp := &vnPayWithdrawResp{
 		Code: "0000",
 		Msg:  "Success",
-		Data: params.MerchantOrderNo,
+		Data: params.OrderNo,
 	}
 	data.Resp = resp
 	return data, nil
