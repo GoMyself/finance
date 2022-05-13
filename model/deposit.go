@@ -542,6 +542,43 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 			PushDepositSuccess(order.UID, order.Amount)
 		}
 	*/
+	if DepositSuccess == state && cashType == TransactionDeposit {
+		member, err := MemberFindOne(order.Username)
+		if err != nil {
+			if member.FirstDepositAt == 0 {
+				rec := g.Record{
+					"first_deposit_at":     order.CreatedAt,
+					"first_deposit_amount": order.Amount,
+				}
+				ex := g.Ex{
+					"uid": member.UID,
+				}
+				query, _, _ := dialect.Update("tbl_members").Set(rec).Where(ex).ToSQL()
+				fmt.Printf("memberFirstDeposit Update: %v\n", query)
+
+				_, err := meta.MerchantDB.Exec(query)
+				if err != nil {
+					fmt.Println("update member first_amount err:", err.Error())
+				}
+			} else if member.SecondDepositAt == 0 {
+				rec := g.Record{
+					"second_deposit_at":     order.CreatedAt,
+					"second_deposit_amount": order.Amount,
+				}
+				ex := g.Ex{
+					"uid": member.UID,
+				}
+				query, _, _ := dialect.Update("tbl_members").Set(rec).Where(ex).ToSQL()
+				fmt.Printf("memberSecondDeposit Update: %v\n", query)
+
+				_, err := meta.MerchantDB.Exec(query)
+				if err != nil {
+					fmt.Println("update member second_amount err:", err.Error())
+				}
+			}
+
+		}
+	}
 	return nil
 }
 

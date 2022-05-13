@@ -3,7 +3,7 @@ package model
 import (
 	"errors"
 	"finance/contrib/helper"
-
+	"fmt"
 	g "github.com/doug-martin/goqu/v9"
 	"github.com/shopspring/decimal"
 	"github.com/valyala/fasthttp"
@@ -74,6 +74,42 @@ func MemberCache(fctx *fasthttp.RequestCtx) (Member, error) {
 	return m, nil
 }
 
+type MemberInfo struct {
+	UID                 string `db:"uid" json:"uid"`
+	Username            string `db:"username" json:"username"`                           //会员名
+	Password            string `db:"password" json:"password"`                           //密码
+	RealnameHash        uint64 `db:"realname_hash" json:"realname_hash"`                 //真实姓名哈希
+	EmailHash           uint64 `db:"email_hash" json:"email_hash"`                       //邮件地址哈希
+	PhoneHash           uint64 `db:"phone_hash" json:"phone_hash"`                       //电话号码哈希
+	Prefix              string `db:"prefix" json:"prefix"`                               //站点前缀
+	WithdrawPwd         uint64 `db:"withdraw_pwd" json:"withdraw_pwd"`                   //取款密码哈希
+	Regip               string `db:"regip" json:"regip"`                                 //注册IP
+	RegDevice           string `db:"reg_device" json:"reg_device"`                       //注册设备号
+	RegUrl              string `db:"reg_url" json:"reg_url"`                             //注册链接
+	CreatedAt           uint32 `db:"created_at" json:"created_at"`                       //注册时间
+	LastLoginIp         string `db:"last_login_ip" json:"last_login_ip"`                 //最后登陆ip
+	LastLoginAt         uint32 `db:"last_login_at" json:"last_login_at"`                 //最后登陆时间
+	SourceId            uint8  `db:"source_id" json:"source_id"`                         //注册来源 1 pc 2h5 3 app
+	FirstDepositAt      uint32 `db:"first_deposit_at" json:"first_deposit_at"`           //首充时间
+	FirstDepositAmount  string `db:"first_deposit_amount" json:"first_deposit_amount"`   //首充金额
+	SecondDepositAt     uint32 `db:"second_deposit_at" json:"second_deposit_at"`         //二存时间
+	SecondDepositAmount string `db:"second_deposit_amount" json:"second_deposit_amount"` //二充金额
+	FirstBetAt          uint32 `db:"first_bet_at" json:"first_bet_at"`                   //首投时间
+	FirstBetAmount      string `db:"first_bet_amount" json:"first_bet_amount"`           //首投金额
+	TopUid              string `db:"top_uid" json:"top_uid"`                             //总代uid
+	TopName             string `db:"top_name" json:"top_name"`                           //总代代理
+	ParentUid           string `db:"parent_uid" json:"parent_uid"`                       //上级uid
+	ParentName          string `db:"parent_name" json:"parent_name"`                     //上级代理
+	BankcardTotal       uint8  `db:"bankcard_total" json:"bankcard_total"`               //用户绑定银行卡的数量
+	LastLoginDevice     string `db:"last_login_device" json:"last_login_device"`         //最后登陆设备
+	LastLoginSource     int    `db:"last_login_source" json:"last_login_source"`         //上次登录设备来源:1=pc,2=h5,3=ios,4=andriod
+	Remarks             string `db:"remarks" json:"remarks"`                             //备注
+	State               uint8  `db:"state" json:"state"`                                 //状态 1正常 2禁用
+	Balance             string `db:"balance" json:"balance"`                             //余额
+	LockAmount          string `db:"lock_amount" json:"lock_amount"`                     //锁定金额
+	Commission          string `db:"commission" json:"commission"`                       //佣金
+}
+
 func MemberGetByName(username string) (Member, error) {
 
 	m := Member{}
@@ -90,6 +126,27 @@ func MemberGetByName(username string) (Member, error) {
 
 //读取余额
 func GetBalanceDB(uid string) (MBBalance, error) {
+
+	var (
+		balance MBBalance
+		query   string
+	)
+
+	ex := g.Ex{
+		"uid":    uid,
+		"prefix": meta.Prefix,
+	}
+	query, _, _ = dialect.From("tbl_members").Select("balance", "uid", "lock_amount").Where(ex).Limit(1).ToSQL()
+	err := meta.MerchantDB.Get(&balance, query)
+	if err != nil {
+		return balance, pushLog(err, helper.DBErr)
+	}
+
+	return balance, nil
+}
+
+//获取用户 首存 和 二存
+func GetUserDeposit(uid string) (MBBalance, error) {
 
 	var (
 		balance MBBalance
@@ -171,4 +228,20 @@ func MemberLevelByUID(uids []string) (map[string]int, error) {
 	}
 
 	return res, nil
+}
+
+// 查询用户单条数据
+func MemberFindOne(name string) (MemberInfo, error) {
+
+	m := MemberInfo{}
+
+	t := dialect.From("tbl_members")
+	query, _, _ := t.Select(colsMember...).Where(g.Ex{"username": name}).Limit(1).ToSQL()
+	fmt.Printf("MemberFindOne : %v\n", query)
+	err := meta.MerchantDB.Get(&m, query)
+	if err != nil {
+		return m, err
+	}
+
+	return m, nil
 }
