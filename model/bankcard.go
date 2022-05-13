@@ -169,7 +169,7 @@ func BankCardUpdate(id string, record g.Record) error {
 	if err != nil {
 		return pushLog(err, helper.DBErr)
 	}
-
+	BankCardUpdateCache()
 	return nil
 }
 

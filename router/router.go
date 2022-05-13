@@ -278,12 +278,12 @@ func SetupRouter(b BuildInfo) *router.Router {
 	post(route_merchant_group, "/deposit/usdt/list", depositCtl.USDTList)
 	// [商户后台] 财务管理-存款管理-线下转卡-入款订单
 	post(route_merchant_group, "/manual/list", manualCtl.List)
-	//post(route_merchant_group, "/deposit/manual/list", depositCtl.Offline)
 
 	// [商户后台] 财务管理-存款管理-线下转卡-确认金额待审核
-	post(route_merchant_group, "/deposit/manual/reviewing", depositCtl.OfflineToReview)
+	post(route_merchant_group, "/manual/confirm", manualCtl.Confirm)
 	// [商户后台] 财务管理-存款管理-线下转卡-审核
-	post(route_merchant_group, "/deposit/manual/review", depositCtl.OfflineReview)
+	post(route_merchant_group, "/manual/review", manualCtl.Review)
+
 	// [商户后台] 财务管理-存款管理-线下USDT-确认金额待审核
 	post(route_merchant_group, "/deposit/usdt/reviewing", depositCtl.OfflineUSDT)
 	// [商户后台] 财务管理-存款管理-线下USDT-审核

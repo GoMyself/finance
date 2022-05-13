@@ -8,6 +8,7 @@ import (
 
 	g "github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
+	"github.com/shopspring/decimal"
 	"github.com/valyala/fasthttp"
 )
 
@@ -161,4 +162,67 @@ func ManualList(ex g.Ex, startTime, endTime string, page, pageSize int) (FDeposi
 	}
 
 	return data, nil
+}
+
+// DepositManualReview 线下转卡-存款审核
+func ManualReview(did, remark, name, uid string, state int, record Deposit) error {
+
+	// 加锁
+	err := depositLock(did)
+	if err != nil {
+		return err
+	}
+	defer depositUnLock(did)
+
+	err = DepositUpPointReview(did, uid, name, remark, state)
+
+	if err == nil && state == DepositSuccess {
+
+		// 清除未未成功的订单计数
+		CacheDepositProcessingRem(record.UID)
+
+		amount := decimal.NewFromFloat(record.Amount)
+
+		vals := g.Record{
+			"total_finish_amount": g.L(fmt.Sprintf("total_finish_amount+%s", amount.String())),
+			"daily_finish_amount": g.L(fmt.Sprintf("daily_finish_amount+%s", amount.String())),
+		}
+
+		err = BankCardUpdate(record.BankcardID, vals)
+		if err != nil {
+			fmt.Println("ManualReview BankCardUpdate = ", err)
+
+			return err
+		}
+
+		bc, err := BankCardByID(record.BankcardID)
+		if err != nil {
+			return err
+		}
+
+		total_finish_amount, _ := decimal.NewFromString(bc.TotalFinishAmount)
+		daily_finish_amount, _ := decimal.NewFromString(bc.DailyFinishAmount)
+
+		total_max_amount, _ := decimal.NewFromString(bc.TotalMaxAmount)
+		daily_max_amount, _ := decimal.NewFromString(bc.DailyMaxAmount)
+
+		if total_finish_amount.Cmp(total_max_amount) >= 0 {
+
+			vals = g.Record{
+				"state": "0",
+			}
+			BankCardUpdate(record.BankcardID, vals)
+		}
+		if daily_finish_amount.Cmp(daily_max_amount) >= 0 {
+
+			vals = g.Record{
+				"state": "0",
+			}
+			BankCardUpdate(record.BankcardID, vals)
+
+		}
+	}
+
+	return err
+
 }
