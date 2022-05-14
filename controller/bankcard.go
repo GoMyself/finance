@@ -117,6 +117,22 @@ func (that *BankCardController) Delete(ctx *fasthttp.RequestCtx) {
 	helper.Print(ctx, true, helper.Success)
 }
 
+//出款银行卡
+func (that *BankCardController) Remit(ctx *fasthttp.RequestCtx) {
+
+	ex := g.Ex{
+		"flags": "2",
+	}
+
+	data, err := model.BankCardList(ex)
+	if err != nil {
+		helper.Print(ctx, false, err.Error())
+		return
+	}
+
+	helper.Print(ctx, true, data)
+}
+
 //List 银行卡列表
 func (that *BankCardController) List(ctx *fasthttp.RequestCtx) {
 
