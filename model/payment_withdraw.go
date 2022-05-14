@@ -93,6 +93,7 @@ func WithdrawalCallBack(fctx *fasthttp.RequestCtx, payment_id string) {
 	data, err = p.WithdrawCallBack(fctx)
 	if err != nil {
 		fctx.SetBody([]byte(`failed`))
+		pushLog(err, helper.WithdrawFailure)
 		return
 	}
 
@@ -101,17 +102,19 @@ func WithdrawalCallBack(fctx *fasthttp.RequestCtx, payment_id string) {
 	if err != nil {
 		err = fmt.Errorf("query order error: [%v]", err)
 		fctx.SetBody([]byte(`failed`))
+		pushLog(err, helper.WithdrawFailure)
 		return
 	}
 
 	//pLog.Username = order.Username
-	//pLog.OrderID = data.OrderID
+	//pLog.OrderID = data.OrderID0
 
 	// 提款成功只考虑出款中和代付失败的情况
 	// 审核中的状态不用考虑，因为不会走到三方去，出款成功和出款失败是终态也不用考虑
 	if order.State != WithdrawDealing && order.State != WithdrawAutoPayFailed {
 		err = fmt.Errorf("duplicated Withdrawal notify: [%v]", err)
 		fctx.SetBody([]byte(`failed`))
+		pushLog(err, helper.WithdrawFailure)
 		return
 	}
 
@@ -125,6 +128,7 @@ func WithdrawalCallBack(fctx *fasthttp.RequestCtx, payment_id string) {
 		if err != nil {
 			err = fmt.Errorf("compare amount error: [%v]", err)
 			fctx.SetBody([]byte(`failed`))
+			pushLog(err, helper.WithdrawFailure)
 			return
 		}
 	}
@@ -133,6 +137,7 @@ func WithdrawalCallBack(fctx *fasthttp.RequestCtx, payment_id string) {
 	err = withdrawUpdate(data.OrderID, order.UID, order.BID, data.State, fctx.Time())
 	if err != nil {
 		err = fmt.Errorf("set order state [%d] to [%d] error: [%v]", order.State, data.State, err)
+		pushLog(err, helper.WithdrawFailure)
 		fctx.SetBody([]byte(`failed`))
 		return
 	}

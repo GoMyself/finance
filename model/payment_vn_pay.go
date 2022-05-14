@@ -305,12 +305,12 @@ func (that *VnPayment) WithdrawCallBack(fctx *fasthttp.RequestCtx) (paymentCallb
 		return data, fmt.Errorf("invalid sign")
 	}
 
-	data.OrderID = params.OrderNo
+	data.OrderID = params.MerchantOrderNo
 	data.Amount = params.Amount
 	resp := &vnPayWithdrawResp{
 		Code: "0000",
 		Msg:  "Success",
-		Data: params.OrderNo,
+		Data: params.MerchantOrderNo,
 	}
 	data.Resp = resp
 	return data, nil

@@ -1219,7 +1219,6 @@ func LockBalanceIsEnough(uid string, amount decimal.Decimal) (decimal.Decimal, e
 	if err != nil {
 		return decimal.NewFromFloat(balance.LockAmount), err
 	}
-
 	if decimal.NewFromFloat(balance.LockAmount).Sub(amount).IsNegative() {
 		return decimal.NewFromFloat(balance.LockAmount), errors.New(helper.LackOfBalance)
 	}
@@ -1451,6 +1450,7 @@ func withdrawFind(id string) (Withdraw, error) {
 	w := Withdraw{}
 	query, _, _ := dialect.From("tbl_withdraw").Select(colWithdraw...).Where(g.Ex{"id": id}).Limit(1).ToSQL()
 	err := meta.MerchantDB.Get(&w, query)
+	fmt.Println(query)
 	if err == sql.ErrNoRows {
 		return w, errors.New(helper.OrderNotExist)
 	}
