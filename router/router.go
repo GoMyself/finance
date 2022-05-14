@@ -164,7 +164,7 @@ func SetupRouter(b BuildInfo) *router.Router {
 	// [商户后台] 渠道列表数据缓存
 	get(route_merchant_group, "/cate/cache", cateCtl.Cache)
 	// [商户后台] 财务管理-提款渠道
-	post(route_merchant_group, "/cate/withdraw", cateCtl.Withdraw)
+	get(route_merchant_group, "/cate/withdraw", cateCtl.Withdraw)
 
 	// [商户后台] 财务管理-渠道管理-通道管理-新增
 	post(route_merchant_group, "/channel/insert", channelCtl.Insert)
