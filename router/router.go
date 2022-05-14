@@ -303,17 +303,6 @@ func SetupRouter(b BuildInfo) *router.Router {
 	// [商户后台] 财务管理-存款管理-线下转卡-删除银行卡
 	get(route_merchant_group, "/bankcard/delete", bankCardCtl.Delete)
 
-	/*
-		// [商户后台] 财务管理-渠道管理-usdt汇率设置
-		post(route_merchant_group, "/usdt/setrate", usdtCtl.SetRate)
-		// [商户后台] 财务管理-渠道管理-usdt汇率获取
-		get(route_merchant_group, "/usdt/getrate", usdtCtl.GetRate)
-		// [商户后台] 财务管理-存款管理-线下usdt-设置收款地址
-		post(route_merchant_group, "/usdt/settrc", usdtCtl.SetTRC)
-		// [商户后台] 财务管理-存款管理-线下usdt-获取收款地址
-		get(route_merchant_group, "/usdt/gettrc", usdtCtl.GetTRC)
-	*/
-
 	get(route_merchant_group, "/usdt/info", usdtCtl.Info)
 	post(route_merchant_group, "/usdt/update", usdtCtl.Update)
 

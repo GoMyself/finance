@@ -136,7 +136,7 @@ func (that *BankCardController) Remit(ctx *fasthttp.RequestCtx) {
 //List 银行卡列表
 func (that *BankCardController) List(ctx *fasthttp.RequestCtx) {
 
-	banklcardNo := string(ctx.PostArgs().Peek("banklcard_no"))
+	banklcardNo := string(ctx.PostArgs().Peek("card_no"))
 	accounName := string(ctx.PostArgs().Peek("account_name"))
 	bankId := string(ctx.PostArgs().Peek("bank_id"))
 
