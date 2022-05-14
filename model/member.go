@@ -197,6 +197,38 @@ func MemberByUsername(username string) (Member, error) {
 	return member, err
 }
 
+func MembersByUsernames(username []string) ([]Member, error) {
+
+	var members []Member
+	ex := g.Ex{"username": username, "prefix": meta.Prefix}
+	query, _, err := dialect.From("tbl_members").Select(colsMember...).Where(ex).ToSQL()
+	err = meta.MerchantDB.Select(&members, query)
+	if err != nil {
+		return members, pushLog(err, helper.DBErr)
+	}
+
+	return members, err
+}
+
+func getBalanceByUids(uids []string) ([]MBBalance, error) {
+	var (
+		balances []MBBalance
+		query    string
+	)
+
+	ex := g.Ex{
+		"uid":    uids,
+		"prefix": meta.Prefix,
+	}
+	query, _, _ = dialect.From("tbl_members").Select("balance", "uid", "lock_amount").Where(ex).ToSQL()
+	err := meta.MerchantDB.Select(&balances, query)
+	if err != nil {
+		return balances, pushLog(err, helper.DBErr)
+	}
+
+	return balances, nil
+}
+
 // BalanceIsEnough 检查中心钱包余额是否充足
 func BalanceIsEnough(uid string, amount decimal.Decimal) (decimal.Decimal, error) {
 

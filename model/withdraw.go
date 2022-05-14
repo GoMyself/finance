@@ -83,14 +83,16 @@ type WithdrawListData struct {
 
 type withdrawCols struct {
 	Withdraw
-	CateID             string `json:"cate_id"`
-	CateName           string `json:"cate_name"`
-	MemberBankName     string `json:"member_bank_name"`
-	MemberBankNo       string `json:"member_bank_no"`
-	MemberBankRealName string `json:"member_bank_real_name"`
-	MemberBankAddress  string `json:"member_bank_address"`
-	MemberRealName     string `json:"member_real_name"`
-	MemberTags         string `json:"member_tags"`
+	CateID             string  `json:"cate_id"`
+	CateName           string  `json:"cate_name"`
+	MemberBankName     string  `json:"member_bank_name"`
+	MemberBankNo       string  `json:"member_bank_no"`
+	MemberBankRealName string  `json:"member_bank_real_name"`
+	MemberBankAddress  string  `json:"member_bank_address"`
+	MemberRealName     string  `json:"member_real_name"`
+	MemberTags         string  `json:"member_tags"`
+	Balance            float64 `db:"balance"     json:"balance"     redis:"balance"    ` //余额
+	LockAmount         float64 `db:"lock_amount" json:"lock_amount" redis:"lock_amount"` //锁定额度
 }
 
 type withdrawTotal struct {
@@ -798,6 +800,24 @@ func WithdrawDealListData(data FWithdrawData) (WithdrawListData, error) {
 		}
 
 	}
+	userMap := map[string]MBBalance{}
+	if len(data.D) > 0 {
+		var uids []string
+
+		for _, v := range data.D {
+			uids = append(uids, v.UID)
+		}
+
+		balances, err := getBalanceByUids(uids)
+		if err != nil {
+			return result, err
+		}
+
+		for _, v := range balances {
+			userMap[v.UID] = v
+		}
+
+	}
 
 	// 遍历用户map 读取标签数据
 	var names []string
@@ -824,12 +844,6 @@ func WithdrawDealListData(data FWithdrawData) (WithdrawListData, error) {
 		encFields = append(encFields, "bankcard"+v)
 	}
 
-	/*
-		fmt.Println("bankcard", rpcParam["bankcard"])
-		fmt.Println("bankcards = ", bankcards)
-		fmt.Println("realname = ", rpcParam["realname"])
-	*/
-
 	recs, err := grpc_t.DecryptAll(rpcParam["realname"], true, encFields)
 	if err != nil {
 		return result, errors.New(helper.GetRPCErr)
@@ -841,18 +855,14 @@ func WithdrawDealListData(data FWithdrawData) (WithdrawListData, error) {
 	for k, v := range data.D {
 
 		fmt.Println("k = ", k)
-		//cardNo := bankcardNos[k].Res
-		//realName := realNames[k].Res
-
-		//cardNo := ""
-		//realName := ""
-
 		w := withdrawCols{
 			Withdraw:           v,
 			MemberBankNo:       recs[v.UID]["bankcard"+v.BID],
 			MemberBankRealName: recs[v.UID]["realname"],
 			MemberRealName:     recs[v.UID]["realname"],
 			MemberTags:         tags[v.Username],
+			Balance:            userMap[v.UID].Balance,
+			LockAmount:         userMap[v.UID].LockAmount,
 		}
 
 		// 匹配银行卡信息
