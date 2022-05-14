@@ -544,7 +544,8 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 	*/
 	if DepositSuccess == state && cashType == TransactionDeposit {
 		member, err := MemberFindOne(order.Username)
-		if err != nil {
+		fmt.Println(err)
+		if err == nil {
 			if member.FirstDepositAt == 0 {
 				rec := g.Record{
 					"first_deposit_at":     order.CreatedAt,

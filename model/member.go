@@ -268,7 +268,7 @@ func MemberFindOne(name string) (MemberInfo, error) {
 	m := MemberInfo{}
 
 	t := dialect.From("tbl_members")
-	query, _, _ := t.Select(colsMember...).Where(g.Ex{"username": name}).Limit(1).ToSQL()
+	query, _, _ := t.Select(colsMemberInfo...).Where(g.Ex{"username": name}).Limit(1).ToSQL()
 	fmt.Printf("MemberFindOne : %v\n", query)
 	err := meta.MerchantDB.Get(&m, query)
 	if err != nil {

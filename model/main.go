@@ -85,6 +85,7 @@ var (
 	colsMember           = helper.EnumFields(Member{})
 	colsMemberBankcard   = helper.EnumFields(MemberBankCard{})
 	closChannelDevice    = helper.EnumFields(ChannelDevice{})
+	colsMemberInfo       = helper.EnumFields(MemberInfo{})
 
 	depositFields  = helper.EnumRedisFields(Deposit{})
 	withdrawFields = helper.EnumRedisFields(Withdraw{})
