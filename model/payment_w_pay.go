@@ -223,7 +223,7 @@ func (that *WPayment) WithdrawCallBack(fctx *fasthttp.RequestCtx) (paymentCallba
 	fctx.PostArgs().VisitAll(func(key, value []byte) {
 		params[string(key)] = string(value)
 	})
-
+	fmt.Println(params)
 	data := paymentCallbackResp{
 		State: WithdrawDealing,
 		Sign:  string(fctx.PostArgs().Peek("sign")),
@@ -246,7 +246,7 @@ func (that *WPayment) WithdrawCallBack(fctx *fasthttp.RequestCtx) (paymentCallba
 		return data, fmt.Errorf("invalid sign")
 	}
 
-	data.OrderID = params["tradeNo"]
+	data.OrderID = params["orderNo"]
 	data.Amount = params["amount"]
 
 	return data, nil

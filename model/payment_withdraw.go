@@ -96,6 +96,7 @@ func WithdrawalCallBack(fctx *fasthttp.RequestCtx, payment_id string) {
 		pushLog(err, helper.WithdrawFailure)
 		return
 	}
+	fmt.Println("获取并校验回调参数:", data)
 
 	// 查询订单
 	order, err := withdrawFind(data.OrderID)
