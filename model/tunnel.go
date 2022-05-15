@@ -27,26 +27,50 @@ func TunnelList() ([]Tunnel_t, error) {
 	return data, nil
 }
 
-func TunnelUpdate(param map[string]string) error { // 校验渠道id和通道id是否存在
+func TunnelUpdate(id, state, discount, seq string) error { // 校验渠道id和通道id是否存在
 
-	record := g.Record{
-		"sort": param["sort"],
+	record := g.Record{}
+
+	if state != "" {
+		record["promo_state"] = state
+	}
+	if discount != "" {
+		record["promo_discount"] = discount
+	}
+	if seq != "" {
+		record["sort"] = seq
 	}
 
-	query, _, _ := dialect.Update("f_channel_type").Set(record).Where(g.Ex{"id": param["id"], "prefix": meta.Prefix}).ToSQL()
+	query, _, _ := dialect.Update("f_channel_type").Set(record).Where(g.Ex{"id": id, "prefix": meta.Prefix}).ToSQL()
 	_, err := meta.MerchantDB.Exec(query)
 	if err != nil {
 		return pushLog(err, helper.DBErr)
 	}
 
-	_, err = meta.MerchantRedis.HSet(ctx, "payment_discount", param["id"], param["discount"]).Result()
-	if err != nil {
-		_ = pushLog(err, helper.RedisErr)
-	}
-
+	//TunnelUpdateCache()
 	return nil
 }
 
+/*
+func TunnelUpdateCache() error {
+
+	res, err := TunnelList()
+	if err != nil {
+		return err
+	}
+
+	pipe := meta.MerchantRedis.Pipeline()
+	pipe.Unlink(ctx, "tunnel:All")
+	for _, v := range res {
+
+	}
+
+	pipe.Exec(ctx)
+	pipe.Close()
+
+	return nil
+}
+*/
 // 获取三方通道
 func TunnelByID(id string) (Tunnel_t, error) {
 

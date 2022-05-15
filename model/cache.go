@@ -33,7 +33,7 @@ type Tunnel_t struct {
 	Sort       int    `db:"sort" json:"sort"`                //排序
 	PromoState string `db:"promo_state"  json:"promo_state"` //存款优化开关
 	//Content    string `db:"content"  json:"content"`         //存款优化开关
-	//Discount string `db:"discount" json:"discount"` // 存款优惠比例
+	PromoDiscount string `db:"promo_discount" json:"promo_discount"` // 存款优惠比例
 }
 
 /*

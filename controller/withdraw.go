@@ -34,6 +34,7 @@ type withdrawReviewParam struct {
 	Ty       uint8  `name:"ty" rule:"digit" min:"1" max:"2" msg:"ty error"` // 1手动代付 2 手动出款
 	Pid      string `name:"pid" rule:"digit" default:"0" msg:"pid error"`
 	Remark   string `name:"remark" rule:"filter" default:"" min:"0" max:"50" msg:"remark error"`
+	BankId   string `name:"bank_id" rule:"digit" msg:"bank_id error"`
 	BankName string `name:"bank_name" rule:"none"`
 	RealName string `name:"real_name" rule:"none"`
 	CardNo   string `name:"card_no" rule:"none"`
@@ -906,6 +907,7 @@ func (that *WithdrawController) Review(ctx *fasthttp.RequestCtx) {
 		*/
 
 		record["pid"] = "0"
+		record["bid"] = param.BankId
 		record["automatic"] = "0"
 		record["state"] = model.WithdrawSuccess
 		record["bank_name"] = param.BankName

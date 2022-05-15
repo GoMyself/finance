@@ -66,7 +66,7 @@ func SetupRouter(b BuildInfo) *router.Router {
 	depositCtl := new(controller.DepositController)
 	bankCtl := new(controller.ChannelBankController)
 	tunnelCtl := new(controller.TunnelController)
-	promoCtl := new(controller.PromoController)
+
 	risksCtl := new(controller.RisksController)
 	creditCtl := new(controller.CreditLevelController)
 	lockCtl := new(controller.LockController)
@@ -144,12 +144,14 @@ func SetupRouter(b BuildInfo) *router.Router {
 	// [前台] 线下USDT-获取trc收款地址
 	get(nil, "/finance/usdt/info", usdtCtl.Info)
 
-	// [商户后台] 财务管理-渠道管理-通道优惠管理-通道优惠存款
-	get(route_merchant_group, "/promo/detail", promoCtl.Detail)
-	// [商户后台] 财务管理-渠道管理-通道优惠管理-开启/关闭优惠状态
-	get(route_merchant_group, "/promo/update/state", promoCtl.UpdateState)
-	// [商户后台] 财务管理-渠道管理-通道优惠管理-设置通道优惠比例
-	post(route_merchant_group, "/promo/update/quota", promoCtl.UpdateQuota)
+	/*
+		// [商户后台] 财务管理-渠道管理-通道优惠管理-通道优惠存款
+		get(route_merchant_group, "/promo/detail", promoCtl.Detail)
+		// [商户后台] 财务管理-渠道管理-通道优惠管理-开启/关闭优惠状态
+		get(route_merchant_group, "/promo/update/state", promoCtl.UpdateState)
+		// [商户后台] 财务管理-渠道管理-通道优惠管理-设置通道优惠比例
+		post(route_merchant_group, "/promo/update", promoCtl.Update)
+	*/
 
 	// [商户后台] 财务管理-渠道管理-新增
 	post(route_merchant_group, "/cate/insert", cateCtl.Insert)
