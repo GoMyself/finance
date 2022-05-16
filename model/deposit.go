@@ -616,6 +616,11 @@ func DepositManual(id, amount, remark, name, uid string) error {
 		return err
 	}
 
+	err = lockMemberCheck(order.Username)
+	if err != nil {
+		return err
+	}
+
 	// 判断状态
 	if order.State != DepositConfirming && order.State != DepositCancelled {
 		return errors.New(helper.OrderStateErr)
