@@ -51,6 +51,7 @@ func BankCardBackend() (Bankcard_t, error) {
 
 func BankCardUpdateCache() error {
 
+	key := "offlineBankcard"
 	ex := g.Ex{
 		"state": "1",
 		"flags": "1",
@@ -63,15 +64,14 @@ func BankCardUpdateCache() error {
 
 	if len(res) == 0 {
 		fmt.Println("BankCardUpdateCache len(res) = 0")
+		meta.MerchantRedis.Unlink(ctx, key).Err()
 		return nil
 	}
 
-	key := "offlineBankcard"
 	pipe := meta.MerchantRedis.TxPipeline()
 	defer pipe.Close()
 
 	pipe.Unlink(ctx, key)
-
 	for _, v := range res {
 		val, err := helper.JsonMarshal(v)
 		if err != nil {
@@ -101,6 +101,7 @@ func BankCardInsert(recs Bankcard_t, code string) error {
 	recs.Prefix = meta.Prefix
 
 	query, _, _ := dialect.Insert("f_bankcards").Rows(recs).ToSQL()
+	fmt.Println("BankCardInsert query = ", query)
 	_, err := meta.MerchantDB.Exec(query)
 	if err != nil {
 		return pushLog(err, helper.DBErr)

@@ -78,8 +78,8 @@ func (that *BankCardController) Insert(ctx *fasthttp.RequestCtx) {
 		Remark:            validator.FilterInjection(remark),
 		DailyMaxAmount:    fmt.Sprintf("%d", daily_max_amount),
 		DailyFinishAmount: "0",
-		TotalMaxAmount:    "0",
-		TotalFinishAmount: fmt.Sprintf("%d", total_max_amount),
+		TotalMaxAmount:    fmt.Sprintf("%d", total_max_amount),
+		TotalFinishAmount: "0",
 		Flags:             flags,
 	}
 
@@ -112,7 +112,7 @@ func (that *BankCardController) Delete(ctx *fasthttp.RequestCtx) {
 	}
 
 	// 线下转卡的paymentID  304314961990368154 刷新渠道下银行列表
-	_ = model.CacheRefreshPaymentBanks("304314961990368154")
+	//_ = model.CacheRefreshPaymentBanks("304314961990368154")
 
 	helper.Print(ctx, true, helper.Success)
 }
@@ -136,14 +136,14 @@ func (that *BankCardController) Remit(ctx *fasthttp.RequestCtx) {
 //List 银行卡列表
 func (that *BankCardController) List(ctx *fasthttp.RequestCtx) {
 
-	banklcardNo := string(ctx.PostArgs().Peek("card_no"))
-	accounName := string(ctx.PostArgs().Peek("account_name"))
-	bankId := string(ctx.PostArgs().Peek("bank_id"))
+	banklcardNo := string(ctx.QueryArgs().Peek("card_no"))
+	accounName := string(ctx.QueryArgs().Peek("real_name"))
+	bankId := string(ctx.QueryArgs().Peek("bank_id"))
 
 	ex := g.Ex{}
 
 	if helper.CtypeDigit(banklcardNo) {
-		ex["banklcard_no"] = validator.FilterInjection(banklcardNo)
+		ex["banklcard_no"] = banklcardNo
 	}
 	if helper.CtypeDigit(bankId) {
 		ex["channel_bank_id"] = bankId
@@ -187,22 +187,15 @@ func (that *BankCardController) Rest(ctx *fasthttp.RequestCtx) {
 //Update 编辑
 func (that *BankCardController) Update(ctx *fasthttp.RequestCtx) {
 
+	fmt.Println("Update = ", string(ctx.PostBody()))
 	id := string(ctx.PostArgs().Peek("id"))
 	state := string(ctx.PostArgs().Peek("state"))
 	total_max_amount := ctx.PostArgs().GetUintOrZero("total_max_amount")
 	daily_max_amount := ctx.PostArgs().GetUintOrZero("daily_max_amount")
 
-	flags := string(ctx.PostArgs().Peek("flags"))
+	//flags := string(ctx.PostArgs().Peek("flags"))
 	//code := string(ctx.PostArgs().Peek("code"))
 	remark := string(ctx.PostArgs().Peek("remark"))
-
-	if flags != "2" {
-		flags = "1"
-	}
-
-	if state != "1" {
-		flags = "0"
-	}
 
 	if !helper.CtypeDigit(id) {
 		helper.Print(ctx, false, helper.ParamErr)
@@ -210,7 +203,6 @@ func (that *BankCardController) Update(ctx *fasthttp.RequestCtx) {
 	}
 
 	rec := g.Record{
-		"flags": flags,
 		"state": state,
 	}
 

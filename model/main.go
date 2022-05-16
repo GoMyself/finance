@@ -42,6 +42,7 @@ type log_t struct {
 type MetaTable struct {
 	Zlog          *fluent.Fluent
 	MerchantDB    *sqlx.DB
+	MerchantTD    *sqlx.DB
 	MerchantRedis *redis.Client
 	ES            *elastic.Client
 	//MQPool        cpool.Pool
