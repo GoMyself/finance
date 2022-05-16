@@ -45,15 +45,15 @@ type MetaTable struct {
 	MerchantTD    *sqlx.DB
 	MerchantRedis *redis.Client
 	ES            *elastic.Client
-	//MQPool        cpool.Pool
-	Nats         *nats.Conn
-	Prefix       string
-	Lang         string
-	Fcallback    string
-	IsDev        bool
-	EsPrefix     string
-	MerchantInfo map[string]string
-	Finance      map[string]map[string]interface{}
+	Nats          *nats.Conn
+	Program       string
+	Prefix        string
+	Lang          string
+	Fcallback     string
+	IsDev         bool
+	EsPrefix      string
+	MerchantInfo  map[string]string
+	Finance       map[string]map[string]interface{}
 }
 
 var grpc_t struct {
@@ -163,35 +163,21 @@ func Constructor(mt *MetaTable, socks5, c string) {
 func pushLog(err error, code string) error {
 
 	err = tracerr.Wrap(err)
-	fields := map[string]string{
-		"filename": tracerr.SprintSource(err, 2, 2),
-		"content":  err.Error(),
-		"fn":       code,
+	ts := time.Now()
+	fields := g.Record{
 		"id":       helper.GenId(),
-		"project":  "finance_error",
+		"content":  err.Error(),
+		"project":  meta.Program,
+		"flags":    code,
+		"filename": tracerr.SprintSource(err, 2, 2),
+		"ts":       ts.In(loc).UnixMilli(),
 	}
 
-	fmt.Println(err.Error())
-	fmt.Println(tracerr.SprintSource(err, 2, 2))
-
-	l := log_t{
-		ID:      helper.GenId(),
-		Project: "finance",
-		Flags:   code,
-		Fn:      "",
-		File:    tracerr.SprintSource(err, 2, 2),
-		Content: err.Error(),
-	}
-	//err = tdlog.Info(fields)
-	//if err != nil {
-	//	fmt.Printf("write tdlog[%#v] err : %s", fields, err.Error())
-	//}
-
-	_ = meta.Zlog.Post(esPrefixIndex("finance_error"), l)
-
-	switch code {
-	case helper.DBErr, helper.RedisErr, helper.ESErr:
-		code = helper.ServerErr
+	query, _, _ := dialect.Insert("goerror").Rows(&fields).ToSQL()
+	//fmt.Println(query)
+	_, err1 := meta.MerchantTD.Exec(query)
+	if err1 != nil {
+		fmt.Println("insert SMS = ", err1.Error())
 	}
 
 	note := fmt.Sprintf("Hệ thống lỗi %s", fields["id"])
@@ -199,6 +185,7 @@ func pushLog(err error, code string) error {
 }
 
 func Close() {
+	meta.MerchantTD.Close()
 	_ = meta.MerchantDB.Close()
 	_ = meta.MerchantRedis.Close()
 	//meta.MQPool.Release()

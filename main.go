@@ -43,13 +43,14 @@ func main() {
 	}
 
 	mt := new(model.MetaTable)
-	mt.Zlog = conn.InitFluentd(cfg.Zlog.Host, cfg.Zlog.Port)
+	//mt.Zlog = conn.InitFluentd(cfg.Zlog.Host, cfg.Zlog.Port)
 	mt.MerchantTD = conn.InitTD(cfg.Td.Addr, cfg.Td.MaxIdleConn, cfg.Td.MaxOpenConn)
 	mt.MerchantDB = conn.InitDB(cfg.Db.Master.Addr, cfg.Db.Master.MaxIdleConn, cfg.Db.Master.MaxOpenConn)
 	mt.ES = conn.InitES(cfg.Es.Host, cfg.Es.Username, cfg.Es.Password)
 	mt.MerchantRedis = conn.InitRedisSentinel(cfg.Redis.Addr, cfg.Redis.Password, cfg.Redis.Sentinel, cfg.Redis.Db)
 	mt.Nats = conn.InitNatsIO(cfg.Nats.Servers, cfg.Nats.Username, cfg.Nats.Password)
 
+	mt.Program = os.Args[0]
 	mt.Prefix = cfg.Prefix
 	mt.EsPrefix = cfg.EsPrefix
 	mt.Lang = cfg.Lang
@@ -59,8 +60,6 @@ func main() {
 	//mt.MQPool = conn.InitBeanstalk(cfg.Beanstalkd.Addr, 15, cfg.Beanstalkd.MaxIdle, cfg.Beanstalkd.MaxCap)
 
 	mt.Finance = content
-
-	//tdlog.New(cfg.Td.Servers, cfg.Td.Username, cfg.Td.Password)
 	model.Constructor(mt, os.Args[3], cfg.Rpc)
 
 	session.New(mt.MerchantRedis, mt.Prefix)
@@ -73,7 +72,7 @@ func main() {
 	if os.Args[3] == "load" {
 		fmt.Println("load")
 
-		for i := 0; i < 10; i++ {
+		for i := 1; i < 11; i++ {
 			level := fmt.Sprintf("%d", i)
 			model.Create(level)
 		}
