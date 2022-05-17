@@ -187,7 +187,6 @@ func (that *BankCardController) Rest(ctx *fasthttp.RequestCtx) {
 //Update 编辑
 func (that *BankCardController) Update(ctx *fasthttp.RequestCtx) {
 
-	fmt.Println("Update = ", string(ctx.PostBody()))
 	id := string(ctx.PostArgs().Peek("id"))
 	state := string(ctx.PostArgs().Peek("state"))
 	total_max_amount := ctx.PostArgs().GetUintOrZero("total_max_amount")

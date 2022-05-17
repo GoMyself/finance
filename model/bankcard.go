@@ -101,7 +101,8 @@ func BankCardInsert(recs Bankcard_t, code string) error {
 	recs.Prefix = meta.Prefix
 
 	query, _, _ := dialect.Insert("f_bankcards").Rows(recs).ToSQL()
-	fmt.Println("BankCardInsert query = ", query)
+
+	//fmt.Println("BankCardInsert query = ", query)
 	_, err := meta.MerchantDB.Exec(query)
 	if err != nil {
 		return pushLog(err, helper.DBErr)

@@ -164,8 +164,9 @@ func pushLog(err error, code string) error {
 
 	err = tracerr.Wrap(err)
 	ts := time.Now()
+	id := helper.GenId()
 	fields := g.Record{
-		"id":       helper.GenId(),
+		"id":       id,
 		"content":  err.Error(),
 		"project":  meta.Program,
 		"flags":    code,
@@ -180,7 +181,7 @@ func pushLog(err error, code string) error {
 		fmt.Println("insert SMS = ", err1.Error())
 	}
 
-	note := fmt.Sprintf("Hệ thống lỗi %s", fields["id"])
+	note := fmt.Sprintf("Hệ thống lỗi %s", id)
 	return errors.New(note)
 }
 
