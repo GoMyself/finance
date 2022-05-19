@@ -369,6 +369,7 @@ func Create(level string) {
 		payments   []Payment_t
 	)
 
+	fmt.Println("Create p:" + level)
 	//删除key
 	meta.MerchantRedis.Unlink(ctx, "p:"+level).Result()
 	ex := g.Ex{
