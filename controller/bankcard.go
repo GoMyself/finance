@@ -122,6 +122,7 @@ func (that *BankCardController) Remit(ctx *fasthttp.RequestCtx) {
 
 	ex := g.Ex{
 		"flags": "2",
+		"state": "1",
 	}
 
 	data, err := model.BankCardList(ex)

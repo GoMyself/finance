@@ -16,7 +16,6 @@ import (
 
 	g "github.com/doug-martin/goqu/v9"
 	_ "github.com/doug-martin/goqu/v9/dialect/mysql"
-	"github.com/fluent/fluent-logger-golang/fluent"
 	"github.com/go-redis/redis/v8"
 	"github.com/hprose/hprose-golang/v3/rpc/core"
 	rpchttp "github.com/hprose/hprose-golang/v3/rpc/http"
@@ -40,7 +39,6 @@ type log_t struct {
 }
 
 type MetaTable struct {
-	Zlog          *fluent.Fluent
 	MerchantDB    *sqlx.DB
 	MerchantTD    *sqlx.DB
 	MerchantRedis *redis.Client

@@ -194,13 +194,15 @@ func httpDoTimeout(requestBody []byte, method string, requestURI string, headers
 // 写入日志
 func paymentPushLog(data paymentTDLog) {
 
+	ts := time.Now()
+
 	if data.Error == "" {
 		data.Level = "info"
 	} else {
 		data.Level = "error"
 	}
 
-	logInfo := map[string]string{
+	fields := g.Record{
 		"username":      data.Username,
 		"lable":         paymentLogTag,
 		"order_id":      data.OrderID,
@@ -213,6 +215,7 @@ func paymentPushLog(data paymentTDLog) {
 		"merchant":      data.Merchant,
 		"channel":       data.Channel,
 		"flag":          data.Flag,
+		"ts":            ts.In(loc).UnixMilli(),
 	}
 
 	//fmt.Printf("%v \n", logInfo)
@@ -221,7 +224,14 @@ func paymentPushLog(data paymentTDLog) {
 	//	fmt.Println("logging payment error: ", err.Error())
 	//}
 
-	_ = meta.Zlog.Post(esPrefixIndex(paymentLogTag), logInfo)
+	query, _, _ := dialect.Insert("finance_log").Rows(&fields).ToSQL()
+	//fmt.Println(query)
+	_, err1 := meta.MerchantTD.Exec(query)
+	if err1 != nil {
+		fmt.Println("insert SMS = ", err1.Error())
+	}
+
+	//_ = meta.Zlog.Post(esPrefixIndex(paymentLogTag), logInfo)
 }
 
 /*
