@@ -6,9 +6,9 @@ import (
 	"database/sql"
 	"errors"
 	"finance/contrib/helper"
-	"finance/contrib/tracerr"
 	"fmt"
 	"net/url"
+	"runtime"
 	"strings"
 	"time"
 
@@ -160,15 +160,22 @@ func Constructor(mt *MetaTable, socks5, c string) {
 
 func pushLog(err error, code string) error {
 
-	err = tracerr.Wrap(err)
+	_, file, line, _ := runtime.Caller(1)
+	paths := strings.Split(file, "/")
+	l := len(paths)
+	if l > 2 {
+		file = paths[l-2] + "/" + paths[l-1]
+	}
+	path := fmt.Sprintf("%s:%d", file, line)
+
 	ts := time.Now()
 	id := helper.GenId()
 	fields := g.Record{
 		"id":       id,
-		"content":  tracerr.SprintSource(err, 2, 2),
+		"content":  err.Error(),
 		"project":  meta.Program,
 		"flags":    code,
-		"filename": err.Error(),
+		"filename": path,
 		"ts":       ts.In(loc).UnixMilli(),
 	}
 
