@@ -175,7 +175,7 @@ func httpDoTimeout(merchant string, requestBody []byte, method string, requestUR
 
 	pLog := paymentTDLog{
 		Merchant:   merchant,
-		Flag:       "request",
+		Flag:       "2",
 		Lable:      paymentLogTag,
 		RequestURL: requestURI,
 	}

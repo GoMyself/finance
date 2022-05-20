@@ -252,7 +252,7 @@ func DepositCallBack(fctx *fasthttp.RequestCtx, payment_id string) {
 
 	pLog := paymentTDLog{
 		Merchant:   p.Name(),
-		Flag:       "deposit callback",
+		Flag:       "1",
 		Lable:      paymentLogTag,
 		RequestURL: string(fctx.RequestURI()),
 	}

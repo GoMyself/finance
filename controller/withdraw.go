@@ -69,6 +69,8 @@ func (that *WithdrawController) Withdraw(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	//TODO 检查上次提现成功到现在的存款
+
 	id, err := model.WithdrawUserInsert(param.Amount, param.BID, ctx)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
