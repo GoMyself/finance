@@ -225,7 +225,7 @@ func paymentPushLog(data paymentTDLog) {
 	//}
 
 	query, _, _ := dialect.Insert("finance_log").Rows(&fields).ToSQL()
-	//fmt.Println(query)
+	fmt.Println(query)
 	_, err1 := meta.MerchantTD.Exec(query)
 	if err1 != nil {
 		fmt.Println("insert SMS = ", err1.Error())
