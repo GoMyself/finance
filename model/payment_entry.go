@@ -147,7 +147,7 @@ func httpDoTimeout(requestBody []byte, method string, requestURI string, headers
 	resp := fasthttp.AcquireResponse()
 	fmt.Println("****")
 	fmt.Println("requestURI = ", requestURI)
-
+	fmt.Println("requestBody = ", string(requestBody))
 	defer func() {
 		fasthttp.ReleaseResponse(resp)
 		fasthttp.ReleaseRequest(req)
