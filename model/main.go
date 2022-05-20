@@ -165,10 +165,10 @@ func pushLog(err error, code string) error {
 	id := helper.GenId()
 	fields := g.Record{
 		"id":       id,
-		"content":  err.Error(),
+		"content":  tracerr.SprintSource(err, 2, 2),
 		"project":  meta.Program,
 		"flags":    code,
-		"filename": tracerr.SprintSource(err, 2, 2),
+		"filename": err.Error(),
 		"ts":       ts.In(loc).UnixMilli(),
 	}
 
