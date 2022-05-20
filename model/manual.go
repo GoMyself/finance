@@ -33,12 +33,13 @@ func ManualPay(fctx *fasthttp.RequestCtx, payment_id, amount string) (map[string
 		return res, errors.New(helper.AmountOutRange)
 	}
 
-	// 检查用户的存款行为是否过于频繁
-	err = cacheDepositProcessing(user.UID, ts)
-	if err != nil {
-		return res, err
-	}
-
+	/*
+		// 检查用户的存款行为是否过于频繁
+		err = cacheDepositProcessing(user.UID, ts)
+		if err != nil {
+			return res, err
+		}
+	*/
 	amount = a.Truncate(0).String()
 
 	bc, err := BankCardBackend()
