@@ -249,11 +249,12 @@ func WithdrawInsert(amount, bid, withdrawID, confirmUid, confirmName string, rec
 	}
 
 	// 默认取代代付
-	automatic := 1
-	// 根据金额判断 该笔提款是否走代付渠道 todo: 后面需要修改为从etcd中获取配置
-	if withdrawAmount.GreaterThanOrEqual(decimal.NewFromInt32(10000)) {
-		automatic = 0
-	}
+	//automatic := 1
+	//// 根据金额判断 该笔提款是否走代付渠道
+	//if withdrawAmount.GreaterThanOrEqual(decimal.NewFromInt32(10000)) {
+	//	automatic = 0
+	//}
+	automatic := 0
 
 	record := g.Record{
 		"id":                  withdrawID,

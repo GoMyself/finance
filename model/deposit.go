@@ -1103,8 +1103,8 @@ func cacheDepositProcessing(uid string, now int64) error {
 		return nil
 	}
 
-	// 十笔 订单 锁定 30 分钟
-	if num == 10 && now < int64(recs[0].Score)+30*60 {
+	// 十笔 订单 锁定 5 分钟
+	if num == 20 && now < int64(recs[0].Score)+5*60 {
 		// 最后一笔订单的时间
 		return errors.New(helper.EmptyOrder30MinsBlock)
 	}

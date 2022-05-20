@@ -17,6 +17,7 @@ const (
 	vtZaloPay    = "VT_ZALO_QR"
 	vtOnline     = "VT_ONLINE_BANK"
 	vtBankQr     = "VT_BANK_QR"
+	vtCard       = "VT_CARD_RECHARGE"
 )
 
 type vtPayConf struct {
@@ -51,6 +52,7 @@ func (that *VtPayment) New() {
 			"online":     vtOnline,
 			"zalo":       vtZaloPay,
 			"viettelpay": vtViettelPay,
+			"Thẻ Cào":    vtCard,
 		},
 	}
 }
