@@ -1,6 +1,7 @@
 package model
 
 import (
+	"database/sql"
 	"errors"
 	"finance/contrib/helper"
 	"fmt"
@@ -52,23 +53,33 @@ func MemberCache(fctx *fasthttp.RequestCtx) (Member, error) {
 		return m, errors.New(helper.UsernameErr)
 	}
 
-	pipe := meta.MerchantRedis.TxPipeline()
-	defer pipe.Close()
-
-	exist := pipe.Exists(ctx, name)
-	rs := pipe.HMGet(ctx, name, "uid", "username", "realname_hash", "state", "top_uid", "top_name", "parent_uid", "parent_name", "level")
-
-	_, err := pipe.Exec(ctx)
-	if err != nil {
-		return m, pushLog(err, helper.RedisErr)
+	//pipe := meta.MerchantRedis.TxPipeline()
+	//defer pipe.Close()
+	//
+	//exist := pipe.Exists(ctx, name)
+	//rs := pipe.HMGet(ctx, name, "uid", "username", "realname_hash", "state", "top_uid", "top_name", "parent_uid", "parent_name", "level")
+	//
+	//_, err := pipe.Exec(ctx)
+	//if err != nil {
+	//	return m, pushLog(err, helper.RedisErr)
+	//}
+	//
+	//if exist.Val() == 0 {
+	//	return m, errors.New(helper.UsernameErr)
+	//}
+	//
+	//if err = rs.Scan(&m); err != nil {
+	//	return m, pushLog(rs.Err(), helper.RedisErr)
+	//}
+	t := dialect.From("tbl_members")
+	query, _, _ := t.Select(colsMember...).Where(g.Ex{"username": name, "prefix": meta.Prefix}).Limit(1).ToSQL()
+	err := meta.MerchantDB.Get(&m, query)
+	if err != nil && err != sql.ErrNoRows {
+		return m, pushLog(err, helper.DBErr)
 	}
 
-	if exist.Val() == 0 {
+	if err == sql.ErrNoRows {
 		return m, errors.New(helper.UsernameErr)
-	}
-
-	if err = rs.Scan(&m); err != nil {
-		return m, pushLog(rs.Err(), helper.RedisErr)
 	}
 
 	return m, nil
