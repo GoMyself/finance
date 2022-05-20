@@ -228,7 +228,7 @@ func paymentPushLog(data paymentTDLog) {
 	fmt.Println(query)
 	_, err1 := meta.MerchantTD.Exec(query)
 	if err1 != nil {
-		fmt.Println("insert SMS = ", err1.Error())
+		fmt.Println("insert finance_log = ", err1.Error())
 	}
 
 	//_ = meta.Zlog.Post(esPrefixIndex(paymentLogTag), logInfo)
