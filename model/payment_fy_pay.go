@@ -102,7 +102,7 @@ func (that *FyPayment) Pay(orderId, ch, amount, bid string) (paymentDepositResp,
 	headers := map[string]string{}
 	uri := fmt.Sprintf("%s/pay", that.Conf.Domain)
 
-	v, err := httpDoTimeout([]byte(formData.Encode()), "POST", uri, headers, time.Second*8)
+	v, err := httpDoTimeout("fy pay", []byte(formData.Encode()), "POST", uri, headers, time.Second*8)
 	if err != nil {
 		fmt.Println("fy uri = ", uri)
 		fmt.Println("fy httpDoTimeout err = ", err)
@@ -153,7 +153,7 @@ func (that *FyPayment) Withdraw(arg WithdrawAutoParam) (paymentWithdrawalRsp, er
 	uri := fmt.Sprintf("%s/applyfor", that.Conf.Domain)
 	headers := map[string]string{}
 
-	v, err := httpDoTimeout([]byte(formData.Encode()), "POST", uri, headers, time.Second*8)
+	v, err := httpDoTimeout("fy pay", []byte(formData.Encode()), "POST", uri, headers, time.Second*8)
 	if err != nil {
 		return data, err
 	}

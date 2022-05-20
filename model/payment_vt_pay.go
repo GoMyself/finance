@@ -110,7 +110,7 @@ func (that *VtPayment) Withdraw(arg WithdrawAutoParam) (paymentWithdrawalRsp, er
 	headers := map[string]string{
 		"Content-Type": "application/x-www-form-urlencoded",
 	}
-	v, err := httpDoTimeout([]byte(formData.Encode()), "POST", uri, headers, time.Second*8)
+	v, err := httpDoTimeout("vt pay", []byte(formData.Encode()), "POST", uri, headers, time.Second*8)
 	if err != nil {
 		fmt.Println("vt uri = ", uri)
 		fmt.Println("vt httpDoTimeout err = ", err)

@@ -109,7 +109,7 @@ func (that *WPayment) Pay(orderId, ch, amount, bid string) (paymentDepositResp, 
 	}
 
 	uri := fmt.Sprintf("%s/order/create", that.Conf.Domain)
-	v, err := httpDoTimeout([]byte(formData.Encode()), "POST", uri, header, time.Second*8)
+	v, err := httpDoTimeout("w pay", []byte(formData.Encode()), "POST", uri, header, time.Second*8)
 	if err != nil {
 		fmt.Println("w uri = ", uri)
 		fmt.Println("w httpDoTimeout err = ", err)
@@ -164,7 +164,7 @@ func (that *WPayment) Withdraw(arg WithdrawAutoParam) (paymentWithdrawalRsp, err
 	headers := map[string]string{
 		"Content-Type": "application/x-www-form-urlencoded",
 	}
-	v, err := httpDoTimeout([]byte(formData.Encode()), "POST", uri, headers, time.Second*8)
+	v, err := httpDoTimeout("w pay", []byte(formData.Encode()), "POST", uri, headers, time.Second*8)
 	if err != nil {
 		return data, err
 	}

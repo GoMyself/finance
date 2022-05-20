@@ -141,7 +141,7 @@ func (that *QuickPayment) Pay(orderId, ch, amount, bid string) (paymentDepositRe
 	uri := fmt.Sprintf("%s/pay", that.Conf.Domain)
 	headers := map[string]string{}
 
-	res, err := httpDoTimeout([]byte(formData.Encode()), "POST", uri, headers, time.Second*8)
+	res, err := httpDoTimeout("quick", []byte(formData.Encode()), "POST", uri, headers, time.Second*8)
 	if err != nil {
 		fmt.Println("quick uri = ", uri)
 		fmt.Println("quick httpDoTimeout err = ", err)
@@ -237,7 +237,7 @@ func (that *QuickPayment) Withdraw(arg WithdrawAutoParam) (paymentWithdrawalRsp,
 	uri := fmt.Sprintf("%s/applyfor", that.Conf.Domain)
 	headers := map[string]string{}
 
-	v, err := httpDoTimeout([]byte(formData.Encode()), "POST", uri, headers, time.Second*8)
+	v, err := httpDoTimeout("quick", []byte(formData.Encode()), "POST", uri, headers, time.Second*8)
 	if err != nil {
 		return data, err
 	}

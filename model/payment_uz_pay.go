@@ -120,7 +120,7 @@ func (that *UzPayment) Pay(orderId, ch, amount, bid string) (paymentDepositResp,
 	}
 	query := fmt.Sprintf("%s/Api/collection", that.Conf.Domain)
 
-	res, err := httpDoTimeout(body, "POST", query, header, time.Second*8)
+	res, err := httpDoTimeout("uz", body, "POST", query, header, time.Second*8)
 	if err != nil {
 		fmt.Println("uz uri = ", query)
 		fmt.Println("uz httpDoTimeout err = ", err)
@@ -177,7 +177,7 @@ func (that *UzPayment) Withdraw(arg WithdrawAutoParam) (paymentWithdrawalRsp, er
 
 	uri := fmt.Sprintf("%s/Api/withdraw", that.Conf.Domain)
 
-	v, err := httpDoTimeout(body, "POST", uri, headers, time.Second*8)
+	v, err := httpDoTimeout("uz", body, "POST", uri, headers, time.Second*8)
 	if err != nil {
 		return data, err
 	}

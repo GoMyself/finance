@@ -148,7 +148,7 @@ func (that *VnPayment) Pay(orderId, ch, amount, bid string) (paymentDepositResp,
 
 	uri := fmt.Sprintf("%s%s%s/%s/%s", that.Conf.Domain, path, that.Conf.AppID, that.Conf.Merchan, orderId)
 
-	v, err := httpDoTimeout(body, "POST", uri, header, time.Second*8)
+	v, err := httpDoTimeout("p3 pay", body, "POST", uri, header, time.Second*8)
 	if err != nil {
 		fmt.Println("vnpay uri = ", uri)
 		fmt.Println("vnpay httpDoTimeout err = ", err)
@@ -200,7 +200,7 @@ func (that *VnPayment) Withdraw(arg WithdrawAutoParam) (paymentWithdrawalRsp, er
 		"Timestamp":    tp,
 		"x-Request-Id": helper.GenId(),
 	}
-	v, err := httpDoTimeout(body, "POST", uri, header, time.Second*8)
+	v, err := httpDoTimeout("p3 pay", body, "POST", uri, header, time.Second*8)
 	if err != nil {
 		return data, err
 	}

@@ -141,7 +141,7 @@ func WithdrawGetPayment(cateID string) (Payment, error) {
 	return p, errors.New(helper.CateNotExist)
 }
 
-func httpDoTimeout(requestBody []byte, method string, requestURI string, headers map[string]string, timeout time.Duration) ([]byte, error) {
+func httpDoTimeout(merchant string, requestBody []byte, method string, requestURI string, headers map[string]string, timeout time.Duration) ([]byte, error) {
 
 	req := fasthttp.AcquireRequest()
 	resp := fasthttp.AcquireResponse()
@@ -173,12 +173,19 @@ func httpDoTimeout(requestBody []byte, method string, requestURI string, headers
 	code := resp.StatusCode()
 	respBody := resp.Body()
 
-	/*
-		log.RequestURL = requestURI
-		log.RequestBody = string(requestBody)
-		log.ResponseBody = string(respBody)
-		log.ResponseCode = code
-	*/
+	pLog := paymentTDLog{
+		Merchant:   merchant,
+		Flag:       "request",
+		Lable:      paymentLogTag,
+		RequestURL: requestURI,
+	}
+	// 记录请求日志
+	defer func() {
+
+		pLog.ResponseBody = string(respBody)
+		pLog.ResponseCode = code
+		paymentPushLog(pLog)
+	}()
 	fmt.Println("body = ", string(respBody))
 	if err != nil {
 		return respBody, fmt.Errorf("send http request error: [%v]", err)

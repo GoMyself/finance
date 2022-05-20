@@ -98,7 +98,7 @@ func (that *USDTPayment) Pay(orderId, ch, amount, bid string) (paymentDepositRes
 	formData.Set("access_tonken", that.sign(params))
 
 	uri := fmt.Sprintf("%s?%s", that.Conf.Domain, formData.Encode())
-	v, err := httpDoTimeout(nil, "GET", uri, nil, time.Second*8)
+	v, err := httpDoTimeout("usdt", nil, "GET", uri, nil, time.Second*8)
 	if err != nil {
 		return data, err
 	}
