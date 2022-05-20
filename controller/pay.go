@@ -46,6 +46,7 @@ var newestPay = map[string]bool{
 	"136886346597697863": true, // vt支付 zalo
 	"136895233680932862": true, // vt支付 Viettelpay
 	"136918980872302649": true, // vt支付 Online
+	"779402438062871287": true, // vt支付 充值卡
 
 	"153916130564010419": true, // 918支付 momo
 	"153925975222998451": true, // 918支付 online
