@@ -41,7 +41,7 @@ func ChannelBankList(cateID, chanID string, page, pageSize uint16) (ChannelBankD
 	if chanID != "0" {
 		var ids []string
 		query, _, _ := dialect.From("f_payment").Select("id").GroupBy("id").
-			Where(g.Ex{"channel_id": chanID, "prefix": meta.Prefix}).ToSQL()
+			Where(g.Ex{"channel_id": chanID, "prefix": meta.Prefix}).Order(g.C("created_at").Desc()).ToSQL()
 		err := meta.MerchantDB.Select(&ids, query)
 		if err != nil {
 			return data, pushLog(err, helper.DBErr)
