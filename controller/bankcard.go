@@ -19,7 +19,7 @@ func (that *BankCardController) Insert(ctx *fasthttp.RequestCtx) {
 
 	bank_id := string(ctx.PostArgs().Peek("bank_id"))
 	account_name := string(ctx.PostArgs().Peek("account_name"))
-	bankcard_addr := string(ctx.PostArgs().Peek("bankcard_addr"))
+	//bankcard_addr := string(ctx.PostArgs().Peek("bankcard_addr"))
 	banklcard_no := string(ctx.PostArgs().Peek("banklcard_no"))
 
 	total_max_amount := ctx.PostArgs().GetUintOrZero("total_max_amount")
@@ -29,10 +29,10 @@ func (that *BankCardController) Insert(ctx *fasthttp.RequestCtx) {
 	code := string(ctx.PostArgs().Peek("code"))
 	remark := string(ctx.PostArgs().Peek("remark"))
 
-	if !helper.CtypeDigit(bank_id) {
-		helper.Print(ctx, false, helper.ParamErr)
-		return
-	}
+	//if !helper.CtypeDigit(bank_id) {
+	//	helper.Print(ctx, false, helper.ParamErr)
+	//	return
+	//}
 
 	if !helper.CtypeDigit(banklcard_no) {
 		helper.Print(ctx, false, helper.ParamErr)
@@ -69,11 +69,11 @@ func (that *BankCardController) Insert(ctx *fasthttp.RequestCtx) {
 	bc := model.Bankcard_t{
 
 		Id:                helper.GenId(),
-		ChannelBankId:     bank_id,
+		ChannelBankId:     "0",
 		BanklcardName:     bank.Name,
 		BanklcardNo:       banklcard_no,
 		AccountName:       account_name,
-		BankcardAddr:      validator.FilterInjection(bankcard_addr),
+		BankcardAddr:      "",
 		State:             "0",
 		Remark:            validator.FilterInjection(remark),
 		DailyMaxAmount:    fmt.Sprintf("%d", daily_max_amount),
