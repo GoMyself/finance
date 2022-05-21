@@ -76,7 +76,7 @@ func (that *VnPayment) New() {
 		Merchan:        merchan,
 		MerchanNo:      merchanNo,
 		PayKey:         payKey,
-		Name:           "VnPay",
+		Name:           "P3Pay",
 		Domain:         apiUrl,
 		PayNotify:      "%s/finance/callback/vnd",
 		WithdrawNotify: "%s/finance/callback/vnw",

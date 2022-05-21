@@ -130,7 +130,7 @@ func Constructor(mt *MetaTable, socks5, c string) {
 		"13": "USDT2",
 		"17": "VTPAY",
 		"18": "918PAY",
-		"19": "VNPAY",
+		"19": "P3PAY",
 		"20": "DBPAY",
 	}
 
