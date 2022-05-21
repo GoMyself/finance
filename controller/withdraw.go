@@ -42,8 +42,9 @@ type withdrawReviewParam struct {
 
 //  风控审核 拒绝
 type withdrawRiskRejectParam struct {
-	ID           string `name:"id" rule:"digit" msg:"id error"`
-	ReviewRemark string `name:"review_remark" rule:"filter" min:"1" max:"100" msg:"review_remark error"`
+	ID             string `name:"id" rule:"digit" msg:"id error"`
+	ReviewRemark   string `name:"review_remark" rule:"filter" min:"1" max:"100" msg:"review_remark error"`
+	WithdrawRemark string `name:"withdraw_remark" rule:"filter" default:"" min:"1" max:"100" msg:"withdraw remark error"`
 }
 
 // 订单挂起
@@ -897,10 +898,10 @@ func (that *WithdrawController) Review(ctx *fasthttp.RequestCtx) {
 
 	if param.Ty == 2 { // 人工出款
 
-		if !validator.CheckStringDigit(param.CardNo) || !validator.CheckStringLength(param.CardNo, 6, 20) {
-			helper.Print(ctx, false, helper.BankcardIDErr)
-			return
-		}
+		//if !validator.CheckStringDigit(param.CardNo) || !validator.CheckStringLength(param.CardNo, 6, 20) {
+		//	helper.Print(ctx, false, helper.BankcardIDErr)
+		//	return
+		//}
 
 		/*
 			logMsg := fmt.Sprintf("人工出款【订单号:%s；会员账号:%s；订单金额:%.4f；申请时间:%s；完成时间:%s】",
@@ -1106,9 +1107,10 @@ func (that *WithdrawController) RiskReviewReject(ctx *fasthttp.RequestCtx) {
 	}
 
 	record := g.Record{
-		"state":         model.WithdrawReviewReject,
-		"review_remark": param.ReviewRemark,
-		"confirm_at":    ctx.Time().Unix(),
+		"state":           model.WithdrawReviewReject,
+		"review_remark":   param.ReviewRemark,
+		"withdraw_remark": param.WithdrawRemark,
+		"confirm_at":      ctx.Time().Unix(),
 	}
 	err = model.WithdrawRiskReview(param.ID, model.WithdrawReviewReject, record, withdraw)
 	if err != nil {
