@@ -193,12 +193,13 @@ func (that *VnPayment) Withdraw(arg WithdrawAutoParam) (paymentWithdrawalRsp, er
 	if err != nil {
 		return data, errors.New(helper.FormatErr)
 	}
+	sid := helper.GenId()
 	uri := fmt.Sprintf("%s/v1/api/withdraw/%s/%s/%s", that.Conf.Domain, that.Conf.AppID, that.Conf.Merchan, arg.OrderID)
 	header := map[string]string{
 		"Content-Type": "application/json",
-		"Nonce":        helper.MD5Hash(helper.GenId()),
+		"Nonce":        helper.MD5Hash(sid),
 		"Timestamp":    tp,
-		"x-Request-Id": helper.GenId(),
+		"x-Request-Id": sid,
 	}
 	v, err := httpDoTimeout("p3 pay", body, "POST", uri, header, time.Second*8)
 	if err != nil {
