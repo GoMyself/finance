@@ -42,10 +42,10 @@ type conf struct {
 		MaxIdleConn int    `json:"max_idle_conn"`
 		MaxOpenConn int    `json:"max_open_conn"`
 	} `json:"td"`
-	Zlog struct {
-		Host string `json:"host"`
-		Port int    `json:"port"`
-	} `json:"zlog"`
+	BankcardValidAPI struct {
+		URL string `json:"url"`
+		Key string `json:"key"`
+	} `json:"bankcard_valid_api"`
 	Redis struct {
 		Addr     []string `json:"addr"`
 		Password string   `json:"password"`

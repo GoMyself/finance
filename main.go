@@ -43,7 +43,7 @@ func main() {
 	}
 
 	mt := new(model.MetaTable)
-	//mt.Zlog = conn.InitFluentd(cfg.Zlog.Host, cfg.Zlog.Port)
+
 	mt.MerchantTD = conn.InitTD(cfg.Td.Addr, cfg.Td.MaxIdleConn, cfg.Td.MaxOpenConn)
 	mt.MerchantDB = conn.InitDB(cfg.Db.Master.Addr, cfg.Db.Master.MaxIdleConn, cfg.Db.Master.MaxOpenConn)
 	mt.ES = conn.InitES(cfg.Es.Host, cfg.Es.Username, cfg.Es.Password)
@@ -51,6 +51,7 @@ func main() {
 	mt.Nats = conn.InitNatsIO(cfg.Nats.Servers, cfg.Nats.Username, cfg.Nats.Password)
 
 	mt.Program = os.Args[0]
+	mt.CardValid = cfg.BankcardValidAPI
 	mt.Prefix = cfg.Prefix
 	mt.EsPrefix = cfg.EsPrefix
 	mt.Lang = cfg.Lang

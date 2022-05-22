@@ -60,12 +60,14 @@ func BankcardTaskQuery(ts, id string) (bool, error) {
 		"Content-Type": "application/json",
 	}
 
-	str := fmt.Sprintf("orderNo=%s&timestamp=%s&appsecret=%s", id, ts, "da156c07f0b7ad6ce")
+	str := fmt.Sprintf("orderNo=%s&timestamp=%s&appsecret=%s", id, ts, meta.CardValid.Key)
+	uri := fmt.Sprintf("%s/bank/result/query", meta.CardValid.URL)
+
 	sign := helper.GetMD5Hash(helper.GetMD5Hash(helper.GetMD5Hash(str)))
 
 	b := fmt.Sprintf("{\"orderNo\":\"%s\", \"sign\":\"%s\"}", id, sign)
 
-	body, statusCode, err := helper.HttpDoTimeout([]byte(b), "POST", "http://34.143.205.118:8080/bank/result/query", headers, 5*time.Second)
+	body, statusCode, err := helper.HttpDoTimeout([]byte(b), "POST", uri, headers, 5*time.Second)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -93,7 +95,9 @@ func BankcardTaskCreate(ts string, res bankcard_check_t) (string, error) {
 		"Content-Type": "application/json",
 	}
 
-	str := fmt.Sprintf("bankCode=%s&bankCard=%s&name=%s&timestamp=%s&appsecret=%s", res.BankCode, res.BankCard, res.Name, ts, "da156c07f0b7ad6ce")
+	str := fmt.Sprintf("bankCode=%s&bankCard=%s&name=%s&timestamp=%s&appsecret=%s", res.BankCode, res.BankCard, res.Name, ts, meta.CardValid.Key)
+	uri := fmt.Sprintf("%s/bank/check/create", meta.CardValid.URL)
+
 	res.Sign = helper.GetMD5Hash(helper.GetMD5Hash(helper.GetMD5Hash(str)))
 
 	b, err := helper.JsonMarshal(res)
@@ -101,7 +105,7 @@ func BankcardTaskCreate(ts string, res bankcard_check_t) (string, error) {
 		log.Fatal(err)
 	}
 
-	body, statusCode, err := helper.HttpDoTimeout(b, "POST", "http://34.143.205.118:8080/bank/check/create", headers, 5*time.Second)
+	body, statusCode, err := helper.HttpDoTimeout(b, "POST", uri, headers, 5*time.Second)
 	if err != nil {
 		return "", err
 	}
