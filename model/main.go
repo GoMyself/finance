@@ -29,15 +29,9 @@ import (
 	"github.com/valyala/fastjson"
 )
 
-type bankcardValidAPI_t struct {
-	URL string `json:"url"`
-	Key string `json:"key"`
-}
-
 type MetaTable struct {
 	MerchantDB    *sqlx.DB
 	MerchantTD    *sqlx.DB
-	CardValid     bankcardValidAPI_t
 	MerchantRedis *redis.Client
 	ES            *elastic.Client
 	Nats          *nats.Conn

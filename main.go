@@ -51,14 +51,11 @@ func main() {
 	mt.Nats = conn.InitNatsIO(cfg.Nats.Servers, cfg.Nats.Username, cfg.Nats.Password)
 
 	mt.Program = os.Args[0]
-	mt.CardValid = cfg.BankcardValidAPI
 	mt.Prefix = cfg.Prefix
 	mt.EsPrefix = cfg.EsPrefix
 	mt.Lang = cfg.Lang
 	mt.Fcallback = cfg.Fcallback
 	mt.IsDev = cfg.IsDev
-
-	//mt.MQPool = conn.InitBeanstalk(cfg.Beanstalkd.Addr, 15, cfg.Beanstalkd.MaxIdle, cfg.Beanstalkd.MaxCap)
 
 	mt.Finance = content
 	model.Constructor(mt, os.Args[3], cfg.Rpc)
