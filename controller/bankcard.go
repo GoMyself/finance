@@ -17,9 +17,10 @@ func (that *BankCardController) Insert(ctx *fasthttp.RequestCtx) {
 
 	//fmt.Println("BankCardController Insert = ", string(ctx.PostBody()))
 
-	bank_id := string(ctx.PostArgs().Peek("bank_id"))
+	//bank_id := string(ctx.PostArgs().Peek("bank_id"))
 	account_name := string(ctx.PostArgs().Peek("account_name"))
 	//bankcard_addr := string(ctx.PostArgs().Peek("bankcard_addr"))
+	banklcard_name := string(ctx.PostArgs().Peek("banklcard_name"))
 	banklcard_no := string(ctx.PostArgs().Peek("banklcard_no"))
 
 	total_max_amount := ctx.PostArgs().GetUintOrZero("total_max_amount")
@@ -60,17 +61,11 @@ func (that *BankCardController) Insert(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	bank, err := model.ChannelBankByID(bank_id)
-	if err != nil {
-		helper.Print(ctx, false, err.Error())
-		return
-	}
-
 	bc := model.Bankcard_t{
 
 		Id:                helper.GenId(),
 		ChannelBankId:     "0",
-		BanklcardName:     bank.Name,
+		BanklcardName:     banklcard_name,
 		BanklcardNo:       banklcard_no,
 		AccountName:       account_name,
 		BankcardAddr:      "",
