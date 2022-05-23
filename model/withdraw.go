@@ -549,7 +549,12 @@ func WithdrawHandToAuto(uid, username, id, pid, bid string, amount float64, t ti
 
 	// query realName and bankcardNo
 	bankcardNo, realName, err := WithdrawGetBkAndRn(bid, uid, false)
+	fmt.Println("WithdrawGetBkAndRn realName = ", realName)
+	fmt.Println("WithdrawGetBkAndRn bankcardNo = ", bankcardNo)
+
 	if err != nil {
+
+		fmt.Println("WithdrawGetBkAndRn err = ", err)
 		return err
 	}
 
