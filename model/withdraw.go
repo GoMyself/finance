@@ -548,7 +548,7 @@ func WithdrawHandToAuto(uid, username, id, pid, bid string, amount float64, t ti
 	}
 
 	// query realName and bankcardNo
-	bankcardNo, realName, err := WithdrawGetBkAndRn(bid, uid)
+	bankcardNo, realName, err := WithdrawGetBkAndRn(bid, uid, false)
 	if err != nil {
 		return err
 	}
@@ -1023,10 +1023,10 @@ func WithdrawGetBank(bid, username string) (MemberBankCard, error) {
 
 // query bankcard and realname through by rpc call with the primary key id of table
 // tbl_member_bankcard(which is bid) and the username as parameters
-func WithdrawGetBkAndRn(bid, uid string) (string, string, error) {
+func WithdrawGetBkAndRn(bid, uid string, hide bool) (string, string, error) {
 
 	field := "bankcard" + bid
-	recs, err := grpc_t.Decrypt(uid, true, []string{"realname", field})
+	recs, err := grpc_t.Decrypt(uid, hide, []string{"realname", field})
 
 	if err != nil {
 		return "", "", errors.New(helper.GetRPCErr)
