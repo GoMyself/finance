@@ -1027,7 +1027,7 @@ func (that *WithdrawController) RiskReview(ctx *fasthttp.RequestCtx) {
 	if withdraw.Automatic == 1 {
 		fmt.Println("调用第三方代付")
 
-		bankcardNo, realName, err := model.WithdrawGetBkAndRn(withdraw.BID, withdraw.UID, true)
+		bankcardNo, realName, err := model.WithdrawGetBkAndRn(withdraw.BID, withdraw.UID, false)
 		if err != nil {
 			record = g.Record{
 				"state":     model.WithdrawAutoPayFailed,
