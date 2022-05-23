@@ -282,6 +282,7 @@ func DepositCallBack(fctx *fasthttp.RequestCtx, payment_id string) {
 		fctx.SetBody([]byte(`failed`))
 		return
 	}
+	pLog.OrderID = data.OrderID
 
 	// 查询订单
 	order, err := depositFind(data.OrderID)
@@ -292,7 +293,6 @@ func DepositCallBack(fctx *fasthttp.RequestCtx, payment_id string) {
 	}
 
 	pLog.Username = order.Username
-	pLog.OrderID = data.OrderID
 
 	ch, err := ChannelTypeById(order.ChannelID)
 	if err != nil {
