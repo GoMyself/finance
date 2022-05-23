@@ -24,8 +24,9 @@ type memberWithdrawParam struct {
 
 // 提现拒绝
 type withdrawReviewReject struct {
-	ID     string `name:"id" rule:"digit" msg:"id error"`
-	Remark string `name:"remark" rule:"filter" default:"" min:"0" max:"50" msg:"remark error"`
+	ID             string `name:"id" rule:"digit" msg:"id error"`
+	Remark         string `name:"remark" rule:"filter" default:"" min:"0" max:"50" msg:"remark error"`
+	WithdrawRemark string `name:"withdraw_remark" rule:"filter" default:"" min:"0" max:"50" msg:"withdraw_remark error"`
 }
 
 // 提款审核
@@ -820,7 +821,8 @@ func (that *WithdrawController) ReviewReject(ctx *fasthttp.RequestCtx) {
 	*/
 
 	record := g.Record{
-		"withdraw_remark": param.Remark,
+		"review_remark":   param.Remark,
+		"withdraw_remark": param.WithdrawRemark,
 		"withdraw_at":     ctx.Time().Unix(),
 		"withdraw_uid":    admin["id"],
 		"withdraw_name":   admin["name"],
