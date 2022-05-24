@@ -110,7 +110,7 @@ func (that *VnPayment) Pay(orderId, ch, amount, bid string) (paymentDepositResp,
 		"channelCode": bid,                                              // 银行名称 (用于银行扫码（通道2）,直連（通道3） 的收款账户分配)
 		"orderNo":     orderId,                                          // 商户订单号
 		"currency":    "VND",                                            //
-		"amount":      fmt.Sprintf("%s000.00", amount),                  // 订单金额
+		"amount":      fmt.Sprintf("%s000", amount),                     // 订单金额
 		"notifyUrl":   fmt.Sprintf(that.Conf.PayNotify, meta.Fcallback), // 异步通知地址
 	}
 	if cno == p3Online || cno == p3Offline {
@@ -178,7 +178,7 @@ func (that *VnPayment) Withdraw(arg WithdrawAutoParam) (paymentWithdrawalRsp, er
 		"channelCode":   arg.BankCode,        // 收款银行名称
 		"orderNo":       arg.OrderID,         // 商户订单号
 		"currency":      "VND",
-		"amount":        fmt.Sprintf("%s.00", arg.Amount),                      // 订单金额
+		"amount":        fmt.Sprintf("%s", arg.Amount),                         // 订单金额
 		"payee":         arg.CardName,                                          // 收款人姓名
 		"payeeBankCard": arg.CardNumber,                                        // 收款银行账号
 		"notifyUrl":     fmt.Sprintf(that.Conf.WithdrawNotify, meta.Fcallback), // 异步通知地址
