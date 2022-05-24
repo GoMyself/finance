@@ -10,11 +10,6 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-const (
-	risksKey   = "receive"
-	risksState = "receiveState"
-)
-
 type Receive struct {
 	ID   string `db:"id" json:"id" rule:"none"`      // 主键ID
 	Name string `db:"name" json:"name" rule:"aname"` // 用户名
@@ -23,8 +18,9 @@ type Receive struct {
 //返水风控审核人员的UID
 func GetRisksUID() (string, error) {
 
+	maxKey := fmt.Sprintf("%s:risk:maxreceivenum", meta.Prefix)
 	// 查询最大接单数量
-	max, err := meta.MerchantRedis.Get(ctx, "R:num").Uint64()
+	max, err := meta.MerchantRedis.Get(ctx, maxKey).Uint64()
 	if err != nil && err != redis.Nil {
 		return "0", pushLog(err, helper.RedisErr)
 	}
@@ -34,6 +30,7 @@ func GetRisksUID() (string, error) {
 		return "0", errors.New("max acceptable order quality less or equal to 0")
 	}
 
+	risksKey := fmt.Sprintf("%s:risk:receive", meta.Prefix)
 	// 查询在自动派单列表中的总人数
 	c, err := meta.MerchantRedis.LLen(ctx, risksKey).Result()
 	if err != nil {
@@ -51,7 +48,7 @@ func GetRisksUID() (string, error) {
 			continue
 		}
 
-		key := fmt.Sprintf("R:%s", uid)
+		key := fmt.Sprintf("%s:risk:mb:%s", meta.Prefix, uid)
 		// 查询当前未处理的订单
 		current, err := meta.MerchantRedis.LLen(ctx, key).Result()
 		if err != nil {
@@ -70,9 +67,14 @@ func GetRisksUID() (string, error) {
 
 // RisksCloseAuto 风控人员关闭自己接单或是是关闭风控配置的自动派单
 func RisksCloseAuto(uid string) error {
+
+	// 接单员队列
+	risksKey := fmt.Sprintf("%s:risk:receive", meta.Prefix)
+	// 是否自动接单
+	receiveKey := fmt.Sprintf("%s:risk:auto", meta.Prefix)
 	if uid == "" || uid == "0" {
 		//关闭自动接单
-		_, err := meta.MerchantRedis.Unlink(ctx, risksKey, risksState).Result()
+		_, err := meta.MerchantRedis.Unlink(ctx, risksKey, receiveKey).Result()
 		if err != nil {
 			return pushLog(err, helper.RedisErr)
 		}
@@ -92,6 +94,10 @@ func RisksCloseAuto(uid string) error {
 // RisksOpenAuto 开启自动派单或者设置单个风控人员的自动派单
 func RisksOpenAuto(uid string) error {
 
+	// 接单员队列
+	risksKey := fmt.Sprintf("%s:risk:receive", meta.Prefix)
+	// 是否自动接单
+	receiveKey := fmt.Sprintf("%s:risk:auto", meta.Prefix)
 	if uid == "" || uid == "0" {
 
 		var ids []string
@@ -106,7 +112,7 @@ func RisksOpenAuto(uid string) error {
 			return pushLog(err, helper.DBErr)
 		}
 
-		_, err = meta.MerchantRedis.Set(ctx, risksState, "1", 0).Result()
+		_, err = meta.MerchantRedis.Set(ctx, receiveKey, "1", 0).Result()
 		if err != nil {
 			return pushLog(err, helper.RedisErr)
 		}
@@ -123,7 +129,7 @@ func RisksOpenAuto(uid string) error {
 		return nil
 	}
 
-	exist, _ := meta.MerchantRedis.Get(ctx, risksState).Result()
+	exist, _ := meta.MerchantRedis.Get(ctx, receiveKey).Result()
 	if exist != "1" {
 		return errors.New(helper.ManualPicking)
 	}
@@ -147,7 +153,7 @@ func SetRisksOrder(uid, billNo string, diff int) error {
 		return errors.New(helper.ParamNull)
 	}
 
-	key := fmt.Sprintf("R:%s", uid)
+	key := fmt.Sprintf("%s:risk:mb:%s", meta.Prefix, uid)
 	if diff == -1 {
 		_, err := meta.MerchantRedis.LRem(ctx, key, 0, billNo).Result()
 		if err != nil {
@@ -166,6 +172,8 @@ func SetRisksOrder(uid, billNo string, diff int) error {
 }
 
 func RisksList() ([]string, error) {
+
+	risksKey := fmt.Sprintf("%s:risk:receive", meta.Prefix)
 	uidArr, _ := meta.MerchantRedis.LRange(ctx, risksKey, 0, -1).Result()
 	return uidArr, nil
 }
@@ -173,8 +181,12 @@ func RisksList() ([]string, error) {
 //判断用户是否在list中
 func IsExistRisks(uid string) bool {
 
+	// 接单员队列
+	risksKey := fmt.Sprintf("%s:risk:receive", meta.Prefix)
+	// 是否自动接单
+	receiveKey := fmt.Sprintf("%s:risk:auto", meta.Prefix)
 	if uid == "" || uid == "0" {
-		exist, _ := meta.MerchantRedis.Get(ctx, risksState).Result()
+		exist, _ := meta.MerchantRedis.Get(ctx, receiveKey).Result()
 		if exist == "1" {
 			return true
 		}
@@ -206,7 +218,8 @@ func SetOrderNum(num string) error {
 		return errors.New(helper.OrderNumErr)
 	}
 
-	_, err := meta.MerchantRedis.Set(ctx, "R:num", numInt, 0).Result()
+	maxKey := fmt.Sprintf("%s:risk:maxreceivenum", meta.Prefix)
+	_, err := meta.MerchantRedis.Set(ctx, maxKey, numInt, 0).Result()
 	if err != nil {
 		return pushLog(err, helper.RedisErr)
 	}
@@ -217,7 +230,6 @@ func SetOrderNum(num string) error {
 func RisksReceives() ([]Receive, error) {
 
 	var data []Receive
-
 	ex := g.Ex{
 		"state":    1,
 		"group_id": g.Op{"in": []interface{}{"381", "382", "383"}},
@@ -233,7 +245,9 @@ func RisksReceives() ([]Receive, error) {
 }
 
 func RisksNumber() (uint64, error) {
-	num, err := meta.MerchantRedis.Get(ctx, "R:num").Uint64()
+
+	maxKey := fmt.Sprintf("%s:risk:maxreceivenum", meta.Prefix)
+	num, err := meta.MerchantRedis.Get(ctx, maxKey).Uint64()
 	if err != nil && err != redis.Nil {
 		return num, pushLog(err, helper.RedisErr)
 	}
@@ -248,7 +262,8 @@ func SetRegMax(num string) error {
 		return errors.New(helper.OrderNumErr)
 	}
 
-	_, err := meta.MerchantRedis.Set(ctx, "R:r:num", numInt, 0).Result()
+	maxKey := fmt.Sprintf("%s:risk:maxregnum", meta.Prefix)
+	_, err := meta.MerchantRedis.Set(ctx, maxKey, numInt, 0).Result()
 	if err != nil {
 		return pushLog(err, helper.RedisErr)
 	}
@@ -258,7 +273,8 @@ func SetRegMax(num string) error {
 
 func RisksRegMax() (uint64, error) {
 
-	num, err := meta.MerchantRedis.Get(ctx, "R:r:num").Uint64()
+	maxKey := fmt.Sprintf("%s:risk:maxregnum", meta.Prefix)
+	num, err := meta.MerchantRedis.Get(ctx, maxKey).Uint64()
 	if err != nil && err != redis.Nil {
 		return num, pushLog(err, helper.RedisErr)
 	}
