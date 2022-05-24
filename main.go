@@ -81,6 +81,13 @@ func main() {
 		return
 	}
 
+	if os.Args[3] == "cleanCard" {
+		fmt.Println("cleanBankFinshAmount")
+
+		model.CleanBankFinshAmount()
+		return
+	}
+
 	b := router.BuildInfo{
 		GitReversion:   gitReversion,
 		BuildTime:      buildTime,
