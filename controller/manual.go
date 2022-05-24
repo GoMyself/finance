@@ -4,6 +4,7 @@ import (
 	"finance/contrib/helper"
 	"finance/contrib/validator"
 	"finance/model"
+	"github.com/shopspring/decimal"
 
 	g "github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
@@ -213,11 +214,36 @@ func (that *ManualController) Review(ctx *fasthttp.RequestCtx) {
 			keyword, id, deposit.Username, deposit.Amount, model.TimeFormat(ctx.Time().Unix()))
 		defer model.SystemLogWrite(logMsg, ctx)
 	*/
+	bk, err := model.BankCardByID(deposit.BankcardID)
+	if err != nil {
+		helper.Print(ctx, false, err.Error())
+		return
+	}
+
+	//可以充值超过当日最大收款限额
+	fishAmount, _ := decimal.NewFromString(bk.DailyFinishAmount)
+	maxAmount, _ := decimal.NewFromString(bk.DailyMaxAmount)
+	totalAmount, _ := decimal.NewFromString(bk.TotalFinishAmount)
+	totalMaxAmount, _ := decimal.NewFromString(bk.TotalMaxAmount)
+
+	if state == model.DepositSuccess && (fishAmount.Cmp(maxAmount) >= 0 || fishAmount.Add(decimal.NewFromFloat(deposit.Amount)).GreaterThan(maxAmount) ||
+		totalAmount.Add(decimal.NewFromFloat(deposit.Amount)).GreaterThan(totalMaxAmount)) {
+		helper.Print(ctx, false, helper.ChangeDepositLimitBeforeActive)
+		return
+	}
 
 	err = model.ManualReview(id, remark, admin["name"], admin["id"], state, deposit)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return
+	}
+
+	if state == model.DepositSuccess {
+		record := g.Record{
+			"daily_finish_amount": fishAmount.Add(decimal.NewFromFloat(deposit.Amount)).StringFixed(4),
+			"total_finish_amount": totalAmount.Add(decimal.NewFromFloat(deposit.Amount)).StringFixed(4),
+		}
+		model.BankCardUpdate(bk.Id, record)
 	}
 
 	helper.Print(ctx, true, helper.Success)
