@@ -6,7 +6,6 @@ import (
 	"finance/contrib/helper"
 	"finance/contrib/validator"
 	"fmt"
-
 	g "github.com/doug-martin/goqu/v9"
 )
 
@@ -205,4 +204,21 @@ func BankCardExistByEx(ex g.Ex) (bool, error) {
 	}
 
 	return bc > 0, nil
+}
+
+func CleanBankFinshAmount() (bool, error) {
+
+	record := g.Record{
+		"daily_finish_amount": "0.0000",
+	}
+	ex := g.Ex{
+		"prefix": meta.Prefix,
+	}
+	query, _, _ := dialect.Update("f_bankcards").Set(record).Where(ex).ToSQL()
+	_, err := meta.MerchantDB.Exec(query)
+	if err != nil {
+		return false, pushLog(err, helper.DBErr)
+	}
+	BankCardUpdateCache()
+	return true, nil
 }
