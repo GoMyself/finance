@@ -238,13 +238,13 @@ func (that *ManualController) Review(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if state == model.DepositSuccess {
-		record := g.Record{
-			"daily_finish_amount": fishAmount.Add(decimal.NewFromFloat(deposit.Amount)).StringFixed(4),
-			"total_finish_amount": totalAmount.Add(decimal.NewFromFloat(deposit.Amount)).StringFixed(4),
-		}
-		model.BankCardUpdate(bk.Id, record)
-	}
+	//if state == model.DepositSuccess {
+	//	record := g.Record{
+	//		"daily_finish_amount": fishAmount.Add(decimal.NewFromFloat(deposit.Amount)).StringFixed(4),
+	//		"total_finish_amount": totalAmount.Add(decimal.NewFromFloat(deposit.Amount)).StringFixed(4),
+	//	}
+	//	model.BankCardUpdate(bk.Id, record)
+	//}
 
 	helper.Print(ctx, true, helper.Success)
 }
