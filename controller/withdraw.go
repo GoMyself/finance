@@ -71,8 +71,6 @@ func (that *WithdrawController) Withdraw(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	//TODO 检查上次提现成功到现在的存款
-
 	id, err := model.WithdrawUserInsert(param.Amount, param.BID, ctx)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
@@ -912,7 +910,7 @@ func (that *WithdrawController) Review(ctx *fasthttp.RequestCtx) {
 		*/
 
 		record["pid"] = "0"
-		record["bid"] = param.BankId
+		//record["bid"] = param.BankId
 		record["automatic"] = "0"
 		record["state"] = model.WithdrawSuccess
 		record["bank_name"] = param.BankName

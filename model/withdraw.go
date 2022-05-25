@@ -132,6 +132,54 @@ func WithdrawUserInsert(amount, bid string, fctx *fasthttp.RequestCtx) (string, 
 		return "", errors.New(helper.BankcardAbnormal)
 	}
 
+	//TODO 检查上次提现成功到现在的存款
+
+	//查询今日提款总计
+	count, totalAmount, err := withdrawDailyData(member.Username)
+	//今日有提款过
+	if count > 0 {
+		// 所属vip提现次数限制
+		timesKey := fmt.Sprintf("%s:vip:withdraw:maxtimes", meta.Prefix)
+		times, err := meta.MerchantRedis.HGet(ctx, timesKey, fmt.Sprintf(`%d`, member.Level)).Result()
+		if err != nil {
+			return "", pushLog(err, helper.RedisErr)
+		}
+		num, err := strconv.ParseInt(times, 10, 64)
+		if err != nil {
+			return "", pushLog(err, helper.FormatErr)
+		}
+		//今日提款次数大于等于所属vip提现次数限制
+		if count >= num {
+			return "", errors.New(helper.DailyTimesLimitErr)
+		}
+	}
+
+	//今日提款总额大于零
+	if totalAmount.Cmp(decimal.Zero) == 1 {
+		// 所属vip提现金额限制
+		amountKey := fmt.Sprintf("%s:vip:withdraw:maxamount", meta.Prefix)
+		maxAmount, err := meta.MerchantRedis.HGet(ctx, amountKey, fmt.Sprintf(`%d`, member.Level)).Result()
+		if err != nil {
+			return "", pushLog(err, helper.RedisErr)
+		}
+		max, err := decimal.NewFromString(maxAmount)
+		if err != nil {
+			return "", pushLog(err, helper.FormatErr)
+		}
+		withdrawAmount, err := decimal.NewFromString(amount)
+		if err != nil {
+			return "", pushLog(err, helper.FormatErr)
+		}
+		//当前提现金额 大于 所属等级每日提现金额限制
+		if withdrawAmount.Cmp(max) >= 0 {
+			return "", errors.New(helper.MaxDrawLimitParamErr)
+		}
+		// 今日已经申请的提现金额大于所属等级每日提现金额限制 或者 今日已经申请的提现金额加上当前提现金额大于所属等级每日提现金额限制
+		if totalAmount.Cmp(max) >= 0 || totalAmount.Add(withdrawAmount).Cmp(max) >= 0 {
+			return "", errors.New(helper.DailyAmountLimitErr)
+		}
+	}
+
 	var (
 		receiveAt  int64
 		withdrawId = helper.GenLongId()
@@ -357,6 +405,25 @@ func withdrawOrderExists(ex g.Ex) error {
 	}
 
 	return nil
+}
+
+// 今日提款成功次数和金额
+func withdrawDailyData(username string) (int64, decimal.Decimal, error) {
+
+	data := withdrawTotal{}
+	ex := g.Ex{
+		"prefix":     meta.Prefix,
+		"username":   username,
+		"created_at": g.Op{"between": exp.NewRangeVal(helper.DayTST(0, loc).Unix(), helper.DayTET(0, loc).Unix())},
+	}
+	query, _, _ := dialect.From("tbl_withdraw").Select(g.COUNT("id").As("t"), g.SUM("amount").As("agg")).Where(ex).ToSQL()
+	err := meta.MerchantDB.Get(&data, query)
+
+	if err != nil && err != sql.ErrNoRows {
+		return 0, decimal.Zero, pushLog(err, helper.DBErr)
+	}
+
+	return data.T.Int64, decimal.NewFromFloat(data.Agg.Float64), nil
 }
 
 func BankCardExist(ex g.Ex) bool {
