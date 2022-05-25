@@ -136,48 +136,43 @@ func WithdrawUserInsert(amount, bid string, fctx *fasthttp.RequestCtx) (string, 
 
 	//查询今日提款总计
 	count, totalAmount, err := withdrawDailyData(member.Username)
-	//今日有提款过
-	if count > 0 {
-		// 所属vip提现次数限制
-		timesKey := fmt.Sprintf("%s:vip:withdraw:maxtimes", meta.Prefix)
-		times, err := meta.MerchantRedis.HGet(ctx, timesKey, fmt.Sprintf(`%d`, member.Level)).Result()
-		if err != nil {
-			return "", pushLog(err, helper.RedisErr)
-		}
-		num, err := strconv.ParseInt(times, 10, 64)
-		if err != nil {
-			return "", pushLog(err, helper.FormatErr)
-		}
-		//今日提款次数大于等于所属vip提现次数限制
-		if count >= num {
-			return "", errors.New(helper.DailyTimesLimitErr)
-		}
+
+	// 所属vip提现次数限制
+	timesKey := fmt.Sprintf("%s:vip:withdraw:maxtimes", meta.Prefix)
+	times, err := meta.MerchantRedis.HGet(ctx, timesKey, fmt.Sprintf(`%d`, member.Level)).Result()
+	if err != nil {
+		return "", pushLog(err, helper.RedisErr)
+	}
+	num, err := strconv.ParseInt(times, 10, 64)
+	if err != nil {
+		return "", pushLog(err, helper.FormatErr)
+	}
+	//今日提款次数大于等于所属vip提现次数限制
+	if count >= num {
+		return "", errors.New(helper.DailyTimesLimitErr)
 	}
 
-	//今日提款总额大于零
-	if totalAmount.Cmp(decimal.Zero) == 1 {
-		// 所属vip提现金额限制
-		amountKey := fmt.Sprintf("%s:vip:withdraw:maxamount", meta.Prefix)
-		maxAmount, err := meta.MerchantRedis.HGet(ctx, amountKey, fmt.Sprintf(`%d`, member.Level)).Result()
-		if err != nil {
-			return "", pushLog(err, helper.RedisErr)
-		}
-		max, err := decimal.NewFromString(maxAmount)
-		if err != nil {
-			return "", pushLog(err, helper.FormatErr)
-		}
-		withdrawAmount, err := decimal.NewFromString(amount)
-		if err != nil {
-			return "", pushLog(err, helper.FormatErr)
-		}
-		//当前提现金额 大于 所属等级每日提现金额限制
-		if withdrawAmount.Cmp(max) >= 0 {
-			return "", errors.New(helper.MaxDrawLimitParamErr)
-		}
-		// 今日已经申请的提现金额大于所属等级每日提现金额限制 或者 今日已经申请的提现金额加上当前提现金额大于所属等级每日提现金额限制
-		if totalAmount.Cmp(max) >= 0 || totalAmount.Add(withdrawAmount).Cmp(max) >= 0 {
-			return "", errors.New(helper.DailyAmountLimitErr)
-		}
+	// 所属vip提现金额限制
+	amountKey := fmt.Sprintf("%s:vip:withdraw:maxamount", meta.Prefix)
+	maxAmount, err := meta.MerchantRedis.HGet(ctx, amountKey, fmt.Sprintf(`%d`, member.Level)).Result()
+	if err != nil {
+		return "", pushLog(err, helper.RedisErr)
+	}
+	max, err := decimal.NewFromString(maxAmount)
+	if err != nil {
+		return "", pushLog(err, helper.FormatErr)
+	}
+	withdrawAmount, err := decimal.NewFromString(amount)
+	if err != nil {
+		return "", pushLog(err, helper.FormatErr)
+	}
+	//当前提现金额 大于 所属等级每日提现金额限制
+	if withdrawAmount.Cmp(max) >= 0 {
+		return "", errors.New(helper.MaxDrawLimitParamErr)
+	}
+	// 今日已经申请的提现金额大于所属等级每日提现金额限制 或者 今日已经申请的提现金额加上当前提现金额大于所属等级每日提现金额限制
+	if totalAmount.Cmp(max) >= 0 || totalAmount.Add(withdrawAmount).Cmp(max) >= 0 {
+		return "", errors.New(helper.DailyAmountLimitErr)
 	}
 
 	var (
