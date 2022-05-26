@@ -1,14 +1,17 @@
 package model
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/hprose/hprose-golang/v3/rpc/core"
 
 	"finance/contrib/helper"
 	"finance/contrib/validator"
@@ -912,7 +915,13 @@ func WithdrawDealListData(data FWithdrawData) (WithdrawListData, error) {
 		encFields = append(encFields, "bankcard"+v)
 	}
 
-	recs, err := grpc_t.DecryptAll(rpcParam["realname"], true, encFields)
+	clientContext := core.NewClientContext()
+	header := make(http.Header)
+	header.Set("X-Func-Name", "kms")
+	clientContext.Items().Set("httpRequestHeaders", header)
+	rctx := core.WithContext(context.Background(), clientContext)
+
+	recs, err := grpc_t.DecryptAll(rctx, rpcParam["realname"], true, encFields)
 	if err != nil {
 		return result, errors.New(helper.GetRPCErr)
 	}
@@ -1093,7 +1102,14 @@ func WithdrawGetBank(bid, username string) (MemberBankCard, error) {
 func WithdrawGetBkAndRn(bid, uid string, hide bool) (string, string, error) {
 
 	field := "bankcard" + bid
-	recs, err := grpc_t.Decrypt(uid, hide, []string{"realname", field})
+
+	clientContext := core.NewClientContext()
+	header := make(http.Header)
+	header.Set("X-Func-Name", "kms")
+	clientContext.Items().Set("httpRequestHeaders", header)
+	rctx := core.WithContext(context.Background(), clientContext)
+
+	recs, err := grpc_t.Decrypt(rctx, uid, hide, []string{"realname", field})
 
 	if err != nil {
 		return "", "", errors.New(helper.GetRPCErr)
@@ -1105,7 +1121,14 @@ func WithdrawGetBkAndRn(bid, uid string, hide bool) (string, string, error) {
 func withdrawGetBankcard(id, bid string) (string, error) {
 
 	field := "bankcard" + bid
-	recs, err := grpc_t.Decrypt(id, true, []string{field})
+
+	clientContext := core.NewClientContext()
+	header := make(http.Header)
+	header.Set("X-Func-Name", "kms")
+	clientContext.Items().Set("httpRequestHeaders", header)
+	rctx := core.WithContext(context.Background(), clientContext)
+
+	recs, err := grpc_t.Decrypt(rctx, id, true, []string{field})
 	if err != nil {
 		return "", errors.New(helper.GetRPCErr)
 	}
