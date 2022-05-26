@@ -135,7 +135,17 @@ func WithdrawUserInsert(amount, bid string, fctx *fasthttp.RequestCtx) (string, 
 		return "", errors.New(helper.BankcardAbnormal)
 	}
 
-	//TODO 检查上次提现成功到现在的存款
+	// 检查上次提现成功到现在的存款流水是否满足 未满足的返回流水未达标
+	clientContext := core.NewClientContext()
+	header := make(http.Header)
+	header.Set("X-Func-Name", "CheckDepositFlow")
+	clientContext.Items().Set("httpRequestHeaders", header)
+	rctx := core.WithContext(context.Background(), clientContext)
+
+	recs := grpc_t.CheckDepositFlow(rctx, member.Username)
+	if !recs {
+		return "", errors.New(helper.WaterFlowUnreached)
+	}
 
 	//查询今日提款总计
 	count, totalAmount, err := withdrawDailyData(member.Username)
