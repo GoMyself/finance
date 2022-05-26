@@ -167,11 +167,11 @@ func WithdrawUserInsert(amount, bid string, fctx *fasthttp.RequestCtx) (string, 
 		return "", pushLog(err, helper.FormatErr)
 	}
 	//当前提现金额 大于 所属等级每日提现金额限制
-	if withdrawAmount.Cmp(max) >= 0 {
+	if withdrawAmount.Cmp(max) > 0 {
 		return "", errors.New(helper.MaxDrawLimitParamErr)
 	}
 	// 今日已经申请的提现金额大于所属等级每日提现金额限制 或者 今日已经申请的提现金额加上当前提现金额大于所属等级每日提现金额限制
-	if totalAmount.Cmp(max) >= 0 || totalAmount.Add(withdrawAmount).Cmp(max) >= 0 {
+	if totalAmount.Cmp(max) > 0 || totalAmount.Add(withdrawAmount).Cmp(max) > 0 {
 		return "", errors.New(helper.DailyAmountLimitErr)
 	}
 
