@@ -1363,8 +1363,9 @@ func withdrawOrderSuccess(query, bankcard string, order Withdraw) error {
 
 	// 锁定钱包下分
 	ex := g.Ex{
-		"uid":    order.UID,
-		"prefix": meta.Prefix,
+		"uid":              order.UID,
+		"prefix":           meta.Prefix,
+		"last_withdraw_at": time.Now().Unix(),
 	}
 	gr := g.Record{
 		"lock_amount": g.L(fmt.Sprintf("lock_amount-%s", money.String())),
