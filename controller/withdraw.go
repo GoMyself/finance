@@ -888,7 +888,7 @@ func (that *WithdrawController) Review(ctx *fasthttp.RequestCtx) {
 		"withdraw_name":   admin["name"],
 	}
 
-	if param.Ty == 1 { // 人工代付
+	if param.Ty == 1 { // 三方代付
 		err = model.WithdrawHandToAuto(withdraw.UID, withdraw.Username, withdraw.ID, param.Pid, withdraw.BID, withdraw.Amount, ctx.Time())
 		if err != nil {
 			helper.Print(ctx, false, err.Error())
@@ -916,11 +916,39 @@ func (that *WithdrawController) Review(ctx *fasthttp.RequestCtx) {
 		record["bank_name"] = param.BankName
 		record["card_no"] = param.CardNo
 		record["real_name"] = param.RealName
+
+		bk, err := model.BankCardByCol(param.CardNo)
+		if err != nil {
+			helper.Print(ctx, false, err.Error())
+			return
+		}
+		//提款超过当日最大提款限额
+		fishAmount, _ := decimal.NewFromString(bk.DailyFinishAmount)
+		maxAmount, _ := decimal.NewFromString(bk.DailyMaxAmount)
+		totalAmount, _ := decimal.NewFromString(bk.TotalFinishAmount)
+		totalMaxAmount, _ := decimal.NewFromString(bk.TotalMaxAmount)
+
+		if fishAmount.Cmp(maxAmount) >= 0 || fishAmount.Add(decimal.NewFromFloat(withdraw.Amount)).GreaterThan(maxAmount) ||
+			totalAmount.Add(decimal.NewFromFloat(withdraw.Amount)).GreaterThan(totalMaxAmount) {
+			helper.Print(ctx, false, helper.DailyAmountLimitErr)
+			return
+		}
 		err = model.WithdrawHandSuccess(param.ID, withdraw.UID, withdraw.BID, record)
 		if err != nil {
 			helper.Print(ctx, false, err.Error())
 			return
 		}
+		record := g.Record{
+			"daily_finish_amount": fishAmount.Add(decimal.NewFromFloat(withdraw.Amount)).StringFixed(4),
+			"total_finish_amount": totalAmount.Add(decimal.NewFromFloat(withdraw.Amount)).StringFixed(4),
+		}
+		if fishAmount.Add(decimal.NewFromFloat(withdraw.Amount)).Cmp(maxAmount) >= 0 {
+			record["state"] = 0
+		}
+		if totalAmount.Add(decimal.NewFromFloat(withdraw.Amount)).Cmp(totalMaxAmount) >= 0 {
+			record["state"] = 0
+		}
+		model.BankCardUpdate(bk.Id, record)
 	}
 
 	helper.Print(ctx, true, helper.Success)
