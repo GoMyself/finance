@@ -69,6 +69,8 @@ func ChannelBankList(cateID, chanID string, page, pageSize uint16) (ChannelBankD
 	offset := (page - 1) * pageSize
 	query, _, _ := dialect.From("f_channel_banks").Select(colChannelBank...).
 		Where(ex).Order(g.C("sort").Asc()).Offset(uint(offset)).Limit(uint(pageSize)).ToSQL()
+	//query, _, _ := dialect.From("f_channel_banks").Select(colChannelBank...).
+	//	Where(ex).Order(g.C("code").Asc()).Offset(uint(offset)).Limit(uint(pageSize)).ToSQL()
 	err := meta.MerchantDB.Select(&data.D, query)
 	if err != nil {
 		return data, pushLog(err, helper.DBErr)

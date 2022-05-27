@@ -50,7 +50,9 @@ func main() {
 	mt.MerchantRedis = conn.InitRedisSentinel(cfg.Redis.Addr, cfg.Redis.Password, cfg.Redis.Sentinel, cfg.Redis.Db)
 	mt.Nats = conn.InitNatsIO(cfg.Nats.Servers, cfg.Nats.Username, cfg.Nats.Password)
 
-	mt.Program = os.Args[0]
+	bin := strings.Split(os.Args[0], "/")
+	mt.Program = bin[len(bin)-1]
+
 	mt.Prefix = cfg.Prefix
 	mt.EsPrefix = cfg.EsPrefix
 	mt.Lang = cfg.Lang

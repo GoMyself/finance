@@ -77,7 +77,7 @@ func (that *ManualController) List(ctx *fasthttp.RequestCtx) {
 		"flag":  flag,
 	}
 	if username != "" {
-		if !validator.CheckUName(username, 4, 9) {
+		if !validator.CheckUName(username, 4, 20) {
 			helper.Print(ctx, false, helper.UsernameErr)
 			return
 		}
