@@ -556,7 +556,6 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 				}
 				query, _, _ := dialect.Update("tbl_members").Set(rec).Where(ex).ToSQL()
 				fmt.Printf("memberFirstDeposit Update: %v\n", query)
-
 				_, err := meta.MerchantDB.Exec(query)
 				if err != nil {
 					fmt.Println("update member first_amount err:", err.Error())
@@ -571,13 +570,18 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 				}
 				query, _, _ := dialect.Update("tbl_members").Set(rec).Where(ex).ToSQL()
 				fmt.Printf("memberSecondDeposit Update: %v\n", query)
-
 				_, err := meta.MerchantDB.Exec(query)
 				if err != nil {
 					fmt.Println("update member second_amount err:", err.Error())
 				}
 			}
 
+			title := "Thông Báo Nạp Tiền Thành Công"
+			content := fmt.Sprintf("Quý Khách Của P3 Thân Mến:\nBạn Đã Nạp Tiền Thành Công %.4f KVND,Vui Lòng KIểm Tra Ngay,Nếu Bạn Có Bất Cứ Thắc Mắc Vấn Đề Gì Vui Lòng Liên Hệ CSKH Để Biết Thêm Chi Tiết.【P3】Chúc Bạn Cược Đâu Thắng Đó !!\n", order.Amount)
+			err = messageSend(order.ID, title, "", content, "system", meta.Prefix, 0, 0, 2, []string{order.Username})
+			if err != nil {
+				_ = pushLog(err, helper.ESErr)
+			}
 		}
 	}
 	return nil

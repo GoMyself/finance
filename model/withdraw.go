@@ -1381,12 +1381,21 @@ func withdrawOrderSuccess(query, bankcard string, order Withdraw) error {
 	if err != nil {
 		return pushLog(err, helper.DBErr)
 	}
-	// 发送通知 提款成功
-	_ = PushWithdrawSuccess(order.UID, order.Amount)
 
 	// 修改会员提款限制
 	date := time.Unix(order.CreatedAt, 0).Format("20060102")
 	_ = withDrawDailyLimitUpdate(money, date, order.Username)
+	
+	// 发送通知 提款成功
+	_ = PushWithdrawSuccess(order.UID, order.Amount)
+
+	title := "Thông Báo Rút Tiền Thành Công "
+	content := fmt.Sprintf("Quý Khách Của P3 Thân Mến:\nBạn Đã Rút Tiền Thành Công %.4f KVND,Vui Lòng Kiểm Tra Tiền Rút Của Bạn Đã Thành Công Về Tài Khoản Chưa .Nếu Bạn Có Bất Cứ Thắc Mắc Vấn Đề Gì Vui Lòng Liên Hệ CSKH Để Biết Thêm Chi Tiết.!!【P3】Rút Tiền Nhanh Chóng & An Toàn !", order.Amount)
+	err = messageSend(order.ID, title, "", content, "system", meta.Prefix, 0, 0, 2, []string{order.Username})
+	if err != nil {
+		_ = pushLog(err, helper.ESErr)
+	}
+
 	return nil
 }
 
