@@ -923,7 +923,7 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 	}
 
 	// 判断订单是否存在
-	ex := g.Ex{"id": did, "state": DepositReviewing}
+	ex := g.Ex{"id": did, "state": []int{DepositReviewing, DepositConfirming}}
 	order, err := DepositOrderFindOne(ex)
 	if err != nil {
 		return err
