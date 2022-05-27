@@ -4,7 +4,6 @@ import (
 	"finance/contrib/helper"
 	"finance/contrib/validator"
 	"finance/model"
-	"fmt"
 	"strconv"
 
 	"github.com/valyala/fasthttp"
@@ -23,6 +22,7 @@ type vipParam struct {
 
 type vipUpdateParam struct {
 	ID   string `rule:"digit" msg:"id error" name:"id"`
+	Vip  string `rule:"digit" msg:"vip error" name:"vip"`
 	FMin string `rule:"float" min:"0" msg:"fmin error" name:"fmin"` // 最小支付金额
 	FMax string `rule:"float" min:"0" msg:"fmax error" name:"fmax"` // 最大支付金额
 	Code string `rule:"digit" msg:"code error" name:"code"`         // 动态验证码
@@ -30,6 +30,7 @@ type vipUpdateParam struct {
 
 type vipStateParam struct {
 	ID    string `rule:"digit" default:"0" msg:"id error" name:"id"`
+	Vip   string `rule:"digit" default:"0" msg:"vip error" name:"vip"`
 	State string `rule:"digit" min:"0" max:"1" msg:"state error" name:"state"` // 0:关闭1:开启
 	Code  string `rule:"digit" msg:"code error" name:"code"`                   // 动态验证码
 }
@@ -162,6 +163,7 @@ func (that *VipController) Update(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	model.Create(param.Vip)
 	helper.Print(ctx, true, helper.Success)
 }
 
@@ -244,7 +246,7 @@ func (that *VipController) UpdateState(ctx *fasthttp.RequestCtx) {
 		helper.Print(ctx, false, err.Error())
 		return
 	}
-	fmt.Println("UpdateState VipByID = ", vip)
+	//fmt.Println("UpdateState VipByID = ", vip)
 
 	if len(vip.ID) == 0 {
 		helper.Print(ctx, false, helper.RecordNotExistErr)
@@ -289,6 +291,6 @@ func (that *VipController) UpdateState(ctx *fasthttp.RequestCtx) {
 		helper.Print(ctx, false, err.Error())
 		return
 	}
-
+	model.Create(param.Vip)
 	helper.Print(ctx, true, helper.Success)
 }

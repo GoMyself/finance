@@ -1,14 +1,17 @@
 package model
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/hprose/hprose-golang/v3/rpc/core"
 
 	"finance/contrib/helper"
 	"finance/contrib/validator"
@@ -130,6 +133,59 @@ func WithdrawUserInsert(amount, bid string, fctx *fasthttp.RequestCtx) (string, 
 
 	if ok {
 		return "", errors.New(helper.BankcardAbnormal)
+	}
+
+	// 检查上次提现成功到现在的存款流水是否满足 未满足的返回流水未达标
+	clientContext := core.NewClientContext()
+	header := make(http.Header)
+	header.Set("X-Func-Name", "CheckDepositFlow")
+	clientContext.Items().Set("httpRequestHeaders", header)
+	rctx := core.WithContext(context.Background(), clientContext)
+
+	recs := grpc_t.CheckDepositFlow(rctx, member.Username)
+	if !recs {
+		return "", errors.New(helper.WaterFlowUnreached)
+	}
+
+	//查询今日提款总计
+	count, totalAmount, err := withdrawDailyData(member.Username)
+
+	// 所属vip提现次数限制
+	timesKey := fmt.Sprintf("%s:vip:withdraw:maxtimes", meta.Prefix)
+	times, err := meta.MerchantRedis.HGet(ctx, timesKey, fmt.Sprintf(`%d`, member.Level)).Result()
+	if err != nil {
+		return "", pushLog(err, helper.RedisErr)
+	}
+	num, err := strconv.ParseInt(times, 10, 64)
+	if err != nil {
+		return "", pushLog(err, helper.FormatErr)
+	}
+	//今日提款次数大于等于所属vip提现次数限制
+	if count >= num {
+		return "", errors.New(helper.DailyTimesLimitErr)
+	}
+
+	// 所属vip提现金额限制
+	amountKey := fmt.Sprintf("%s:vip:withdraw:maxamount", meta.Prefix)
+	maxAmount, err := meta.MerchantRedis.HGet(ctx, amountKey, fmt.Sprintf(`%d`, member.Level)).Result()
+	if err != nil {
+		return "", pushLog(err, helper.RedisErr)
+	}
+	max, err := decimal.NewFromString(maxAmount)
+	if err != nil {
+		return "", pushLog(err, helper.FormatErr)
+	}
+	withdrawAmount, err := decimal.NewFromString(amount)
+	if err != nil {
+		return "", pushLog(err, helper.FormatErr)
+	}
+	//当前提现金额 大于 所属等级每日提现金额限制
+	if withdrawAmount.Cmp(max) > 0 {
+		return "", errors.New(helper.MaxDrawLimitParamErr)
+	}
+	// 今日已经申请的提现金额大于所属等级每日提现金额限制 或者 今日已经申请的提现金额加上当前提现金额大于所属等级每日提现金额限制
+	if totalAmount.Cmp(max) > 0 || totalAmount.Add(withdrawAmount).Cmp(max) > 0 {
+		return "", errors.New(helper.DailyAmountLimitErr)
 	}
 
 	var (
@@ -357,6 +413,25 @@ func withdrawOrderExists(ex g.Ex) error {
 	}
 
 	return nil
+}
+
+// 今日提款成功次数和金额
+func withdrawDailyData(username string) (int64, decimal.Decimal, error) {
+
+	data := withdrawTotal{}
+	ex := g.Ex{
+		"prefix":     meta.Prefix,
+		"username":   username,
+		"created_at": g.Op{"between": exp.NewRangeVal(helper.DayTST(0, loc).Unix(), helper.DayTET(0, loc).Unix())},
+	}
+	query, _, _ := dialect.From("tbl_withdraw").Select(g.COUNT("id").As("t"), g.SUM("amount").As("agg")).Where(ex).ToSQL()
+	err := meta.MerchantDB.Get(&data, query)
+
+	if err != nil && err != sql.ErrNoRows {
+		return 0, decimal.Zero, pushLog(err, helper.DBErr)
+	}
+
+	return data.T.Int64, decimal.NewFromFloat(data.Agg.Float64), nil
 }
 
 func BankCardExist(ex g.Ex) bool {
@@ -850,7 +925,13 @@ func WithdrawDealListData(data FWithdrawData) (WithdrawListData, error) {
 		encFields = append(encFields, "bankcard"+v)
 	}
 
-	recs, err := grpc_t.DecryptAll(rpcParam["realname"], true, encFields)
+	clientContext := core.NewClientContext()
+	header := make(http.Header)
+	header.Set("X-Func-Name", "kms")
+	clientContext.Items().Set("httpRequestHeaders", header)
+	rctx := core.WithContext(context.Background(), clientContext)
+
+	recs, err := grpc_t.DecryptAll(rctx, rpcParam["realname"], true, encFields)
 	if err != nil {
 		return result, errors.New(helper.GetRPCErr)
 	}
@@ -1031,7 +1112,14 @@ func WithdrawGetBank(bid, username string) (MemberBankCard, error) {
 func WithdrawGetBkAndRn(bid, uid string, hide bool) (string, string, error) {
 
 	field := "bankcard" + bid
-	recs, err := grpc_t.Decrypt(uid, hide, []string{"realname", field})
+
+	clientContext := core.NewClientContext()
+	header := make(http.Header)
+	header.Set("X-Func-Name", "kms")
+	clientContext.Items().Set("httpRequestHeaders", header)
+	rctx := core.WithContext(context.Background(), clientContext)
+
+	recs, err := grpc_t.Decrypt(rctx, uid, hide, []string{"realname", field})
 
 	if err != nil {
 		return "", "", errors.New(helper.GetRPCErr)
@@ -1043,7 +1131,14 @@ func WithdrawGetBkAndRn(bid, uid string, hide bool) (string, string, error) {
 func withdrawGetBankcard(id, bid string) (string, error) {
 
 	field := "bankcard" + bid
-	recs, err := grpc_t.Decrypt(id, true, []string{field})
+
+	clientContext := core.NewClientContext()
+	header := make(http.Header)
+	header.Set("X-Func-Name", "kms")
+	clientContext.Items().Set("httpRequestHeaders", header)
+	rctx := core.WithContext(context.Background(), clientContext)
+
+	recs, err := grpc_t.Decrypt(rctx, id, true, []string{field})
 	if err != nil {
 		return "", errors.New(helper.GetRPCErr)
 	}
@@ -1268,8 +1363,9 @@ func withdrawOrderSuccess(query, bankcard string, order Withdraw) error {
 
 	// 锁定钱包下分
 	ex := g.Ex{
-		"uid":    order.UID,
-		"prefix": meta.Prefix,
+		"uid":              order.UID,
+		"prefix":           meta.Prefix,
+		"last_withdraw_at": time.Now().Unix(),
 	}
 	gr := g.Record{
 		"lock_amount": g.L(fmt.Sprintf("lock_amount-%s", money.String())),

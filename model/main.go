@@ -46,10 +46,12 @@ type MetaTable struct {
 }
 
 var grpc_t struct {
-	View       func(uid, field string) ([]string, error)
-	Encrypt    func(uid string, data [][]string) error
-	Decrypt    func(uid string, hide bool, field []string) (map[string]string, error)
-	DecryptAll func(uids []string, hide bool, field []string) (map[string]map[string]string, error)
+	View       func(rctx context.Context, uid, field string) ([]string, error)
+	Encrypt    func(rctx context.Context, uid string, data [][]string) error
+	Decrypt    func(rctx context.Context, uid string, hide bool, field []string) (map[string]string, error)
+	DecryptAll func(rctx context.Context, uids []string, hide bool, field []string) (map[string]map[string]string, error)
+
+	CheckDepositFlow func(rctx context.Context, username string) bool
 }
 
 var (
