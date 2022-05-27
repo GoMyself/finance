@@ -113,7 +113,7 @@ func WithdrawUserInsert(amount, bid string, fctx *fasthttp.RequestCtx) (string, 
 	}
 
 	var bankcardHash uint64
-	query, _, _ := dialect.From("tbl_member_bankcard").Select("bank_card_hash").Where(g.Ex{"id": bid}).ToSQL()
+	query, _, _ := dialect.From("tbl_member_bankcard").Select("bank_card_hash").Where(g.Ex{"id": bid, "state": 1}).ToSQL()
 	err = meta.MerchantDB.Get(&bankcardHash, query)
 	if err != nil {
 		return "", err
