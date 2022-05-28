@@ -18,7 +18,7 @@ func TunnelList() ([]Tunnel_t, error) {
 		"prefix": meta.Prefix,
 	}
 
-	query, _, _ := dialect.From("f_channel_type").Select(colTunnel...).Where(ex).ToSQL()
+	query, _, _ := dialect.From("f_channel_type").Select(colTunnel...).Where(ex).Order(g.L("sort").Asc()).ToSQL()
 	err := meta.MerchantDB.Select(&data, query)
 	if err != nil {
 		return data, pushLog(err, helper.DBErr)
@@ -47,11 +47,10 @@ func TunnelUpdate(id, state, discount, seq string) error { // 校验渠道id和�
 		return pushLog(err, helper.DBErr)
 	}
 
-	//TunnelUpdateCache()
+	TunnelUpdateCache()
 	return nil
 }
 
-/*
 func TunnelUpdateCache() error {
 
 	res, err := TunnelList()
@@ -59,18 +58,18 @@ func TunnelUpdateCache() error {
 		return err
 	}
 
+	key := meta.Prefix + ":tunnel:All"
+	val, _ := helper.JsonMarshal(res)
+
 	pipe := meta.MerchantRedis.Pipeline()
-	pipe.Unlink(ctx, "tunnel:All")
-	for _, v := range res {
-
-	}
-
+	pipe.Unlink(ctx, key)
+	pipe.Set(ctx, key, string(val), 0)
 	pipe.Exec(ctx)
 	pipe.Close()
 
 	return nil
 }
-*/
+
 // 获取三方通道
 func TunnelByID(id string) (Tunnel_t, error) {
 

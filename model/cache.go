@@ -7,6 +7,7 @@ import (
 	"time"
 
 	g "github.com/doug-martin/goqu/v9"
+	"github.com/go-redis/redis/v8"
 	"github.com/jmoiron/sqlx"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/fastjson"
@@ -295,7 +296,7 @@ func Cate(fctx *fasthttp.RequestCtx) (string, error) {
 	//	key = fmt.Sprintf("p:%d", 9)
 	//}
 
-	recs_temp := pipe.SMembers(ctx, key)
+	recs_temp := pipe.ZRange(ctx, key, 0, -1)
 
 	_, err = pipe.Exec(ctx)
 	pipe.Close()
@@ -366,12 +367,23 @@ func Create(level string) {
 		paymentIds []string
 		vips       []Vip_t
 		tunnels    []Tunnel_t
+		tunnelSort []Tunnel_t
 		payments   []Payment_t
 	)
 
 	fmt.Println("Create p:" + level)
 	//删除key
 	meta.MerchantRedis.Unlink(ctx, "p:"+level).Result()
+
+	tunnelData_temp, err := meta.MerchantRedis.Get(ctx, meta.Prefix+":tunnel:All").Bytes()
+	if err != nil {
+		fmt.Println("tunnel:All = ", err.Error())
+		return
+	}
+
+	helper.JsonUnmarshal(tunnelData_temp, &tunnelSort)
+	fmt.Println("JsonUnmarshal tunnelSort = ", tunnelSort)
+
 	ex := g.Ex{
 		"vip":    level,
 		"flags":  1,
@@ -379,7 +391,7 @@ func Create(level string) {
 		"prefix": meta.Prefix,
 	}
 	query, _, _ := dialect.From("f_vip").Select(colVip...).Where(ex).ToSQL()
-	err := meta.MerchantDB.Select(&vips, query)
+	err = meta.MerchantDB.Select(&vips, query)
 	if err != nil {
 		fmt.Println("1", err.Error())
 		return
@@ -451,9 +463,19 @@ func Create(level string) {
 	}
 
 	for _, val := range tunnels {
-
 		value, _ := helper.JsonMarshal(val)
-		pipe.SAdd(ctx, "p:"+level, value)
+		vv := new(redis.Z)
+
+		vv.Member = string(value)
+		for _, v := range tunnelSort {
+
+			if val.ID == v.ID {
+				vv.Score = float64(v.Sort)
+			}
+
+		}
+		pipe.ZAdd(ctx, "p:"+level, vv)
+		vv = nil
 	}
 
 	pipe.Persist(ctx, "p:"+level)
