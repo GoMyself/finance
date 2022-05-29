@@ -319,10 +319,10 @@ func WithdrawInsert(amount, bid, withdrawID, confirmUid, confirmName string, rec
 		"flag":                1,
 		"oid":                 withdrawID,
 		"uid":                 member.UID,
-		"top_uid":             member.TopUID,
+		"top_uid":             member.TopUid,
 		"top_name":            member.TopName,
 		"parent_name":         member.ParentName,
-		"parent_uid":          member.ParentUID,
+		"parent_uid":          member.ParentUid,
 		"username":            member.Username,
 		"pid":                 0,
 		"amount":              withdrawAmount.Truncate(4).String(),
@@ -330,7 +330,7 @@ func WithdrawInsert(amount, bid, withdrawID, confirmUid, confirmName string, rec
 		"automatic":           automatic, //1:自动转账  0:人工确认
 		"created_at":          ts.Unix(),
 		"finance_type":        TransactionWithDraw,
-		"real_name_hash":      strconv.FormatUint(member.RealnameHash, 10),
+		"real_name_hash":      member.RealnameHash,
 		"last_deposit_amount": lastDeposit,
 		"receive_at":          receiveAt,
 		"confirm_uid":         confirmUid,
@@ -1385,7 +1385,7 @@ func withdrawOrderSuccess(query, bankcard string, order Withdraw) error {
 	// 修改会员提款限制
 	date := time.Unix(order.CreatedAt, 0).Format("20060102")
 	_ = withDrawDailyLimitUpdate(money, date, order.Username)
-	
+
 	// 发送通知 提款成功
 	_ = PushWithdrawSuccess(order.UID, order.Amount)
 
