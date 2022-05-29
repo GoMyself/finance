@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"finance/contrib/helper"
+	"fmt"
 
 	g "github.com/doug-martin/goqu/v9"
 )
@@ -48,6 +49,10 @@ func TunnelUpdate(id, state, discount, seq string) error { // 校验渠道id和�
 	}
 
 	TunnelUpdateCache()
+	for i := 1; i < 11; i++ {
+		level := fmt.Sprintf("%d", i)
+		Create(level)
+	}
 	return nil
 }
 
