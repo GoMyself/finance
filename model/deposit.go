@@ -584,6 +584,8 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 			}
 		}
 	}
+
+	MemberUpdateCache(order.Username)
 	return nil
 }
 
@@ -793,7 +795,7 @@ func DepositReduce(username, amount, remark, name, uid string) error {
 		"amount":        fmt.Sprintf("-%s", amount),
 		"state":         DepositConfirming,
 		"automatic":     "0",
-		"created_at":    fmt.Sprintf("%d", now.Unix()),
+		"created_at":    fmt.Sprintf("%d", now.In(loc).Unix()),
 		"created_uid":   uid,
 		"created_name":  name,
 		"confirm_at":    "0",
@@ -868,6 +870,7 @@ func DepositReduce(username, amount, remark, name, uid string) error {
 		return pushLog(err, helper.DBErr)
 	}
 
+	MemberUpdateCache(mb.Username)
 	// 发送消息通知
 	_ = PushMerchantNotify(downgradeReviewFmt, name, username, amount)
 
@@ -1013,7 +1016,7 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 	if err != nil {
 		return pushLog(err, helper.DBErr)
 	}
-
+	MemberUpdateCache(order.Username)
 	/*
 		// 存款成功发送到队列
 		if DepositSuccess == state {

@@ -393,7 +393,7 @@ func WithdrawInsert(amount, bid, withdrawID, confirmUid, confirmName string, rec
 	if err != nil {
 		return pushLog(err, helper.DBErr)
 	}
-
+	MemberUpdateCache(member.Username)
 	return nil
 }
 
@@ -1381,6 +1381,7 @@ func withdrawOrderSuccess(query, bankcard string, order Withdraw) error {
 	if err != nil {
 		return pushLog(err, helper.DBErr)
 	}
+	MemberUpdateCache(order.Username)
 
 	// 修改会员提款限制
 	date := time.Unix(order.CreatedAt, 0).Format("20060102")
@@ -1508,6 +1509,7 @@ func withdrawOrderFailed(query string, order Withdraw) error {
 		return pushLog(err, helper.DBErr)
 	}
 
+	MemberUpdateCache(order.Username)
 	return nil
 }
 
