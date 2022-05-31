@@ -44,7 +44,7 @@ type handDepositParam struct {
 
 // 下分补单
 type reduceDepositParam struct {
-	Username string `rule:"alnum" min:"4" max:"9" msg:"username error" name:"username"`
+	Username string `rule:"alnum" min:"5" max:"14" msg:"username error" name:"username"`
 	Remark   string `rule:"none" name:"remark"`
 	Amount   string `rule:"float" name:"amount"`
 	Code     string `rule:"digit" name:"code" msg:"code error"`

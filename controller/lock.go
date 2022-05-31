@@ -13,8 +13,8 @@ import (
 type LockController struct{}
 
 type memberLockParam struct {
-	Username string `rule:"uname" min:"4" max:"9" msg:"username error" name:"username"` // 会员名
-	Comment  string `rule:"none" min:"0" max:"50" msg:"comment error" name:"comment"`   // 备注
+	Username string `rule:"uname" min:"5" max:"14" msg:"username error" name:"username"` // 会员名
+	Comment  string `rule:"none" min:"0" max:"50" msg:"comment error" name:"comment"`    // 备注
 }
 
 type memberLockListParam struct {
