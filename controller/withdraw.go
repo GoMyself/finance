@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"database/sql"
 	"finance/contrib/helper"
 	"finance/contrib/validator"
 	"finance/model"
@@ -917,14 +916,13 @@ func (that *WithdrawController) Review(ctx *fasthttp.RequestCtx) {
 		record["bank_name"] = param.BankName
 		record["card_no"] = param.CardNo
 		record["real_name"] = param.RealName
+		if param.BankId != "" && param.BankId != "undefined" {
+			bk, err := model.BankCardByCol(param.CardNo)
+			if err != nil {
+				helper.Print(ctx, false, err.Error())
+				return
+			}
 
-		bk, err := model.BankCardByCol(param.CardNo)
-		if err != nil && err != sql.ErrNoRows {
-			helper.Print(ctx, false, err.Error())
-			return
-		}
-
-		if err == nil {
 			//提款超过当日最大提款限额
 			fishAmount, _ := decimal.NewFromString(bk.DailyFinishAmount)
 			maxAmount, _ := decimal.NewFromString(bk.DailyMaxAmount)
