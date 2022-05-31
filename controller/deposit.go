@@ -44,7 +44,7 @@ type handDepositParam struct {
 
 // 下分补单
 type reduceDepositParam struct {
-	Username string `rule:"alnum" min:"4" max:"9" msg:"username error" name:"username"`
+	Username string `rule:"alnum" min:"5" max:"14" msg:"username error" name:"username"`
 	Remark   string `rule:"none" name:"remark"`
 	Amount   string `rule:"float" name:"amount"`
 	Code     string `rule:"digit" name:"code" msg:"code error"`
@@ -145,7 +145,7 @@ func (that *DepositController) History(ctx *fasthttp.RequestCtx) {
 	}
 
 	if param.Username != "" {
-		if !validator.CheckUName(param.Username, 4, 9) {
+		if !validator.CheckUName(param.Username, 5, 14) {
 			helper.Print(ctx, false, helper.UsernameErr)
 			return
 		}
@@ -212,7 +212,7 @@ func (that *DepositController) List(ctx *fasthttp.RequestCtx) {
 	}
 
 	if param.Username != "" {
-		if !validator.CheckUName(param.Username, 4, 9) {
+		if !validator.CheckUName(param.Username, 5, 14) {
 			helper.Print(ctx, false, helper.UsernameErr)
 			return
 		}
@@ -305,7 +305,7 @@ func (that *DepositController) USDTList(ctx *fasthttp.RequestCtx) {
 	}
 
 	if username != "" {
-		if !validator.CheckUName(username, 4, 9) {
+		if !validator.CheckUName(username, 5, 14) {
 			helper.Print(ctx, false, helper.UsernameErr)
 			return
 		}

@@ -236,7 +236,7 @@ func (that *CreditLevelController) MemberInsert(ctx *fasthttp.RequestCtx) {
 
 	var users []string
 	for _, v := range strings.Split(param.Users, ",") {
-		if !validator.CheckUName(v, 4, 9) {
+		if !validator.CheckUName(v, 5, 14) {
 			helper.Print(ctx, false, helper.UsernameErr)
 			return
 		}
@@ -292,7 +292,7 @@ func (that *CreditLevelController) MemberList(ctx *fasthttp.RequestCtx) {
 	var users []string
 	if param.Users != "" {
 		for _, v := range strings.Split(param.Users, ",") {
-			if !validator.CheckUName(v, 4, 9) {
+			if !validator.CheckUName(v, 5, 14) {
 				helper.Print(ctx, false, helper.UsernameErr)
 				return
 			}
