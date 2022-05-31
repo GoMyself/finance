@@ -16,7 +16,7 @@ type DepositController struct{}
 
 // 会员存款信息
 type memberDepositParam struct {
-	Username  string `rule:"alnum" min:"4" max:"9" msg:"username error" name:"username"`
+	Username  string `rule:"alnum" min:"5" max:"14" msg:"username error" name:"username"`
 	State     string `rule:"none" msg:"state error" name:"state"`
 	ChannelID string `rule:"none" msg:"channel_id error" name:"channel_id"`
 	TimeFlag  string `rule:"digit" min:"0" max:"2" default:"0" msg:"time_flag error" name:"time_flag"`
