@@ -145,7 +145,7 @@ func (that *DepositController) History(ctx *fasthttp.RequestCtx) {
 	}
 
 	if param.Username != "" {
-		if !validator.CheckUName(param.Username, 4, 9) {
+		if !validator.CheckUName(param.Username, 5, 14) {
 			helper.Print(ctx, false, helper.UsernameErr)
 			return
 		}
@@ -212,7 +212,7 @@ func (that *DepositController) List(ctx *fasthttp.RequestCtx) {
 	}
 
 	if param.Username != "" {
-		if !validator.CheckUName(param.Username, 4, 9) {
+		if !validator.CheckUName(param.Username, 5, 14) {
 			helper.Print(ctx, false, helper.UsernameErr)
 			return
 		}
@@ -305,7 +305,7 @@ func (that *DepositController) USDTList(ctx *fasthttp.RequestCtx) {
 	}
 
 	if username != "" {
-		if !validator.CheckUName(username, 4, 9) {
+		if !validator.CheckUName(username, 5, 14) {
 			helper.Print(ctx, false, helper.UsernameErr)
 			return
 		}

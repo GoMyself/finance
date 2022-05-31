@@ -174,7 +174,7 @@ func (that *WithdrawController) RiskWaitConfirmList(ctx *fasthttp.RequestCtx) {
 	}
 
 	if username != "" {
-		if !validator.CheckUName(username, 4, 9) {
+		if !validator.CheckUName(username, 5, 14) {
 			helper.Print(ctx, false, helper.UsernameErr)
 			return
 		}
@@ -289,7 +289,7 @@ func (that *WithdrawController) HangUpList(ctx *fasthttp.RequestCtx) {
 	}
 
 	if username != "" {
-		if !validator.CheckUName(username, 4, 9) {
+		if !validator.CheckUName(username, 5, 14) {
 			helper.Print(ctx, false, helper.UsernameErr)
 			return
 		}
@@ -402,7 +402,7 @@ func (that *WithdrawController) RiskHistory(ctx *fasthttp.RequestCtx) {
 	}
 
 	if username != "" {
-		if !validator.CheckUName(username, 4, 9) {
+		if !validator.CheckUName(username, 5, 14) {
 			helper.Print(ctx, false, helper.UsernameErr)
 			return
 		}
@@ -531,7 +531,7 @@ func (that *WithdrawController) HistoryList(ctx *fasthttp.RequestCtx) {
 	}
 
 	if username != "" {
-		if !validator.CheckUName(username, 4, 9) {
+		if !validator.CheckUName(username, 5, 14) {
 			helper.Print(ctx, false, helper.UsernameErr)
 			return
 		}
@@ -719,7 +719,7 @@ func (that *WithdrawController) FinanceReviewList(ctx *fasthttp.RequestCtx) {
 	}
 
 	if username != "" {
-		if !validator.CheckUName(username, 4, 9) {
+		if !validator.CheckUName(username, 5, 14) {
 			helper.Print(ctx, false, helper.UsernameErr)
 			return
 		}
@@ -1324,7 +1324,7 @@ func (that *WithdrawController) BankCardWithdrawRecord(ctx *fasthttp.RequestCtx)
 		return
 	}
 
-	if username == "" || !validator.CheckUName(username, 4, 9) {
+	if username == "" || !validator.CheckUName(username, 5, 14) {
 		helper.Print(ctx, false, helper.UsernameErr)
 		return
 	}
