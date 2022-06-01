@@ -628,14 +628,14 @@ func DepositManual(id, amount, remark, name, uid string) error {
 	}
 
 	// 判断状态
-	if order.State != DepositConfirming && order.State != DepositCancelled {
+	if order.State != DepositConfirming {
 		return errors.New(helper.OrderStateErr)
 	}
 
 	// 判断此订单是否已经已经有一笔补单成功,如果这笔订单的手动补单有一笔成功,则不允许再补单
 	existEx := g.Ex{
 		"oid":       order.OID,
-		"state":     []int{DepositSuccess, DepositCancelled},
+		"state":     DepositSuccess,
 		"automatic": 0,
 		"prefix":    meta.Prefix,
 	}
@@ -706,6 +706,7 @@ func DepositManual(id, amount, remark, name, uid string) error {
 		recs := g.Record{
 			"state":         DepositCancelled,
 			"confirm_at":    now.Unix(),
+			"automatic":     "0",
 			"confirm_uid":   uid,
 			"confirm_name":  name,
 			"review_remark": remark,
