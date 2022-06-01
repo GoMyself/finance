@@ -56,6 +56,10 @@ func (that *ChannelBankController) Insert(ctx *fasthttp.RequestCtx) {
 		helper.Print(ctx, false, helper.ParamErr)
 		return
 	}
+	if channelID == "1" || channelID == "2" || channelID == "6" || channelID == "9" || channelID == "15" {
+		helper.Print(ctx, false, helper.MemberBankcardChannelUnsupport)
+		return
+	}
 
 	bankID := string(ctx.PostArgs().Peek("bank_id")) // 银行id
 	if !validator.CheckStringDigit(bankID) {
