@@ -635,7 +635,7 @@ func DepositManual(id, amount, remark, name, uid string) error {
 	// 判断此订单是否已经已经有一笔补单成功,如果这笔订单的手动补单有一笔成功,则不允许再补单
 	existEx := g.Ex{
 		"oid":       order.OID,
-		"state":     DepositSuccess,
+		"state":     []int{DepositSuccess, DepositCancelled},
 		"automatic": 0,
 		"prefix":    meta.Prefix,
 	}
@@ -712,6 +712,8 @@ func DepositManual(id, amount, remark, name, uid string) error {
 		}
 		query, _, _ = dialect.Update("tbl_deposit").Set(recs).Where(ex).ToSQL()
 		r, err := tx.Exec(query)
+		fmt.Println(r)
+		fmt.Println(err)
 		if err != nil {
 			_ = tx.Rollback()
 			return errors.New(helper.TransErr)
