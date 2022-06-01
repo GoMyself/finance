@@ -577,7 +577,8 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 			}
 
 			title := "Thông Báo Nạp Tiền Thành Công"
-			content := fmt.Sprintf("Quý Khách Của P3 Thân Mến:\nBạn Đã Nạp Tiền Thành Công %.4f KVND,Vui Lòng KIểm Tra Ngay,Nếu Bạn Có Bất Cứ Thắc Mắc Vấn Đề Gì Vui Lòng Liên Hệ CSKH Để Biết Thêm Chi Tiết.【P3】Chúc Bạn Cược Đâu Thắng Đó !!\n", order.Amount)
+			content := fmt.Sprintf("Quý Khách Của P3 Thân Mến:\nBạn Đã Nạp Tiền Thành Công %s KVND,Vui Lòng KIểm Tra Ngay,Nếu Bạn Có Bất Cứ Thắc Mắc Vấn Đề Gì Vui Lòng Liên Hệ CSKH Để Biết Thêm Chi Tiết.【P3】Chúc Bạn Cược Đâu Thắng Đó !!\n",
+				decimal.NewFromFloat(order.Amount).Truncate(0).String())
 			err = messageSend(order.ID, title, "", content, "system", meta.Prefix, 0, 0, 2, []string{order.Username})
 			if err != nil {
 				_ = pushLog(err, helper.ESErr)
@@ -585,7 +586,7 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 		}
 	}
 
-	MemberUpdateCache(order.Username)
+	_ = MemberUpdateCache(order.Username)
 	return nil
 }
 
@@ -1030,7 +1031,18 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 	if err != nil {
 		return pushLog(err, helper.DBErr)
 	}
-	MemberUpdateCache(order.Username)
+
+	_ = MemberUpdateCache(order.Username)
+
+	if DepositSuccess == state {
+		title := "Thông Báo Nạp Tiền Thành Công"
+		content := fmt.Sprintf("Quý Khách Của P3 Thân Mến:\nBạn Đã Nạp Tiền Thành Công %s KVND,Vui Lòng KIểm Tra Ngay,Nếu Bạn Có Bất Cứ Thắc Mắc Vấn Đề Gì Vui Lòng Liên Hệ CSKH Để Biết Thêm Chi Tiết.【P3】Chúc Bạn Cược Đâu Thắng Đó !!\n",
+			decimal.NewFromFloat(order.Amount).Truncate(0).String())
+		err = messageSend(order.ID, title, "", content, "system", meta.Prefix, 0, 0, 2, []string{order.Username})
+		if err != nil {
+			_ = pushLog(err, helper.ESErr)
+		}
+	}
 	/*
 		// 存款成功发送到队列
 		if DepositSuccess == state {
