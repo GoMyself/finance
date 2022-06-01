@@ -77,6 +77,8 @@ func SetupRouter(b BuildInfo) *router.Router {
 	route_callback_group := route.Group("/finance/callback")
 	route_merchant_group := route.Group("/merchant/finance")
 
+	get(nil, "/finance/version", Version)
+
 	// [callback] uz pay 代收 回调
 	post(route_callback_group, "/uzd", cbCtl.UZD)
 	// [callback] uz pay 代付 回调

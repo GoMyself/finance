@@ -1112,10 +1112,13 @@ func cacheDepositProcessing(uid string, now int64) error {
 	defer pipe.Close()
 
 	// 检查是否被手动锁定
-	exists := pipe.Exists(ctx, fmt.Sprintf("DL:%s", uid))
+	manual_lock_key := fmt.Sprintf("%s:finance:mlock:%s", meta.Prefix, uid)
+	automatic_lock_key := fmt.Sprintf("%s:finance:alock:%s", meta.Prefix, uid)
+
+	exists := pipe.Exists(ctx, manual_lock_key)
 
 	// 检查是否被自动锁定
-	rs := pipe.ZRevRangeWithScores(ctx, fmt.Sprintf("DP:%s", uid), 0, -1)
+	rs := pipe.ZRevRangeWithScores(ctx, automatic_lock_key, 0, -1)
 	_, err := pipe.Exec(ctx)
 	if err != nil {
 		return pushLog(err, helper.RedisErr)
@@ -1151,19 +1154,20 @@ func cacheDepositProcessing(uid string, now int64) error {
 
 func cacheDepositProcessingInsert(uid, depositId string, now int64) error {
 
-	key := fmt.Sprintf("DP:%s", uid)
+	automatic_lock_key := fmt.Sprintf("%s:finance:alock:%s", meta.Prefix, uid)
+
 	z := redis.Z{
 		Score:  float64(now),
 		Member: depositId,
 	}
-	return meta.MerchantRedis.ZAdd(ctx, key, &z).Err()
+	return meta.MerchantRedis.ZAdd(ctx, automatic_lock_key, &z).Err()
 }
 
 // CacheDepositProcessingRem 清除未未成功的订单计数
 func CacheDepositProcessingRem(uid string) error {
 
-	key := fmt.Sprintf("DP:%s", uid)
-	return meta.MerchantRedis.Unlink(ctx, key).Err()
+	automatic_lock_key := fmt.Sprintf("%s:finance:alock:%s", meta.Prefix, uid)
+	return meta.MerchantRedis.Unlink(ctx, automatic_lock_key).Err()
 }
 
 // 存入数据库
