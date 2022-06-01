@@ -178,6 +178,7 @@ func pushLog(err error, code string) error {
 	if err1 != nil {
 		fmt.Println("insert goerror query = ", query)
 		fmt.Println("insert goerror err = ", err1.Error())
+
 	}
 
 	note := fmt.Sprintf("Hệ thống lỗi %s", id)

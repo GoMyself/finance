@@ -72,6 +72,7 @@ func main() {
 	if os.Args[3] == "load" {
 		fmt.Println("load")
 
+		model.TunnelUpdateCache()
 		for i := 1; i < 11; i++ {
 			level := fmt.Sprintf("%d", i)
 			model.Create(level)
