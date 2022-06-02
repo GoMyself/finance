@@ -21,7 +21,7 @@ func ChannelTypeCreateCache() {
 
 	for _, value := range reocrd {
 
-		key := "p:c:t:" + value.ID
+		key := meta.Prefix + ":p:c:t:" + value.ID
 		val := map[string]interface{}{
 			"promo_state": value.PromoState,
 			"sort":        value.Sort,
@@ -43,7 +43,7 @@ func ChannelTypeCreateCache() {
 
 func ChannelTypeById(id string) (map[string]string, error) {
 
-	key := "p:c:t:" + id
+	key := meta.Prefix + ":p:c:t:" + id
 	field := []string{"promo_state", "sort", "name", "id"}
 	res := map[string]string{}
 

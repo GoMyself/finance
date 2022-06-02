@@ -124,17 +124,18 @@ func WithdrawUserInsert(amount, bid string, fctx *fasthttp.RequestCtx) (string, 
 		return "", errors.New(helper.RecordNotExistErr)
 	}
 
-	idx := bankcardHash % 10
-	key := fmt.Sprintf("bl:bc%d", idx)
-	ok, err := meta.MerchantRedis.SIsMember(ctx, key, bankcardHash).Result()
-	if err != nil {
-		return "", pushLog(err, helper.RedisErr)
-	}
+	/*
+		idx := bankcardHash % 10
+		key := fmt.Sprintf("bl:bc%d", idx)
+		ok, err := meta.MerchantRedis.SIsMember(ctx, key, bankcardHash).Result()
+		if err != nil {
+			return "", pushLog(err, helper.RedisErr)
+		}
 
-	if ok {
-		return "", errors.New(helper.BankcardAbnormal)
-	}
-
+		if ok {
+			return "", errors.New(helper.BankcardAbnormal)
+		}
+	*/
 	// 检查上次提现成功到现在的存款流水是否满足 未满足的返回流水未达标
 	clientContext := core.NewClientContext()
 	header := make(http.Header)
@@ -785,7 +786,7 @@ func WithdrawLimit(ctx *fasthttp.RequestCtx) (map[string]string, error) {
 // WithDrawDailyLimit 获取每日提现限制
 func WithDrawDailyLimit(date, username string) (map[string]string, error) {
 
-	limitKey := fmt.Sprintf("%s:w:%s", username, date)
+	limitKey := fmt.Sprintf("%s:%s:w:%s", meta.Prefix, username, date)
 
 	// 获取会员当日提现限制，先取缓存 没有就设置一下
 	num, err := meta.MerchantRedis.Exists(ctx, limitKey).Result()
@@ -999,8 +1000,7 @@ func WithdrawUpdateInfo(id string, record g.Record) error {
 func WithdrawAuto(param WithdrawAutoParam, level int) error {
 
 	i := 0
-	key := "pw:" + strconv.Itoa(level)
-
+	key := fmt.Sprintf("%s:pw:%d", meta.Prefix, level)
 	pwc, err := meta.MerchantRedis.LLen(ctx, key).Result()
 	if err != nil {
 		return pushLog(err, helper.RedisErr)
@@ -1404,7 +1404,7 @@ func withdrawOrderSuccess(query, bankcard string, order Withdraw) error {
 // 更新每日提款次数限制和金额限制
 func withDrawDailyLimitUpdate(amount decimal.Decimal, date, username string) error {
 
-	limitKey := fmt.Sprintf("%s:w:%s", username, date)
+	limitKey := fmt.Sprintf("%s:%s:w:%s", meta.Prefix, username, date)
 
 	var wl = map[string]string{
 		"withdraw_count": "0",

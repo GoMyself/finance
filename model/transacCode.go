@@ -29,9 +29,9 @@ func TransacCodeCreate() {
 	}
 
 	pipe := meta.MerchantRedis.Pipeline()
-	pipe.Del(ctx, "manual:code")
+	pipe.Del(ctx, meta.Prefix+":manual:code")
 	for code, _ := range vec {
-		pipe.LPush(ctx, "manual:code", code)
+		pipe.LPush(ctx, meta.Prefix+":manual:code", code)
 	}
 	_, err := pipe.Exec(ctx)
 	pipe.Close()
@@ -42,7 +42,7 @@ func TransacCodeCreate() {
 
 func TransacCodeGet() (string, error) {
 
-	code, err := meta.MerchantRedis.RPopLPush(ctx, "manual:code", "manual:code").Result()
+	code, err := meta.MerchantRedis.RPopLPush(ctx, meta.Prefix+":manual:code", "manual:code").Result()
 	if err != nil {
 		return "", errors.New(helper.RecordNotExistErr)
 	}

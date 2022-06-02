@@ -122,15 +122,16 @@ func CacheRefreshPaymentBanks(id string) error {
 	pipe := meta.MerchantRedis.TxPipeline()
 	defer pipe.Close()
 
-	pipe.Unlink(ctx, "BK:"+id)
+	bkey := meta.Prefix + ":BK:" + id
+	pipe.Unlink(ctx, bkey)
 	if len(bankResult) > 0 {
 		s, err := helper.JsonMarshal(bankResult)
 		if err != nil {
 			return errors.New(helper.FormatErr)
 		}
 
-		pipe.Set(ctx, "BK:"+id, string(s), 999999*time.Hour)
-		pipe.Persist(ctx, "BK:"+id)
+		pipe.Set(ctx, bkey, string(s), 999999*time.Hour)
+		pipe.Persist(ctx, bkey)
 	}
 
 	_, err = pipe.Exec(ctx)
@@ -169,9 +170,10 @@ func CacheRefreshPayment(id string) error {
 		"state":       val.State,
 		"amount_list": val.AmountList,
 	}
-	pipe.Unlink(ctx, "p:"+id)
-	pipe.HMSet(ctx, "p:"+id, value)
-	pipe.Persist(ctx, "p:"+id)
+	pkey := meta.Prefix + ":p:" + id
+	pipe.Unlink(ctx, pkey)
+	pipe.HMSet(ctx, pkey, value)
+	pipe.Persist(ctx, pkey)
 	_, err = pipe.Exec(ctx)
 	if err != nil {
 		return pushLog(err, helper.RedisErr)
@@ -193,9 +195,10 @@ func CachePayment(id string) (FPay, error) {
 		cols = append(cols, val.(string))
 	}
 
+	pkey := meta.Prefix + ":p:" + id
 	// 需要执行的命令
-	exists := pipe.Exists(ctx, "p:"+id)
-	rs := pipe.HMGet(ctx, "p:"+id, cols...)
+	exists := pipe.Exists(ctx, pkey)
+	rs := pipe.HMGet(ctx, pkey, cols...)
 
 	_, err := pipe.Exec(ctx)
 	if err != nil {
@@ -221,7 +224,7 @@ func Tunnel(fctx *fasthttp.RequestCtx, id string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	key := fmt.Sprintf("p:%d:%s", u.Level, id)
+	key := fmt.Sprintf("%s:p:%d:%s", meta.Prefix, u.Level, id)
 	//sip := helper.FromRequest(fctx)
 	//if strings.Count(sip, ":") >= 2 {
 	//	key = fmt.Sprintf("p:%d:%s", 9, id)
@@ -236,9 +239,9 @@ func Tunnel(fctx *fasthttp.RequestCtx, id string) (string, error) {
 	pipe := meta.MerchantRedis.TxPipeline()
 	defer pipe.Close()
 
-	rs := pipe.HMGet(ctx, "p:"+paymentId, "id", "fmin", "fmax", "et", "st", "amount_list")
-	re := pipe.HMGet(ctx, "pr:"+paymentId, "fmin", "fmax")
-	bk := pipe.Get(ctx, "BK:"+paymentId)
+	rs := pipe.HMGet(ctx, meta.Prefix+":p:"+paymentId, "id", "fmin", "fmax", "et", "st", "amount_list")
+	re := pipe.HMGet(ctx, meta.Prefix+":pr:"+paymentId, "fmin", "fmax")
+	bk := pipe.Get(ctx, meta.Prefix+":BK:"+paymentId)
 
 	_, _ = pipe.Exec(ctx)
 
@@ -286,10 +289,10 @@ func Cate(fctx *fasthttp.RequestCtx) (string, error) {
 		return "", err
 	}
 
-	key := fmt.Sprintf("p:%d", m.Level)
+	key := fmt.Sprintf("%s:p:%d", meta.Prefix, m.Level)
 	//pipe := meta.MerchantRedisRead.Pipeline()
 	pipe := meta.MerchantRedis.Pipeline()
-	exists := pipe.Exists(ctx, fmt.Sprintf("DL:%s", m.UID))
+	exists := pipe.Exists(ctx, fmt.Sprintf("%s:DL:%s", meta.Prefix, m.UID))
 
 	//sip := helper.FromRequest(fctx)
 	//if strings.Count(sip, ":") >= 2 {
@@ -347,11 +350,11 @@ func CreateAutomatic(level string) {
 	pipe := meta.MerchantRedis.TxPipeline()
 	defer pipe.Close()
 
-	pipe.Unlink(ctx, "pw:"+level)
+	pipe.Unlink(ctx, meta.Prefix+":pw:"+level)
 
 	for _, val := range vips {
 		value, _ := helper.JsonMarshal(val)
-		pipe.LPush(ctx, "pw:"+level, value)
+		pipe.LPush(ctx, meta.Prefix+":pw:"+level, value)
 	}
 
 	_, err = pipe.Exec(ctx)
@@ -373,7 +376,7 @@ func Create(level string) {
 
 	fmt.Println("Create p:" + level)
 	//删除key
-	meta.MerchantRedis.Unlink(ctx, "p:"+level).Result()
+	meta.MerchantRedis.Unlink(ctx, meta.Prefix+":p:"+level).Result()
 
 	tunnelData_temp, err := meta.MerchantRedis.Get(ctx, meta.Prefix+":tunnel:All").Bytes()
 	if err != nil {
@@ -447,8 +450,8 @@ func Create(level string) {
 	pipe := meta.MerchantRedis.TxPipeline()
 
 	for _, val := range payments {
-		pipe.Unlink(ctx, "p:"+val.ID)
-		pipe.Unlink(ctx, "p:"+level+":"+val.ChannelID)
+		pipe.Unlink(ctx, meta.Prefix+":p:"+val.ID)
+		pipe.Unlink(ctx, meta.Prefix+":p:"+level+":"+val.ChannelID)
 	}
 
 	for _, val := range vips {
@@ -457,9 +460,9 @@ func Create(level string) {
 			"fmin": val.Fmin,
 		}
 
-		pipe.Unlink(ctx, "pr:"+val.PaymentID)
-		pipe.HMSet(ctx, "pr:"+val.PaymentID, value)
-		pipe.Persist(ctx, "pr:"+val.PaymentID)
+		pipe.Unlink(ctx, meta.Prefix+":pr:"+val.PaymentID)
+		pipe.HMSet(ctx, meta.Prefix+":pr:"+val.PaymentID, value)
+		pipe.Persist(ctx, meta.Prefix+":pr:"+val.PaymentID)
 	}
 
 	for _, val := range tunnels {
@@ -474,11 +477,11 @@ func Create(level string) {
 			}
 
 		}
-		pipe.ZAdd(ctx, "p:"+level, vv)
+		pipe.ZAdd(ctx, meta.Prefix+":p:"+level, vv)
 		vv = nil
 	}
 
-	pipe.Persist(ctx, "p:"+level)
+	pipe.Persist(ctx, meta.Prefix+":p:"+level)
 
 	for _, val := range payments {
 
@@ -500,9 +503,9 @@ func Create(level string) {
 			"state":       val.State,
 			"amount_list": val.AmountList,
 		}
-		pipe.LPush(ctx, "p:"+level+":"+val.ChannelID, val.ID)
-		pipe.HMSet(ctx, "p:"+val.ID, value)
-		pipe.Persist(ctx, "p:"+val.ID)
+		pipe.LPush(ctx, meta.Prefix+":p:"+level+":"+val.ChannelID, val.ID)
+		pipe.HMSet(ctx, meta.Prefix+":p:"+val.ID, value)
+		pipe.Persist(ctx, meta.Prefix+":p:"+val.ID)
 	}
 
 	_, err = pipe.Exec(ctx)

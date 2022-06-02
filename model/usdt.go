@@ -20,7 +20,7 @@ func UsdtUpdate(field, value string) error {
 		return errors.New(helper.DBErr)
 	}
 
-	err = meta.MerchantRedis.HSet(ctx, "usdt", field, value).Err()
+	err = meta.MerchantRedis.HSet(ctx, meta.Prefix+":usdt", field, value).Err()
 	if err != nil {
 		return errors.New(helper.RedisErr)
 	}
@@ -31,7 +31,7 @@ func UsdtUpdate(field, value string) error {
 func UsdtInfo() (map[string]string, error) {
 
 	res := map[string]string{}
-	f, err := meta.MerchantRedis.HMGet(ctx, "usdt", "usdt_rate", "usdt_trc_addr").Result()
+	f, err := meta.MerchantRedis.HMGet(ctx, meta.Prefix+":usdt", "usdt_rate", "usdt_trc_addr").Result()
 	if err != nil && redis.Nil != err {
 		return res, errors.New(helper.RedisErr)
 	}
