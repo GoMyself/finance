@@ -123,22 +123,21 @@ func WithdrawUserInsert(amount, bid string, fctx *fasthttp.RequestCtx) (string, 
 	if bankcardHash == 0 {
 		return "", errors.New(helper.RecordNotExistErr)
 	}
-	var v_t []Vip_t
+	var vipt []Vip_t
 
 	ex := g.Ex{
-		"prefix":     meta.Prefix,
 		"cate_id":    12,
 		"channel_id": 7,
-		"state":      1,
+		"state":      "1",
 		"vip":        member.Level,
 	}
 	query, _, _ = dialect.From("f_vip").Select(colVip...).Where(ex).ToSQL()
 	fmt.Println(query)
-	err = meta.MerchantDB.Select(&v_t, query)
+	err = meta.MerchantDB.Select(&vipt, query)
 	if err != nil {
 		return "", errors.New(helper.NoPayChannel)
 	}
-	if len(v_t) == 0 {
+	if len(vipt) == 0 {
 		return "", errors.New(helper.NoPayChannel)
 	}
 
@@ -146,11 +145,11 @@ func WithdrawUserInsert(amount, bid string, fctx *fasthttp.RequestCtx) (string, 
 	if err != nil {
 		return "", pushLog(err, helper.FormatErr)
 	}
-	fmin, _ := decimal.NewFromString(v_t[0].Fmin)
+	fmin, _ := decimal.NewFromString(vipt[0].Fmin)
 	if fmin.Cmp(withdrawAmount) > 0 {
 		return "", pushLog(err, helper.AmountErr)
 	}
-	fmax, _ := decimal.NewFromString(v_t[0].Fmax)
+	fmax, _ := decimal.NewFromString(vipt[0].Fmax)
 	if fmax.Cmp(withdrawAmount) < 0 {
 		return "", pushLog(err, helper.AmountErr)
 	}
