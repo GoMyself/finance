@@ -3,7 +3,6 @@ package model
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"strings"
 
 	"finance/contrib/helper"
@@ -28,7 +27,7 @@ type channelCate struct {
 	CateID    string `db:"cate_id" json:"cate_id"`
 }
 
-func ChannelList(cateID, chanID string, device []string, page string) ([]Payment_t, error) {
+func ChannelList(cateID, chanID string, device []string) ([]Payment_t, error) {
 
 	var data []Payment_t
 
@@ -36,7 +35,7 @@ func ChannelList(cateID, chanID string, device []string, page string) ([]Payment
 		"prefix": meta.Prefix,
 	}
 
-	if cateID != "0" && page != "" {
+	if cateID != "0" {
 		ex["cate_id"] = cateID
 	}
 
@@ -66,16 +65,8 @@ func ChannelList(cateID, chanID string, device []string, page string) ([]Payment
 
 		ex["id"] = ids
 	}
-	var query string
-	if page == "" {
-		query, _, _ = dialect.From("f_payment").Select(colPayment...).Where(ex).GroupBy("channel_id").ToSQL()
+	query, _, _ := dialect.From("f_payment").Select(colPayment...).Where(ex).Order(g.C("cate_id").Desc()).ToSQL()
 
-	} else {
-		query, _, _ = dialect.From("f_payment").Select(colPayment...).Where(ex).ToSQL()
-
-	}
-
-	fmt.Println(query)
 	err := meta.MerchantDB.Select(&data, query)
 	if err != nil {
 		return data, pushLog(err, helper.DBErr)

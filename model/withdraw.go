@@ -123,19 +123,38 @@ func WithdrawUserInsert(amount, bid string, fctx *fasthttp.RequestCtx) (string, 
 	if bankcardHash == 0 {
 		return "", errors.New(helper.RecordNotExistErr)
 	}
+	var v_t []Vip_t
 
-	/*
-		idx := bankcardHash % 10
-		key := fmt.Sprintf("bl:bc%d", idx)
-		ok, err := meta.MerchantRedis.SIsMember(ctx, key, bankcardHash).Result()
-		if err != nil {
-			return "", pushLog(err, helper.RedisErr)
-		}
+	ex := g.Ex{
+		"prefix":     meta.Prefix,
+		"cate_id":    12,
+		"channel_id": 7,
+		"state":      1,
+		"vip":        member.Level,
+	}
+	query, _, _ = dialect.From("f_vip").Select(colVip...).Where(ex).ToSQL()
+	fmt.Println(query)
+	err = meta.MerchantDB.Select(&v_t, query)
+	if err != nil {
+		return "", errors.New(helper.NoPayChannel)
+	}
+	if len(v_t) == 0 {
+		return "", errors.New(helper.NoPayChannel)
+	}
 
-		if ok {
-			return "", errors.New(helper.BankcardAbnormal)
-		}
-	*/
+	withdrawAmount, err := decimal.NewFromString(amount)
+	if err != nil {
+		return "", pushLog(err, helper.FormatErr)
+	}
+	fmin, _ := decimal.NewFromString(v_t[0].Fmin)
+	if fmin.Cmp(withdrawAmount) > 0 {
+		return "", pushLog(err, helper.AmountErr)
+	}
+	fmax, _ := decimal.NewFromString(v_t[0].Fmax)
+	if fmax.Cmp(withdrawAmount) < 0 {
+		return "", pushLog(err, helper.AmountErr)
+	}
+
 	// 检查上次提现成功到现在的存款流水是否满足 未满足的返回流水未达标
 	clientContext := core.NewClientContext()
 	header := make(http.Header)
@@ -176,10 +195,7 @@ func WithdrawUserInsert(amount, bid string, fctx *fasthttp.RequestCtx) (string, 
 	if err != nil {
 		return "", pushLog(err, helper.FormatErr)
 	}
-	withdrawAmount, err := decimal.NewFromString(amount)
-	if err != nil {
-		return "", pushLog(err, helper.FormatErr)
-	}
+
 	//当前提现金额 大于 所属等级每日提现金额限制
 	if withdrawAmount.Cmp(max) > 0 {
 		return "", errors.New(helper.MaxDrawLimitParamErr)
