@@ -44,6 +44,7 @@ type channelListParam struct {
 	CateID    string `rule:"digit" default:"0" msg:"cate_id error" name:"cate_id"`       // 渠道id
 	ChannelID string `rule:"digit" default:"0" msg:"channel_id error" name:"channel_id"` // 通道id
 	Device    string `rule:"none" msg:"device error" name:"device"`                      // 支持设备
+	Page      string `rule:"none" name:"page"`
 }
 
 type chanStateParam struct {
@@ -74,7 +75,7 @@ func (that *ChannelController) List(ctx *fasthttp.RequestCtx) {
 		}
 	}
 
-	data, err := model.ChannelList(param.CateID, param.ChannelID, device)
+	data, err := model.ChannelList(param.CateID, param.ChannelID, device, param.Page)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return

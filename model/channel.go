@@ -28,7 +28,7 @@ type channelCate struct {
 	CateID    string `db:"cate_id" json:"cate_id"`
 }
 
-func ChannelList(cateID, chanID string, device []string) ([]Payment_t, error) {
+func ChannelList(cateID, chanID string, device []string, page string) ([]Payment_t, error) {
 
 	var data []Payment_t
 
@@ -36,9 +36,9 @@ func ChannelList(cateID, chanID string, device []string) ([]Payment_t, error) {
 		"prefix": meta.Prefix,
 	}
 
-	//if cateID != "0" {
-	//	ex["cate_id"] = cateID
-	//}
+	if cateID != "0" && page != "" {
+		ex["cate_id"] = cateID
+	}
 
 	if chanID != "0" {
 		ex["channel_id"] = chanID
@@ -66,8 +66,15 @@ func ChannelList(cateID, chanID string, device []string) ([]Payment_t, error) {
 
 		ex["id"] = ids
 	}
+	var query string
+	if page == "" {
+		query, _, _ = dialect.From("f_payment").Select(colPayment...).Where(ex).GroupBy("channel_id").ToSQL()
 
-	query, _, _ := dialect.From("f_payment").Select(colPayment...).Where(ex).GroupBy("cate_id").ToSQL()
+	} else {
+		query, _, _ = dialect.From("f_payment").Select(colPayment...).Where(ex).ToSQL()
+
+	}
+
 	fmt.Println(query)
 	err := meta.MerchantDB.Select(&data, query)
 	if err != nil {
