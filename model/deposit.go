@@ -543,47 +543,45 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 		}
 	*/
 	if DepositSuccess == state && cashType == TransactionDeposit {
-		member, err := MemberFindOne(order.Username)
-		fmt.Println(err)
-		if err == nil {
-			if member.FirstDepositAt == 0 {
-				rec := g.Record{
-					"first_deposit_at":     order.CreatedAt,
-					"first_deposit_amount": order.Amount,
-				}
-				ex := g.Ex{
-					"uid": member.UID,
-				}
-				query, _, _ := dialect.Update("tbl_members").Set(rec).Where(ex).ToSQL()
-				fmt.Printf("memberFirstDeposit Update: %v\n", query)
-				_, err := meta.MerchantDB.Exec(query)
-				if err != nil {
-					fmt.Println("update member first_amount err:", err.Error())
-				}
-			} else if member.SecondDepositAt == 0 {
-				rec := g.Record{
-					"second_deposit_at":     order.CreatedAt,
-					"second_deposit_amount": order.Amount,
-				}
-				ex := g.Ex{
-					"uid": member.UID,
-				}
-				query, _, _ := dialect.Update("tbl_members").Set(rec).Where(ex).ToSQL()
-				fmt.Printf("memberSecondDeposit Update: %v\n", query)
-				_, err := meta.MerchantDB.Exec(query)
-				if err != nil {
-					fmt.Println("update member second_amount err:", err.Error())
-				}
-			}
 
-			title := "Thông Báo Nạp Tiền Thành Công"
-			content := fmt.Sprintf("Quý Khách Của P3 Thân Mến:\nBạn Đã Nạp Tiền Thành Công %s KVND,Vui Lòng KIểm Tra Ngay,Nếu Bạn Có Bất Cứ Thắc Mắc Vấn Đề Gì Vui Lòng Liên Hệ CSKH Để Biết Thêm Chi Tiết.【P3】Chúc Bạn Cược Đâu Thắng Đó !!\n",
-				decimal.NewFromFloat(order.Amount).Truncate(0).String())
-			err = messageSend(order.ID, title, "", content, "system", meta.Prefix, 0, 0, 2, []string{order.Username})
-			if err != nil {
-				_ = pushLog(err, helper.ESErr)
-			}
+		rec := g.Record{
+			"first_deposit_at":     order.CreatedAt,
+			"first_deposit_amount": order.Amount,
 		}
+		ex := g.Ex{
+			"uid":              uid,
+			"first_deposit_at": 0,
+		}
+		query, _, _ := dialect.Update("tbl_members").Set(rec).Where(ex).ToSQL()
+		fmt.Printf("memberFirstDeposit Update: %v\n", query)
+		_, err := meta.MerchantDB.Exec(query)
+		if err != nil {
+			fmt.Println("update member first_amount err:", err.Error())
+		}
+
+		rec2 := g.Record{
+			"second_deposit_at":     order.CreatedAt,
+			"second_deposit_amount": order.Amount,
+		}
+		ex2 := g.Ex{
+			"uid":               uid,
+			"second_deposit_at": 0,
+		}
+		query, _, _ = dialect.Update("tbl_members").Set(rec2).Where(ex2).ToSQL()
+		fmt.Printf("memberSecondDeposit Update: %v\n", query)
+		_, err = meta.MerchantDB.Exec(query)
+		if err != nil {
+			fmt.Println("update member second_amount err:", err.Error())
+		}
+
+		title := "Thông Báo Nạp Tiền Thành Công"
+		content := fmt.Sprintf("Quý Khách Của P3 Thân Mến:\nBạn Đã Nạp Tiền Thành Công %s KVND,Vui Lòng KIểm Tra Ngay,Nếu Bạn Có Bất Cứ Thắc Mắc Vấn Đề Gì Vui Lòng Liên Hệ CSKH Để Biết Thêm Chi Tiết.【P3】Chúc Bạn Cược Đâu Thắng Đó !!\n",
+			decimal.NewFromFloat(order.Amount).Truncate(0).String())
+		err = messageSend(order.ID, title, "", content, "system", meta.Prefix, 0, 0, 2, []string{order.Username})
+		if err != nil {
+			_ = pushLog(err, helper.ESErr)
+		}
+
 	}
 
 	_ = MemberUpdateCache(order.Username)
