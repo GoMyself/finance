@@ -542,17 +542,18 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 			PushDepositSuccess(order.UID, order.Amount)
 		}
 	*/
-	if DepositSuccess == state && cashType == TransactionDeposit {
+	fmt.Println("state:", state)
+	if DepositSuccess == state {
 
 		rec := g.Record{
 			"first_deposit_at":     order.CreatedAt,
 			"first_deposit_amount": order.Amount,
 		}
-		ex := g.Ex{
-			"uid":              uid,
+		ex1 := g.Ex{
+			"username":         order.Username,
 			"first_deposit_at": 0,
 		}
-		query, _, _ := dialect.Update("tbl_members").Set(rec).Where(ex).ToSQL()
+		query, _, _ = dialect.Update("tbl_members").Set(rec).Where(ex1).ToSQL()
 		fmt.Printf("memberFirstDeposit Update: %v\n", query)
 		_, err := meta.MerchantDB.Exec(query)
 		if err != nil {
@@ -564,7 +565,7 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 			"second_deposit_amount": order.Amount,
 		}
 		ex2 := g.Ex{
-			"uid":               uid,
+			"username":          order.Username,
 			"second_deposit_at": 0,
 		}
 		query, _, _ = dialect.Update("tbl_members").Set(rec2).Where(ex2).ToSQL()
@@ -1032,7 +1033,39 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 
 	_ = MemberUpdateCache(order.Username)
 
+	fmt.Println(state)
 	if DepositSuccess == state {
+
+		rec := g.Record{
+			"first_deposit_at":     order.CreatedAt,
+			"first_deposit_amount": order.Amount,
+		}
+		ex1 := g.Ex{
+			"username":         order.Username,
+			"first_deposit_at": 0,
+		}
+		query, _, _ = dialect.Update("tbl_members").Set(rec).Where(ex1).ToSQL()
+		fmt.Printf("memberFirstDeposit Update: %v\n", query)
+		_, err := meta.MerchantDB.Exec(query)
+		if err != nil {
+			fmt.Println("update member first_amount err:", err.Error())
+		}
+
+		rec2 := g.Record{
+			"second_deposit_at":     order.CreatedAt,
+			"second_deposit_amount": order.Amount,
+		}
+		ex2 := g.Ex{
+			"username":          order.Username,
+			"second_deposit_at": 0,
+		}
+		query, _, _ = dialect.Update("tbl_members").Set(rec2).Where(ex2).ToSQL()
+		fmt.Printf("memberSecondDeposit Update: %v\n", query)
+		_, err = meta.MerchantDB.Exec(query)
+		if err != nil {
+			fmt.Println("update member second_amount err:", err.Error())
+		}
+
 		title := "Thông Báo Nạp Tiền Thành Công"
 		content := fmt.Sprintf("Quý Khách Của P3 Thân Mến:\nBạn Đã Nạp Tiền Thành Công %s KVND,Vui Lòng KIểm Tra Ngay,Nếu Bạn Có Bất Cứ Thắc Mắc Vấn Đề Gì Vui Lòng Liên Hệ CSKH Để Biết Thêm Chi Tiết.【P3】Chúc Bạn Cược Đâu Thắng Đó !!\n",
 			decimal.NewFromFloat(order.Amount).Truncate(0).String())
