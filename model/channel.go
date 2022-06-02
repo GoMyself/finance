@@ -35,9 +35,9 @@ func ChannelList(cateID, chanID string, device []string) ([]Payment_t, error) {
 		"prefix": meta.Prefix,
 	}
 
-	if cateID != "0" {
-		ex["cate_id"] = cateID
-	}
+	//if cateID != "0" {
+	//	ex["cate_id"] = cateID
+	//}
 
 	if chanID != "0" {
 		ex["channel_id"] = chanID
