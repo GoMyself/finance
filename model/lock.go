@@ -5,6 +5,7 @@ import (
 	"errors"
 	"finance/contrib/helper"
 	"fmt"
+
 	g "github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
 )
@@ -128,7 +129,7 @@ func LockInsert(param map[string]string) error {
 		return pushLog(err, helper.DBErr)
 	}
 
-	key := fmt.Sprintf("DL:%s", param["uid"])
+	key := fmt.Sprintf("%s:DL:%s", meta.Prefix, param["uid"])
 	err = meta.MerchantRedis.Set(ctx, key, "1", 0).Err()
 	if err != nil {
 		_ = pushLog(err, helper.RedisErr)
@@ -155,7 +156,7 @@ func LockUpdateState(uid string, param map[string]string) error {
 		return pushLog(err, helper.DBErr)
 	}
 
-	key := fmt.Sprintf("DL:%s", uid)
+	key := fmt.Sprintf("%s:DL:%s", meta.Prefix, uid)
 	err = meta.MerchantRedis.Unlink(ctx, key).Err()
 	if err != nil {
 		_ = pushLog(err, helper.RedisErr)

@@ -78,7 +78,7 @@ func ChannelList(cateID, chanID string, device []string) ([]Payment_t, error) {
 		res := make([]*redis.StringCmd, ll)
 		pipe := meta.MerchantRedis.Pipeline()
 		for i, v := range data {
-			key := "p:c:t:" + v.ChannelID
+			key := meta.Prefix + ":p:c:t:" + v.ChannelID
 			res[i] = pipe.HGet(ctx, key, "name")
 		}
 

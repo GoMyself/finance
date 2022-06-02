@@ -381,14 +381,14 @@ func cateToRedis() error {
 
 	b := obj.String()
 
-	key := "f:category"
+	key := meta.Prefix + ":f:category"
 	err = meta.MerchantRedis.Set(ctx, key, b, 0).Err()
 	return err
 }
 
 func CateListRedis() string {
 
-	res, err := meta.MerchantRedis.Get(ctx, "f:category").Result()
+	res, err := meta.MerchantRedis.Get(ctx, meta.Prefix+":f:category").Result()
 	if err == redis.Nil || err != nil {
 		return "{}"
 	}

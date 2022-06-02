@@ -315,7 +315,7 @@ func esPrefixIndex(index string) string {
 
 func Lock(id string) error {
 
-	val := fmt.Sprintf("%s%s", defaultRedisKeyPrefix, id)
+	val := fmt.Sprintf("%s:%s%s", meta.Prefix, defaultRedisKeyPrefix, id)
 	ok, err := meta.MerchantRedis.SetNX(ctx, val, "1", LockTimeout).Result()
 	if err != nil {
 		return pushLog(err, helper.RedisErr)
@@ -329,7 +329,7 @@ func Lock(id string) error {
 
 func Unlock(id string) {
 
-	val := fmt.Sprintf("%s%s", defaultRedisKeyPrefix, id)
+	val := fmt.Sprintf("%s:%s%s", meta.Prefix, defaultRedisKeyPrefix, id)
 	res, err := meta.MerchantRedis.Unlink(ctx, val).Result()
 	if err != nil || res != 1 {
 		fmt.Println("Unlock res = ", res)

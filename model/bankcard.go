@@ -6,6 +6,7 @@ import (
 	"finance/contrib/helper"
 	"finance/contrib/validator"
 	"fmt"
+
 	g "github.com/doug-martin/goqu/v9"
 )
 
@@ -38,7 +39,7 @@ type BankCardListForDeposit struct {
 func BankCardBackend() (Bankcard_t, error) {
 
 	bc := Bankcard_t{}
-	key := "offlineBankcard"
+	key := meta.Prefix + ":offlineBankcard"
 	res, err := meta.MerchantRedis.RPopLPush(ctx, key, key).Result()
 	if err != nil {
 		return bc, errors.New(helper.RecordNotExistErr)
@@ -50,7 +51,7 @@ func BankCardBackend() (Bankcard_t, error) {
 
 func BankCardUpdateCache() error {
 
-	key := "offlineBankcard"
+	key := meta.Prefix + ":offlineBankcard"
 	ex := g.Ex{
 		"state": "1",
 		"flags": "1",
