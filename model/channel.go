@@ -3,6 +3,7 @@ package model
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"strings"
 
 	"finance/contrib/helper"
@@ -66,7 +67,8 @@ func ChannelList(cateID, chanID string, device []string) ([]Payment_t, error) {
 		ex["id"] = ids
 	}
 
-	query, _, _ := dialect.From("f_payment").Select(colPayment...).Where(ex).ToSQL()
+	query, _, _ := dialect.From("f_payment").Select(colPayment...).Where(ex).GroupBy("cate_id").ToSQL()
+	fmt.Println(query)
 	err := meta.MerchantDB.Select(&data, query)
 	if err != nil {
 		return data, pushLog(err, helper.DBErr)
