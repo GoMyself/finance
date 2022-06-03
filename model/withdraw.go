@@ -1413,6 +1413,14 @@ func withdrawOrderSuccess(query, bankcard string, order Withdraw) error {
 		_ = pushLog(err, helper.ESErr)
 	}
 
+	//发送推送
+	msg := fmt.Sprintf(`{"ty":"2","amount": "%s", "ts":"%d"}`, order.Amount, time.Now().Unix())
+	err = meta.Nats.Publish(fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID), []byte(msg))
+	if err != nil {
+		fmt.Println("meta.MerchantNats.Publish = ", err.Error())
+	}
+	meta.Nats.Flush()
+
 	return nil
 }
 
@@ -1526,6 +1534,14 @@ func withdrawOrderFailed(query string, order Withdraw) error {
 	}
 
 	MemberUpdateCache(order.Username)
+
+	//发送推送
+	msg := fmt.Sprintf(`{"ty":"2","amount": "%s", "ts":"%d"}`, order.Amount, time.Now().Unix())
+	err = meta.Nats.Publish(fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID), []byte(msg))
+	if err != nil {
+		fmt.Println("meta.MerchantNats.Publish = ", err.Error())
+	}
+	meta.Nats.Flush()
 	return nil
 }
 

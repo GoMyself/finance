@@ -575,6 +575,7 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 			fmt.Println("update member second_amount err:", err.Error())
 		}
 
+		//发送站内信
 		title := "Thông Báo Nạp Tiền Thành Công"
 		content := fmt.Sprintf("Quý Khách Của P3 Thân Mến:\nBạn Đã Nạp Tiền Thành Công %s KVND,Vui Lòng KIểm Tra Ngay,Nếu Bạn Có Bất Cứ Thắc Mắc Vấn Đề Gì Vui Lòng Liên Hệ CSKH Để Biết Thêm Chi Tiết.【P3】Chúc Bạn Cược Đâu Thắng Đó !!\n",
 			decimal.NewFromFloat(order.Amount).Truncate(0).String())
@@ -582,7 +583,13 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 		if err != nil {
 			_ = pushLog(err, helper.ESErr)
 		}
-
+		//发送推送
+		msg := fmt.Sprintf(`{"ty":"1","amount": "%s", "ts":"%d"}`, balanceAfter.String(), time.Now().Unix())
+		err = meta.Nats.Publish(fmt.Sprintf(`%s_%s_finance`, meta.Prefix, uid), []byte(msg))
+		if err != nil {
+			fmt.Println("meta.MerchantNats.Publish = ", err.Error())
+		}
+		meta.Nats.Flush()
 	}
 
 	_ = MemberUpdateCache(order.Username)
@@ -1066,6 +1073,7 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 			fmt.Println("update member second_amount err:", err.Error())
 		}
 
+		//发送站内信
 		title := "Thông Báo Nạp Tiền Thành Công"
 		content := fmt.Sprintf("Quý Khách Của P3 Thân Mến:\nBạn Đã Nạp Tiền Thành Công %s KVND,Vui Lòng KIểm Tra Ngay,Nếu Bạn Có Bất Cứ Thắc Mắc Vấn Đề Gì Vui Lòng Liên Hệ CSKH Để Biết Thêm Chi Tiết.【P3】Chúc Bạn Cược Đâu Thắng Đó !!\n",
 			decimal.NewFromFloat(order.Amount).Truncate(0).String())
@@ -1073,6 +1081,14 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 		if err != nil {
 			_ = pushLog(err, helper.ESErr)
 		}
+
+		//发送推送
+		msg := fmt.Sprintf(`{"ty":"1","amount": "%s", "ts":"%d"}`, balanceAfter.String(), time.Now().Unix())
+		err = meta.Nats.Publish(fmt.Sprintf(`%s_%s_finance`, meta.Prefix, uid), []byte(msg))
+		if err != nil {
+			fmt.Println("meta.MerchantNats.Publish = ", err.Error())
+		}
+		meta.Nats.Flush()
 	}
 	/*
 		// 存款成功发送到队列
