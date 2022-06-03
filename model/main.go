@@ -32,7 +32,7 @@ import (
 type MetaTable struct {
 	MerchantDB    *sqlx.DB
 	MerchantTD    *sqlx.DB
-	MerchantRedis *redis.Client
+	MerchantRedis *redis.ClusterClient
 	ES            *elastic.Client
 	Nats          *nats.Conn
 	Program       string
