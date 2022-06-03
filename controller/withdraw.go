@@ -25,8 +25,8 @@ type memberWithdrawParam struct {
 // 提现拒绝
 type withdrawReviewReject struct {
 	ID             string `name:"id" rule:"digit" msg:"id error"`
-	Remark         string `name:"remark" rule:"filter" default:"" min:"0" max:"50" msg:"remark error"`
-	WithdrawRemark string `name:"withdraw_remark" rule:"filter" default:"" min:"0" max:"50" msg:"withdraw_remark error"`
+	Remark         string `name:"remark" rule:"filter" default:"" min:"0" max:"100" msg:"remark error"`
+	WithdrawRemark string `name:"withdraw_remark" rule:"filter" default:"" min:"0" max:"100" msg:"withdraw_remark error"`
 }
 
 // 提款审核
