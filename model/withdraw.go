@@ -1414,8 +1414,9 @@ func withdrawOrderSuccess(query, bankcard string, order Withdraw) error {
 	}
 
 	//发送推送
-	msg := fmt.Sprintf(`{"ty":"2","amount": "%s", "ts":"%d"}`, order.Amount, time.Now().Unix())
-	err = meta.Nats.Publish(fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID), []byte(msg))
+	msg := fmt.Sprintf(`{"ty":"2","amount": "%f", "ts":"%d","status":"failed"}`, order.Amount, time.Now().Unix())
+	topic := fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID)
+	err = meta.Nats.Publish(topic, []byte(msg))
 	if err != nil {
 		fmt.Println("meta.MerchantNats.Publish = ", err.Error())
 	}
@@ -1536,8 +1537,9 @@ func withdrawOrderFailed(query string, order Withdraw) error {
 	MemberUpdateCache(order.Username)
 
 	//发送推送
-	msg := fmt.Sprintf(`{"ty":"2","amount": "%s", "ts":"%d"}`, order.Amount, time.Now().Unix())
-	err = meta.Nats.Publish(fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID), []byte(msg))
+	msg := fmt.Sprintf(`{"ty":"2","amount": "%f", "ts":"%d","status":"failed"}`, order.Amount, time.Now().Unix())
+	topic := fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID)
+	err = meta.Nats.Publish(topic, []byte(msg))
 	if err != nil {
 		fmt.Println("meta.MerchantNats.Publish = ", err.Error())
 	}
