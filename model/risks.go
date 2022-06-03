@@ -73,8 +73,14 @@ func RisksCloseAuto(uid string) error {
 	// 是否自动接单
 	receiveKey := fmt.Sprintf("%s:risk:auto", meta.Prefix)
 	if uid == "" || uid == "0" {
+
+		pipe := meta.MerchantRedis.TxPipeline()
+		defer pipe.Close()
+
 		//关闭自动接单
-		_, err := meta.MerchantRedis.Unlink(ctx, risksKey, receiveKey).Result()
+		pipe.Unlink(ctx, risksKey)
+		pipe.Unlink(ctx, receiveKey)
+		_, err := pipe.Exec(ctx)
 		if err != nil {
 			return pushLog(err, helper.RedisErr)
 		}
