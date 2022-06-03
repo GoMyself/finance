@@ -373,16 +373,16 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 	fmt.Println(query)
 	money := decimal.NewFromFloat(order.Amount)
 	amount := money.String()
-	cashType := TransactionDeposit
+	cashType := helper.TransactionDeposit
 	if money.Cmp(zero) == -1 {
-		cashType = TransactionFinanceDownPoint
+		cashType = helper.TransactionFinanceDownPoint
 		amount = money.Abs().String()
 	}
 
 	switch state {
 	case DepositCancelled:
 		// 存款失败 直接修改订单状态
-		if cashType == TransactionDeposit {
+		if cashType == helper.TransactionDeposit {
 			_, err = meta.MerchantDB.Exec(query)
 			if err != nil {
 				return pushLog(err, helper.DBErr)
@@ -393,7 +393,7 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 		// 存款成功 和 下分失败switch完成后处理
 	case DepositSuccess:
 		// 下分成功 修改订单状态并修改adjust表的审核状态
-		if cashType == TransactionFinanceDownPoint {
+		if cashType == helper.TransactionFinanceDownPoint {
 			//开启事务
 			tx, err := meta.MerchantDB.Begin()
 			if err != nil {
@@ -457,7 +457,7 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 	}
 
 	// 如果是下分 审核失败
-	if DepositCancelled == state && cashType == TransactionFinanceDownPoint {
+	if DepositCancelled == state && cashType == helper.TransactionFinanceDownPoint {
 		// 修改状态
 		r := g.Record{
 			"state":          AdjustReviewReject,
@@ -506,7 +506,7 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 		Username:     order.Username,
 		Prefix:       meta.Prefix,
 	}
-	if cashType == TransactionFinanceDownPoint {
+	if cashType == helper.TransactionFinanceDownPoint {
 		mbTrans.OperationNo = id
 	}
 
@@ -680,7 +680,7 @@ func DepositManual(id, amount, remark, name, uid string) error {
 		"confirm_uid":       "0",
 		"confirm_name":      "",
 		"review_remark":     remark,
-		"finance_type":      TransactionDeposit,
+		"finance_type":      helper.TransactionDeposit,
 		"top_uid":           order.TopUID,
 		"top_name":          order.TopName,
 		"parent_uid":        order.ParentUID,
@@ -823,7 +823,7 @@ func DepositReduce(username, amount, remark, name, uid string) error {
 		"confirm_uid":   "0",
 		"confirm_name":  "",
 		"review_remark": remark,
-		"finance_type":  TransactionDeposit,
+		"finance_type":  helper.TransactionDeposit,
 		"level":         mb.Level,
 	}
 	query, _, _ = dialect.Insert("tbl_deposit").Rows(d).ToSQL()
@@ -841,7 +841,7 @@ func DepositReduce(username, amount, remark, name, uid string) error {
 		BillNo:       id,
 		CreatedAt:    now.UnixNano() / 1e6,
 		ID:           id,
-		CashType:     TransactionFinanceDownPoint,
+		CashType:     helper.TransactionFinanceDownPoint,
 		UID:          mb.UID,
 		Username:     mb.Username,
 		Prefix:       meta.Prefix,
@@ -1020,7 +1020,7 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 		BillNo:       order.ID,
 		CreatedAt:    now.UnixNano() / 1e6,
 		ID:           id,
-		CashType:     TransactionDeposit,
+		CashType:     helper.TransactionDeposit,
 		UID:          order.UID,
 		Username:     order.Username,
 		Prefix:       meta.Prefix,

@@ -58,7 +58,7 @@ func NewestPay(fctx *fasthttp.RequestCtx, pid, amount, bid string) (map[string]s
 		"usdt_apply_amount": 0,
 		"rate":              1,
 		"state":             DepositConfirming,
-		"finance_type":      TransactionDeposit,
+		"finance_type":      helper.TransactionDeposit,
 		"automatic":         "1",
 		"created_at":        fmt.Sprintf("%d", ts),
 		"created_uid":       "0",

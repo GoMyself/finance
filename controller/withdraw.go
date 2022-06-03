@@ -627,9 +627,9 @@ func (that *WithdrawController) MemberWithdrawList(ctx *fasthttp.RequestCtx) {
 			helper.Print(ctx, false, helper.FinanceTypeErr)
 			return
 		}
-		if financeTypeInt != model.TransactionWithDraw &&
-			financeTypeInt != model.TransactionValetWithdraw &&
-			financeTypeInt != model.TransactionAgencyWithdraw {
+		if financeTypeInt != helper.TransactionWithDraw &&
+			financeTypeInt != helper.TransactionValetWithdraw &&
+			financeTypeInt != helper.TransactionAgencyWithdraw {
 			helper.Print(ctx, false, helper.FinanceTypeErr)
 			return
 		}

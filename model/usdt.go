@@ -132,7 +132,7 @@ func UsdtPay(fctx *fasthttp.RequestCtx, pid, amount, addr, protocolType, hashID 
 		"pid":               p.ID,
 		"amount":            0,
 		"state":             DepositConfirming,
-		"finance_type":      TransactionUSDTOfflineDeposit,
+		"finance_type":      helper.TransactionUSDTOfflineDeposit,
 		"automatic":         "0",
 		"created_at":        fctx.Time().In(loc).Unix(),
 		"created_uid":       "0",

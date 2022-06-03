@@ -74,7 +74,7 @@ func ManualPay(fctx *fasthttp.RequestCtx, payment_id, amount string) (map[string
 		"pid":           p.ID,
 		"amount":        amount,
 		"state":         DepositConfirming,
-		"finance_type":  TransactionOfflineDeposit,
+		"finance_type":  helper.TransactionOfflineDeposit,
 		"automatic":     "0",
 		"created_at":    ts,
 		"created_uid":   "0",
