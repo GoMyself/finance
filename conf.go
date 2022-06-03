@@ -49,8 +49,6 @@ type conf struct {
 	Redis struct {
 		Addr     []string `json:"addr"`
 		Password string   `json:"password"`
-		Sentinel string   `json:"sentinel"`
-		Db       int      `json:"db"`
 	} `json:"redis"`
 	Minio struct {
 		ImagesBucket    string `json:"images_bucket"`
