@@ -585,7 +585,7 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 		}
 		//发送推送
 		msg := fmt.Sprintf(`{"ty":"1","amount": "%s", "ts":"%d"}`, balanceAfter.String(), time.Now().Unix())
-		err = meta.Nats.Publish(fmt.Sprintf(`%s_%s_finance`, meta.Prefix, uid), []byte(msg))
+		err = meta.Nats.Publish(fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID), []byte(msg))
 		if err != nil {
 			fmt.Println("meta.MerchantNats.Publish = ", err.Error())
 		}
@@ -1084,7 +1084,7 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 
 		//发送推送
 		msg := fmt.Sprintf(`{"ty":"1","amount": "%s", "ts":"%d"}`, balanceAfter.String(), time.Now().Unix())
-		err = meta.Nats.Publish(fmt.Sprintf(`%s_%s_finance`, meta.Prefix, uid), []byte(msg))
+		err = meta.Nats.Publish(fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID), []byte(msg))
 		if err != nil {
 			fmt.Println("meta.MerchantNats.Publish = ", err.Error())
 		}
