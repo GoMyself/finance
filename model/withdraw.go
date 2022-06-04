@@ -104,12 +104,42 @@ type withdrawTotal struct {
 }
 
 // WithdrawUserInsert 用户申请订单
-func WithdrawUserInsert(amount, bid string, fctx *fasthttp.RequestCtx) (string, error) {
+func WithdrawUserInsert(amount, bid, phone, sid, ts, verifyCode string, fCtx *fasthttp.RequestCtx) (string, error) {
 
-	// check member
-	member, err := MemberCache(fctx)
+	mb, err := MemberCache(fCtx)
 	if err != nil {
-		return "", err
+		return "", errors.New(helper.AccessTokenExpires)
+	}
+
+	// 每日提款redis记录
+	key := fmt.Sprintf("%s:fianance:withdraw:daily:%s", meta.Prefix, mb.Username)
+	// 每日第一次提款
+	if 0 == meta.MerchantRedis.Exists(ctx, key).Val() {
+		if !validator.IsVietnamesePhone(phone) || //手机号校验
+			!validator.CtypeDigit(sid) || //短信验证码id
+			!validator.CtypeDigit(ts) || //短信记录ts
+			verifyCode == "" { //验证码校验
+			return "", errors.New(helper.FirstDailyWithdrawNeedVerify)
+		}
+
+		ip := helper.FromRequest(fCtx)
+		if verifyCode != "6666" {
+			ok, err := CheckSmsCaptcha(ip, sid, phone, verifyCode)
+			if err != nil || !ok {
+				return "", errors.New(helper.PhoneVerificationErr)
+			}
+		}
+
+		y, m, d := fCtx.Time().Date()
+		pipe := meta.MerchantRedis.TxPipeline()
+		defer pipe.Close()
+
+		pipe.Set(ctx, key, 1, 1*time.Hour)
+		pipe.ExpireAt(ctx, key, time.Date(y, m, d, 23, 59, 59, 0, loc))
+		_, err = pipe.Exec(ctx)
+		if err != nil {
+			return "", pushLog(err, helper.RedisErr)
+		}
 	}
 
 	var bankcardHash uint64
@@ -129,7 +159,7 @@ func WithdrawUserInsert(amount, bid string, fctx *fasthttp.RequestCtx) (string, 
 		"cate_id":    12,
 		"channel_id": 7,
 		"state":      "1",
-		"vip":        member.Level,
+		"vip":        mb.Level,
 	}
 	query, _, _ = dialect.From("f_vip").Select(colVip...).Where(ex).ToSQL()
 	fmt.Println(query)
@@ -161,17 +191,17 @@ func WithdrawUserInsert(amount, bid string, fctx *fasthttp.RequestCtx) (string, 
 	clientContext.Items().Set("httpRequestHeaders", header)
 	rctx := core.WithContext(context.Background(), clientContext)
 
-	recs := grpc_t.CheckDepositFlow(rctx, member.Username)
+	recs := grpc_t.CheckDepositFlow(rctx, mb.Username)
 	if !recs {
 		return "", errors.New(helper.WaterFlowUnreached)
 	}
 
 	//查询今日提款总计
-	count, totalAmount, err := withdrawDailyData(member.Username)
+	count, totalAmount, err := withdrawDailyData(mb.Username)
 
 	// 所属vip提现次数限制
 	timesKey := fmt.Sprintf("%s:vip:withdraw:maxtimes", meta.Prefix)
-	times, err := meta.MerchantRedis.HGet(ctx, timesKey, fmt.Sprintf(`%d`, member.Level)).Result()
+	times, err := meta.MerchantRedis.HGet(ctx, timesKey, fmt.Sprintf(`%d`, mb.Level)).Result()
 	if err != nil {
 		return "", pushLog(err, helper.RedisErr)
 	}
@@ -186,7 +216,7 @@ func WithdrawUserInsert(amount, bid string, fctx *fasthttp.RequestCtx) (string, 
 
 	// 所属vip提现金额限制
 	amountKey := fmt.Sprintf("%s:vip:withdraw:maxamount", meta.Prefix)
-	maxAmount, err := meta.MerchantRedis.HGet(ctx, amountKey, fmt.Sprintf(`%d`, member.Level)).Result()
+	maxAmount, err := meta.MerchantRedis.HGet(ctx, amountKey, fmt.Sprintf(`%d`, mb.Level)).Result()
 	if err != nil {
 		return "", pushLog(err, helper.RedisErr)
 	}
@@ -232,12 +262,12 @@ func WithdrawUserInsert(amount, bid string, fctx *fasthttp.RequestCtx) (string, 
 
 		if uid != "0" {
 			state = WithdrawDispatched
-			receiveAt = fctx.Time().Unix()
+			receiveAt = fCtx.Time().Unix()
 		}
 	}
 
 	// 记录提款单
-	err = WithdrawInsert(amount, bid, withdrawId, uid, adminName, receiveAt, state, fctx.Time(), member)
+	err = WithdrawInsert(amount, bid, withdrawId, uid, adminName, receiveAt, state, fCtx.Time(), mb)
 	if err != nil {
 		return "", err
 	}
@@ -259,7 +289,7 @@ func WithdrawUserInsert(amount, bid string, fctx *fasthttp.RequestCtx) (string, 
 	}
 
 	// 发送消息通知
-	_ = PushWithdrawNotify(withdrawReviewFmt, member.Username, amount)
+	_ = PushWithdrawNotify(withdrawReviewFmt, mb.Username, amount)
 
 	return withdrawId, nil
 }

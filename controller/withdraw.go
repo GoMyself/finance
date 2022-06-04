@@ -16,12 +16,6 @@ import (
 
 type WithdrawController struct{}
 
-// 会员申请提现
-type memberWithdrawParam struct {
-	BID    string `name:"bid" rule:"digit" msg:"bid error"` // 下发的银行卡或虚拟钱包的ID
-	Amount string `name:"amount" rule:"digit" min:"200" max:"1000000" msg:"amount error[200-1000000]"`
-}
-
 // 提现拒绝
 type withdrawReviewReject struct {
 	ID             string `name:"id" rule:"digit" msg:"id error"`
@@ -64,14 +58,14 @@ type withdrawRecord struct {
 // Withdraw 会员申请提现
 func (that *WithdrawController) Withdraw(ctx *fasthttp.RequestCtx) {
 
-	param := memberWithdrawParam{}
-	err := validator.Bind(ctx, &param)
-	if err != nil {
-		helper.Print(ctx, false, helper.ParamErr)
-		return
-	}
+	bid := string(ctx.PostArgs().Peek("bid"))
+	amount := string(ctx.PostArgs().Peek("amount"))
+	phone := string(ctx.PostArgs().Peek("phone"))
+	sid := string(ctx.PostArgs().Peek("sid"))
+	ts := string(ctx.PostArgs().Peek("ts"))
+	verifyCode := string(ctx.PostArgs().Peek("verify_code"))
 
-	id, err := model.WithdrawUserInsert(param.Amount, param.BID, ctx)
+	id, err := model.WithdrawUserInsert(amount, bid, phone, sid, ts, verifyCode, ctx)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return
