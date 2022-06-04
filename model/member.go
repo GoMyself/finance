@@ -105,18 +105,6 @@ func MemberCache(fctx *fasthttp.RequestCtx) (Member, error) {
 	if err = rs.Scan(&m); err != nil {
 		return m, pushLog(rs.Err(), helper.RedisErr)
 	}
-	/*
-		t := dialect.From("tbl_members")
-		query, _, _ := t.Select(colsMember...).Where(g.Ex{"username": name, "prefix": meta.Prefix}).Limit(1).ToSQL()
-		err := meta.MerchantDB.Get(&m, query)
-		if err != nil && err != sql.ErrNoRows {
-			return m, pushLog(err, helper.DBErr)
-		}
-
-		if err == sql.ErrNoRows {
-			return m, errors.New(helper.UsernameErr)
-		}
-	*/
 
 	return m, nil
 }
