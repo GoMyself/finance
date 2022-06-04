@@ -42,7 +42,7 @@ func TransacCodeCreate() {
 
 func TransacCodeGet() (string, error) {
 
-	code, err := meta.MerchantRedis.RPopLPush(ctx, meta.Prefix+":manual:code", "manual:code").Result()
+	code, err := meta.MerchantRedis.RPopLPush(ctx, meta.Prefix+":manual:code", meta.Prefix+":manual:code").Result()
 	if err != nil {
 		return "", errors.New(helper.RecordNotExistErr)
 	}
