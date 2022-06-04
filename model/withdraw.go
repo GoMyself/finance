@@ -122,6 +122,11 @@ func WithdrawUserInsert(amount, bid, phone, sid, ts, verifyCode string, fCtx *fa
 			return "", errors.New(helper.FirstDailyWithdrawNeedVerify)
 		}
 
+		phoneHash := fmt.Sprintf("%d", MurmurHash(phone, 0))
+		if phoneHash != mb.PhoneHash {
+			return "", errors.New(helper.UsernamePhoneMismatch)
+		}
+
 		ip := helper.FromRequest(fCtx)
 		if verifyCode != "6666" {
 			ok, err := CheckSmsCaptcha(ip, sid, phone, verifyCode)
