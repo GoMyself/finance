@@ -584,7 +584,7 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 			_ = pushLog(err, helper.ESErr)
 		}
 		//发送推送
-		msg := fmt.Sprintf(`{"ty":"1","amount": "%s", "ts":"%d","status":"success"}`, amount, time.Now().Unix())
+		msg := fmt.Sprintf(`{"ty":"1","amount": "%s", "ts":"%d","status":"success"}`, order.Amount, time.Now().Unix())
 		topic := fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID)
 		err = meta.Nats.Publish(topic, []byte(msg))
 		if err != nil {
@@ -1084,7 +1084,7 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 		}
 
 		//发送推送
-		msg := fmt.Sprintf(`{"ty":"1","amount": "%s", "ts":"%d","status":"success"}`, amount, time.Now().Unix())
+		msg := fmt.Sprintf(`{"ty":"1","amount": "%s", "ts":"%d","status":"success"}`, order.Amount, time.Now().Unix())
 		topic := fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID)
 		err = meta.Nats.Publish(topic, []byte(msg))
 		if err != nil {
