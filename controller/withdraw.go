@@ -354,6 +354,8 @@ func (that *WithdrawController) RiskHistory(ctx *fasthttp.RequestCtx) {
 	confirmName := string(ctx.FormValue("confirm_name"))
 	vips := string(ctx.FormValue("vips"))
 	state := string(ctx.FormValue("state"))
+	ty := string(ctx.FormValue("ty"))
+
 	page, err := strconv.ParseUint(string(ctx.FormValue("page")), 10, 64)
 	if err != nil {
 		page = 1
@@ -466,7 +468,7 @@ func (that *WithdrawController) RiskHistory(ctx *fasthttp.RequestCtx) {
 		}
 	}
 
-	data, err := model.WithdrawHistoryList(ex, rangeParam, 1, startTime, endTime, uint(page), uint(pageSize))
+	data, err := model.WithdrawHistoryList(ex, rangeParam, ty, startTime, endTime, uint(page), uint(pageSize))
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return
@@ -491,6 +493,7 @@ func (that *WithdrawController) HistoryList(ctx *fasthttp.RequestCtx) {
 	maxAmount := string(ctx.FormValue("max_amount"))
 	minAmount := string(ctx.FormValue("min_amount"))
 	state := string(ctx.FormValue("state"))
+	ty := string(ctx.FormValue("ty"))
 
 	page, err := strconv.ParseUint(string(ctx.FormValue("page")), 10, 64)
 	if err != nil {
@@ -567,7 +570,7 @@ func (that *WithdrawController) HistoryList(ctx *fasthttp.RequestCtx) {
 		}
 	}
 
-	data, err := model.WithdrawHistoryList(ex, rangeParam, 1, startTime, endTime, uint(page), uint(pageSize))
+	data, err := model.WithdrawHistoryList(ex, rangeParam, ty, startTime, endTime, uint(page), uint(pageSize))
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return
