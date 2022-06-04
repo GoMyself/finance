@@ -38,7 +38,7 @@ func (that *ManualController) Pay(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	helper.Print(ctx, true, res)
+	helper.PrintJson(ctx, true, res)
 }
 
 // Offline 线下转卡 入款订单或者审核列表
