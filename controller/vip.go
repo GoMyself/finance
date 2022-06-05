@@ -40,6 +40,7 @@ func (that *VipController) List(ctx *fasthttp.RequestCtx) {
 
 	level := string(ctx.QueryArgs().Peek("level"))
 	flags := string(ctx.QueryArgs().Peek("flags"))
+	cateName := string(ctx.QueryArgs().Peek("cate_name"))
 
 	if !helper.CtypeDigit(level) {
 		helper.Print(ctx, false, helper.ParamErr)
@@ -49,8 +50,12 @@ func (that *VipController) List(ctx *fasthttp.RequestCtx) {
 		helper.Print(ctx, false, helper.ParamErr)
 		return
 	}
+	if len(cateName) > 0 && validator.CheckStringAlnum(cateName) {
+		helper.Print(ctx, false, helper.ParamErr)
+		return
+	}
 
-	data, err := model.VipList(level, flags)
+	data, err := model.VipList(level, flags, cateName)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return
