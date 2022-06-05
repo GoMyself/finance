@@ -104,7 +104,7 @@ type withdrawTotal struct {
 }
 
 // WithdrawUserInsert 用户申请订单
-func WithdrawUserInsert(amount, bid, phone, sid, ts, verifyCode string, fCtx *fasthttp.RequestCtx) (string, error) {
+func WithdrawUserInsert(amount, bid, sid, ts, verifyCode string, fCtx *fasthttp.RequestCtx) (string, error) {
 
 	mb, err := MemberCache(fCtx)
 	if err != nil {
@@ -115,16 +115,26 @@ func WithdrawUserInsert(amount, bid, phone, sid, ts, verifyCode string, fCtx *fa
 	key := fmt.Sprintf("%s:fianance:withdraw:daily:%s", meta.Prefix, mb.Username)
 	// 每日第一次提款
 	if 0 == meta.MerchantRedis.Exists(ctx, key).Val() {
-		if !validator.IsVietnamesePhone(phone) || //手机号校验
-			!validator.CtypeDigit(sid) || //短信验证码id
+
+		if !validator.CtypeDigit(sid) || //短信验证码id
 			!validator.CtypeDigit(ts) || //短信记录ts
 			verifyCode == "" { //验证码校验
 			return "", errors.New(helper.FirstDailyWithdrawNeedVerify)
 		}
 
+		clientContext := core.NewClientContext()
+		header := make(http.Header)
+		header.Set("X-Func-Name", "kms")
+		clientContext.Items().Set("httpRequestHeaders", header)
+		rCtx := core.WithContext(context.Background(), clientContext)
+		recs, err := grpc_t.Decrypt(rCtx, mb.UID, false, []string{"phone"})
+		if err != nil {
+			return "", errors.New(helper.GetRPCErr)
+		}
+
 		ip := helper.FromRequest(fCtx)
 		if verifyCode != "6666" {
-			ok, err := CheckSmsCaptcha(ip, sid, phone, verifyCode)
+			ok, err := CheckSmsCaptcha(ip, sid, recs["phone"], verifyCode)
 			if err != nil || !ok {
 				return "", errors.New(helper.PhoneVerificationErr)
 			}

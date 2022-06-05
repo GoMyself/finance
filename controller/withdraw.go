@@ -60,12 +60,11 @@ func (that *WithdrawController) Withdraw(ctx *fasthttp.RequestCtx) {
 
 	bid := string(ctx.PostArgs().Peek("bid"))
 	amount := string(ctx.PostArgs().Peek("amount"))
-	phone := string(ctx.PostArgs().Peek("phone"))
 	sid := string(ctx.PostArgs().Peek("sid"))
 	ts := string(ctx.PostArgs().Peek("ts"))
 	verifyCode := string(ctx.PostArgs().Peek("verify_code"))
-
-	id, err := model.WithdrawUserInsert(amount, bid, phone, sid, ts, verifyCode, ctx)
+	fmt.Println(bid, amount, sid, ts, verifyCode)
+	id, err := model.WithdrawUserInsert(amount, bid, sid, ts, verifyCode, ctx)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return

@@ -5,6 +5,7 @@ import (
 	"finance/contrib/helper"
 	"finance/contrib/validator"
 	"fmt"
+	"github.com/go-redis/redis/v8"
 	"time"
 
 	g "github.com/doug-martin/goqu/v9"
@@ -30,7 +31,7 @@ func ManualPay(fctx *fasthttp.RequestCtx, paymentID, amount string) (string, err
 	cmd := pipe.Get(ctx, key)
 
 	_, err = pipe.Exec(ctx)
-	if err != nil {
+	if err != nil && err != redis.Nil {
 		return "", pushLog(err, helper.RedisErr)
 	}
 
