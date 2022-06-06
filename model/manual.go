@@ -204,54 +204,57 @@ func ManualReview(did, remark, name, uid string, state int, record Deposit) erro
 	defer depositUnLock(did)
 
 	err = DepositUpPointReview(did, uid, name, remark, state)
+	if err == nil {
 
-	if err == nil && state == DepositSuccess {
+		if state == DepositSuccess {
+			// 清除未未成功的订单计数
+			CacheDepositProcessingRem(record.UID)
+			amount := decimal.NewFromFloat(record.Amount)
 
-		// 清除未未成功的订单计数
-		CacheDepositProcessingRem(record.UID)
-
-		amount := decimal.NewFromFloat(record.Amount)
-
-		vals := g.Record{
-			"total_finish_amount": g.L(fmt.Sprintf("total_finish_amount+%s", amount.String())),
-			"daily_finish_amount": g.L(fmt.Sprintf("daily_finish_amount+%s", amount.String())),
-		}
-
-		err = BankCardUpdate(record.BankcardID, vals)
-		if err != nil {
-			fmt.Println("ManualReview BankCardUpdate = ", err)
-
-			return err
-		}
-
-		bc, err := BankCardByID(record.BankcardID)
-		if err != nil {
-			return err
-		}
-
-		total_finish_amount, _ := decimal.NewFromString(bc.TotalFinishAmount)
-		daily_finish_amount, _ := decimal.NewFromString(bc.DailyFinishAmount)
-
-		total_max_amount, _ := decimal.NewFromString(bc.TotalMaxAmount)
-		daily_max_amount, _ := decimal.NewFromString(bc.DailyMaxAmount)
-
-		if total_finish_amount.Cmp(total_max_amount) >= 0 {
-
-			vals = g.Record{
-				"state": "0",
+			vals := g.Record{
+				"total_finish_amount": g.L(fmt.Sprintf("total_finish_amount+%s", amount.String())),
+				"daily_finish_amount": g.L(fmt.Sprintf("daily_finish_amount+%s", amount.String())),
 			}
-			BankCardUpdate(record.BankcardID, vals)
-		}
-		if daily_finish_amount.Cmp(daily_max_amount) >= 0 {
-
-			vals = g.Record{
-				"state": "0",
+			err = BankCardUpdate(record.BankcardID, vals)
+			if err != nil {
+				fmt.Println("ManualReview BankCardUpdate = ", err)
+				return err
 			}
-			BankCardUpdate(record.BankcardID, vals)
 
+			bc, err := BankCardByID(record.BankcardID)
+			if err != nil {
+				return err
+			}
+
+			totalFinishAmount, _ := decimal.NewFromString(bc.TotalFinishAmount)
+			dailyFinishAmount, _ := decimal.NewFromString(bc.DailyFinishAmount)
+			totalMaxAmount, _ := decimal.NewFromString(bc.TotalMaxAmount)
+			dailyMaxAmount, _ := decimal.NewFromString(bc.DailyMaxAmount)
+
+			if totalFinishAmount.Cmp(totalMaxAmount) >= 0 {
+
+				vals = g.Record{
+					"state": "0",
+				}
+				BankCardUpdate(record.BankcardID, vals)
+			}
+
+			if dailyFinishAmount.Cmp(dailyMaxAmount) >= 0 {
+
+				vals = g.Record{
+					"state": "0",
+				}
+				BankCardUpdate(record.BankcardID, vals)
+			}
 		}
+
+		key := fmt.Sprintf("%s:finance:manual:%s", meta.Prefix, record.Username)
+		err = meta.MerchantRedis.Unlink(ctx, key).Err()
+		if err != nil {
+			_ = pushLog(err, helper.RedisErr)
+		}
+		return nil
 	}
 
 	return err
-
 }
