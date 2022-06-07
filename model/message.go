@@ -2,36 +2,42 @@ package model
 
 import (
 	"finance/contrib/helper"
-	"github.com/olivere/elastic/v7"
+	"fmt"
+	g "github.com/doug-martin/goqu/v9"
 	"time"
 )
 
 // 发送站内信
 func messageSend(msgID, title, subTitle, content, sendName, prefix string, isTop, isVip, ty int, names []string) error {
 
-	data := Message{
-		MsgID:    msgID,
-		Title:    title,
-		SubTitle: subTitle,
-		Content:  content,
-		IsTop:    isTop,
-		IsVip:    isVip,
-		IsRead:   0,
-		Ty:       ty,
-		SendName: sendName,
-		SendAt:   time.Now().Unix(),
-		Prefix:   prefix,
+	record := g.Record{
+		"message_id": msgID,
+		"title":      title,
+		"sub_title":  subTitle,
+		"content":    content,
+		"send_name":  sendName,
+		"prefix":     prefix,
+		"is_top":     isTop,
+		"is_vip":     isVip,
+		"is_read":    0,
+		"is_delete":  0,
+		"send_at":    time.Now().Unix(),
+		"ty":         ty,
 	}
-	bulkRequest := meta.ES.Bulk().Index(meta.EsPrefix + "messages")
+	var records []g.Record
 	for _, v := range names {
-		data.Username = v
-		doc := elastic.NewBulkIndexRequest().Id(helper.GenId()).Doc(data)
-		bulkRequest = bulkRequest.Add(doc)
+		ts := time.Now()
+		record["ts"] = ts.UnixMilli()
+		record["username"] = v
+		records = append(records, record)
 	}
 
-	_, err := bulkRequest.Refresh("wait_for").Do(ctx)
+	query, _, _ := dialect.Insert("messages").Rows(records).ToSQL()
+	fmt.Println(query)
+	_, err := meta.MerchantTD.Exec(query)
 	if err != nil {
-		return err
+		fmt.Println("insert messages = ", err.Error(), records)
+		return pushLog(err, helper.DBErr)
 	}
 
 	return nil
