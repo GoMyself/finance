@@ -27,7 +27,7 @@ func messageSend(msgID, title, subTitle, content, sendName, prefix string, isTop
 	var records []g.Record
 	for _, v := range names {
 		ts := time.Now()
-		record["ts"] = ts.UnixMilli()
+		record["ts"] = ts.UnixMicro()
 		record["username"] = v
 		records = append(records, record)
 	}
