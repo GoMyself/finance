@@ -138,6 +138,8 @@ func ManualPay(fctx *fasthttp.RequestCtx, paymentID, amount string) (string, err
 		return "", pushLog(err, helper.RedisErr)
 	}
 
+	_ = PushWithdrawNotify(depositReviewFmt, user.Username, amount)
+
 	return string(bytes), nil
 }
 
