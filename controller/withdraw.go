@@ -28,7 +28,7 @@ type withdrawReviewParam struct {
 	ID       string `name:"id" rule:"digit" msg:"id error"`
 	Ty       uint8  `name:"ty" rule:"digit" min:"1" max:"2" msg:"ty error"` // 1手动代付 2 手动出款
 	Pid      string `name:"pid" rule:"digit" default:"0" msg:"pid error"`
-	Remark   string `name:"remark" rule:"filter" default:"" min:"0" max:"50" msg:"remark error"`
+	Remark   string `name:"remark" rule:"none" default:"" min:"0" max:"50" msg:"remark error"`
 	BankId   string `name:"bank_id" rule:"none" msg:"bank_id error"`
 	BankName string `name:"bank_name" rule:"none"`
 	RealName string `name:"real_name" rule:"none"`
