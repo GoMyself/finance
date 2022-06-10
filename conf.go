@@ -8,6 +8,7 @@ type conf struct {
 	IsDev        bool   `json:"is_dev"`
 	Sock5        string `json:"sock5"`
 	Rpc          string `json:"rpc"`
+	IndexUrl     string `json:"index_url"`
 	Fcallback    string `json:"fcallback"`
 	AutoPayLimit string `json:"autoPayLimit"`
 	Nats         struct {

@@ -539,6 +539,8 @@ func (that *WithdrawController) HistoryList(ctx *fasthttp.RequestCtx) {
 		model.WithdrawSuccess,
 		model.WithdrawFailed,
 		model.WithdrawAbnormal,
+		model.WithdrawReviewReject,
+		model.WithdrawDispatched,
 	}
 	ex["state"] = baseState
 

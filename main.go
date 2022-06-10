@@ -57,6 +57,7 @@ func main() {
 	mt.EsPrefix = cfg.EsPrefix
 	mt.Lang = cfg.Lang
 	mt.Fcallback = cfg.Fcallback
+	mt.IndexUrl = cfg.IndexUrl
 	mt.IsDev = cfg.IsDev
 
 	mt.Finance = content
