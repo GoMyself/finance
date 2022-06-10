@@ -1459,7 +1459,7 @@ func withdrawOrderSuccess(query, bankcard string, order Withdraw) error {
 	topic := fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID)
 	err = meta.Nats.Publish(topic, []byte(msg))
 	if err != nil {
-		fmt.Println("meta.MerchantNats.Publish = ", err.Error())
+		fmt.Println("meta.Nats.Publish = ", err.Error())
 	}
 	meta.Nats.Flush()
 
