@@ -387,7 +387,15 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 			if err != nil {
 				return pushLog(err, helper.DBErr)
 			}
-
+			//发送推送
+			msg := fmt.Sprintf(`{"ty":"1","amount": "%f", "ts":"%d","status":"faild"}`, order.Amount, time.Now().Unix())
+			fmt.Println("msg:", msg)
+			topic := fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID)
+			err = meta.Nats.Publish(topic, []byte(msg))
+			if err != nil {
+				fmt.Println("meta.MerchantNats.Publish = ", err.Error())
+			}
+			meta.Nats.Flush()
 			return nil
 		}
 		// 存款成功 和 下分失败switch完成后处理
@@ -585,6 +593,7 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 		}
 		//发送推送
 		msg := fmt.Sprintf(`{"ty":"1","amount": "%f", "ts":"%d","status":"success"}`, order.Amount, time.Now().Unix())
+		fmt.Println("msg:", msg)
 		topic := fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID)
 		err = meta.Nats.Publish(topic, []byte(msg))
 		if err != nil {
@@ -594,6 +603,7 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 	} else {
 		//发送推送
 		msg := fmt.Sprintf(`{"ty":"1","amount": "%f", "ts":"%d","status":"faild"}`, order.Amount, time.Now().Unix())
+		fmt.Println("msg:", msg)
 		topic := fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID)
 		err = meta.Nats.Publish(topic, []byte(msg))
 		if err != nil {

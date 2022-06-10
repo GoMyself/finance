@@ -1455,6 +1455,7 @@ func withdrawOrderSuccess(query, bankcard string, order Withdraw) error {
 
 	//发送推送
 	msg := fmt.Sprintf(`{"ty":"2","amount": "%f", "ts":"%d","status":"success"}`, order.Amount, time.Now().Unix())
+	fmt.Println("msg:", msg)
 	topic := fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID)
 	err = meta.Nats.Publish(topic, []byte(msg))
 	if err != nil {
@@ -1578,6 +1579,7 @@ func withdrawOrderFailed(query string, order Withdraw) error {
 
 	//发送推送
 	msg := fmt.Sprintf(`{"ty":"2","amount": "%f", "ts":"%d","status":"failed"}`, order.Amount, time.Now().Unix())
+	fmt.Println("msg:", msg)
 	topic := fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID)
 	err = meta.Nats.Publish(topic, []byte(msg))
 	if err != nil {
