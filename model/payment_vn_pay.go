@@ -112,6 +112,7 @@ func (that *VnPayment) Pay(orderId, ch, amount, bid string) (paymentDepositResp,
 		"currency":    "VND",                                            //
 		"amount":      fmt.Sprintf("%s000", amount),                     // 订单金额
 		"notifyUrl":   fmt.Sprintf(that.Conf.PayNotify, meta.Fcallback), // 异步通知地址
+		"targetUrl":   meta.IndexUrl,
 	}
 	if cno == p3Online || cno == p3Offline {
 		recs["bankDirct"] = cno

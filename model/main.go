@@ -38,6 +38,7 @@ type MetaTable struct {
 	Program       string
 	Prefix        string
 	Lang          string
+	IndexUrl      string
 	Fcallback     string
 	IsDev         bool
 	EsPrefix      string
