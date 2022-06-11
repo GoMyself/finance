@@ -3,6 +3,7 @@ package main
 import (
 	"finance/contrib/apollo"
 	"finance/contrib/conn"
+	"finance/contrib/helper"
 	"finance/contrib/session"
 	"finance/middleware"
 	"finance/model"
@@ -109,7 +110,7 @@ func main() {
 	fmt.Printf("gitReversion = %s\r\nbuildGoVersion = %s\r\nbuildTime = %s\r\n", gitReversion, buildGoVersion, buildTime)
 	fmt.Println("Finance running", cfg.Port.Finance)
 
-	service := model.NewService(gitReversion, buildTime, buildGoVersion, 1)
+	service := model.NewService(gitReversion, buildTime, buildGoVersion, helper.ServiceHttp)
 	go service.Start()
 
 	if err := srv.ListenAndServe(cfg.Port.Finance); err != nil {
