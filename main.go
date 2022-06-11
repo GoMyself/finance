@@ -105,8 +105,13 @@ func main() {
 		Name:               "finance",
 		MaxRequestBodySize: 51 * 1024 * 1024,
 	}
+
 	fmt.Printf("gitReversion = %s\r\nbuildGoVersion = %s\r\nbuildTime = %s\r\n", gitReversion, buildGoVersion, buildTime)
 	fmt.Println("Finance running", cfg.Port.Finance)
+
+	service := model.NewService(gitReversion, buildTime, buildGoVersion, 1)
+	go service.Start()
+
 	if err := srv.ListenAndServe(cfg.Port.Finance); err != nil {
 		log.Fatalf("Error in ListenAndServe: %s", err)
 	}
