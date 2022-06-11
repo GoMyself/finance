@@ -1448,7 +1448,7 @@ func withdrawOrderSuccess(query, bankcard string, order Withdraw) error {
 	title := "Thông Báo Rút Tiền Thành Công "
 	content := fmt.Sprintf("Quý Khách Của P3 Thân Mến:\nBạn Đã Rút Tiền Thành Công %s KVND,Vui Lòng Kiểm Tra Tiền Rút Của Bạn Đã Thành Công Về Tài Khoản Chưa .Nếu Bạn Có Bất Cứ Thắc Mắc Vấn Đề Gì Vui Lòng Liên Hệ CSKH Để Biết Thêm Chi Tiết.!!【P3】Rút Tiền Nhanh Chóng & An Toàn !",
 		decimal.NewFromFloat(order.Amount).Truncate(0).String())
-	err = messageSend(order.ID, title, "", content, "system", meta.Prefix, 0, 0, 2, []string{order.Username})
+	err = messageSend(order.ID, title, "", content, "system", meta.Prefix, 0, 0, 1, []string{order.Username})
 	if err != nil {
 		_ = pushLog(err, helper.ESErr)
 	}
