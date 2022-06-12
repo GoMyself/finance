@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/hprose/hprose-golang/v3/rpc/core"
+	"github.com/lucacasonato/mqtt"
 
 	"finance/contrib/helper"
 	"finance/contrib/validator"
@@ -1415,12 +1416,21 @@ func withdrawOrderSuccess(query, bankcard string, order Withdraw) error {
 
 	//发送推送
 	msg := fmt.Sprintf(`{"ty":"2","amount": "%s", "ts":"%d"}`, order.Amount, time.Now().Unix())
-	err = meta.Nats.Publish(fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID), []byte(msg))
-	if err != nil {
-		fmt.Println("meta.MerchantNats.Publish = ", err.Error())
-	}
-	meta.Nats.Flush()
 
+	topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, order.UID)
+	err = meta.MerchantNats.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
+	if err != nil {
+		fmt.Println("merchantNats.Publish finance = ", err.Error())
+		return err
+	}
+
+	/*
+		err = meta.Nats.Publish(fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID), []byte(msg))
+		if err != nil {
+			fmt.Println("meta.MerchantNats.Publish = ", err.Error())
+		}
+		meta.Nats.Flush()
+	*/
 	return nil
 }
 
@@ -1537,11 +1547,21 @@ func withdrawOrderFailed(query string, order Withdraw) error {
 
 	//发送推送
 	msg := fmt.Sprintf(`{"ty":"2","amount": "%s", "ts":"%d"}`, order.Amount, time.Now().Unix())
-	err = meta.Nats.Publish(fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID), []byte(msg))
+
+	topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, order.UID)
+	err = meta.MerchantNats.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
 	if err != nil {
-		fmt.Println("meta.MerchantNats.Publish = ", err.Error())
+		fmt.Println("merchantNats.Publish finance = ", err.Error())
+		return err
 	}
-	meta.Nats.Flush()
+
+	/*
+		err = meta.Nats.Publish(fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID), []byte(msg))
+		if err != nil {
+			fmt.Println("meta.MerchantNats.Publish = ", err.Error())
+		}
+		meta.Nats.Flush()
+	*/
 	return nil
 }
 

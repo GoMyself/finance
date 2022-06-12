@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/lucacasonato/mqtt"
 
 	"finance/contrib/helper"
 
@@ -585,11 +586,21 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 		}
 		//发送推送
 		msg := fmt.Sprintf(`{"ty":"1","amount": "%s", "ts":"%d"}`, balanceAfter.String(), time.Now().Unix())
-		err = meta.Nats.Publish(fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID), []byte(msg))
+
+		topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, order.UID)
+		err = meta.MerchantNats.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
 		if err != nil {
-			fmt.Println("meta.MerchantNats.Publish = ", err.Error())
+			fmt.Println("merchantNats.Publish finance = ", err.Error())
+			return err
 		}
-		meta.Nats.Flush()
+
+		/*
+			err = meta.Nats.Publish(fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID), []byte(msg))
+			if err != nil {
+				fmt.Println("meta.MerchantNats.Publish = ", err.Error())
+			}
+			meta.Nats.Flush()
+		*/
 	}
 
 	_ = MemberUpdateCache(order.Username)
@@ -1084,11 +1095,20 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 
 		//发送推送
 		msg := fmt.Sprintf(`{"ty":"1","amount": "%s", "ts":"%d"}`, balanceAfter.String(), time.Now().Unix())
-		err = meta.Nats.Publish(fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID), []byte(msg))
+
+		topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, order.UID)
+		err = meta.MerchantNats.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
 		if err != nil {
-			fmt.Println("meta.MerchantNats.Publish = ", err.Error())
+			fmt.Println("merchantNats.Publish finance = ", err.Error())
+			return err
 		}
-		meta.Nats.Flush()
+		/*
+			err = meta.Nats.Publish(fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID), []byte(msg))
+			if err != nil {
+				fmt.Println("meta.MerchantNats.Publish = ", err.Error())
+			}
+			meta.Nats.Flush()
+		*/
 	}
 	/*
 		// 存款成功发送到队列
