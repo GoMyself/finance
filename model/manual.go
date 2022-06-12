@@ -5,6 +5,8 @@ import (
 	"finance/contrib/helper"
 	"finance/contrib/validator"
 	"fmt"
+	"github.com/go-redis/redis/v8"
+	"time"
 
 	g "github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
@@ -13,24 +15,45 @@ import (
 )
 
 // Manual 调用与pid对应的渠道, 发起充值(代付)请求
-func ManualPay(fctx *fasthttp.RequestCtx, payment_id, amount string) (map[string]string, error) {
+func ManualPay(fctx *fasthttp.RequestCtx, paymentID, amount string) (string, error) {
 
 	res := map[string]string{}
 	user, err := MemberCache(fctx)
 	if err != nil {
-		return res, err
+		return "", err
+	}
+
+	pipe := meta.MerchantRedis.TxPipeline()
+	defer pipe.Close()
+
+	key := fmt.Sprintf("%s:finance:manual:%s", meta.Prefix, user.Username)
+	existCmd := pipe.Exists(ctx, key)
+	cmd := pipe.Get(ctx, key)
+
+	_, err = pipe.Exec(ctx)
+	if err != nil && err != redis.Nil {
+		return "", pushLog(err, helper.RedisErr)
+	}
+
+	if existCmd.Val() == 1 {
+		s, err := cmd.Result()
+		if err != nil {
+			return "", pushLog(err, helper.RedisErr)
+		}
+
+		return s, nil
 	}
 
 	ts := fctx.Time().In(loc).Unix()
-	p, err := CachePayment(payment_id)
+	p, err := CachePayment(paymentID)
 	if err != nil {
-		return res, errors.New(helper.ChannelNotExist)
+		return "", errors.New(helper.ChannelNotExist)
 	}
 
 	// 检查存款金额是否符合范围
 	a, ok := validator.CheckFloatScope(amount, p.Fmin, p.Fmax)
 	if !ok {
-		return res, errors.New(helper.AmountOutRange)
+		return "", errors.New(helper.AmountOutRange)
 	}
 
 	/*
@@ -41,24 +64,22 @@ func ManualPay(fctx *fasthttp.RequestCtx, payment_id, amount string) (map[string
 		}
 	*/
 	amount = a.Truncate(0).String()
-
 	bc, err := BankCardBackend()
 	if err != nil {
 		fmt.Println("BankCardBackend err = ", err.Error())
-		return res, errors.New(helper.BankCardNotExist)
+		return "", errors.New(helper.BankCardNotExist)
 	}
 
 	// 获取附言码
 	code, err := TransacCodeGet()
 	if err != nil {
-		return res, errors.New(helper.ChannelBusyTryOthers)
+		return "", errors.New(helper.ChannelBusyTryOthers)
 	}
 
 	fmt.Println("TransacCodeGet code = ", code)
 
 	// 生成我方存款订单号
 	orderId := helper.GenId()
-
 	d := g.Record{
 		"id":            orderId,
 		"prefix":        meta.Prefix,
@@ -95,11 +116,11 @@ func ManualPay(fctx *fasthttp.RequestCtx, payment_id, amount string) (map[string
 	err = deposit(d)
 	if err != nil {
 		fmt.Println("Manual deposit err = ", err)
-		return res, errors.New(helper.DBErr)
+		return "", pushLog(err, helper.DBErr)
 	}
 
 	// 记录存款行为
-	_ = cacheDepositProcessingInsert(user.UID, orderId, fctx.Time().In(loc).Unix())
+	_ = cacheDepositProcessingInsert(user.UID, orderId, ts)
 
 	res = map[string]string{
 		"id":           orderId,
@@ -108,9 +129,18 @@ func ManualPay(fctx *fasthttp.RequestCtx, payment_id, amount string) (map[string
 		"realname":     bc.AccountName,
 		"bankAddr":     bc.BankcardAddr,
 		"manualRemark": code,
+		"ts":           fmt.Sprintf("%d", ts),
 	}
 
-	return res, nil
+	bytes, _ := helper.JsonMarshal(res)
+	_, err = meta.MerchantRedis.Set(ctx, key, string(bytes), 30*time.Minute).Result()
+	if err != nil {
+		return "", pushLog(err, helper.RedisErr)
+	}
+
+	_ = PushWithdrawNotify(depositReviewFmt, user.Username, amount)
+
+	return string(bytes), nil
 }
 
 // DepositManualList 线下转卡订单列表
@@ -176,54 +206,57 @@ func ManualReview(did, remark, name, uid string, state int, record Deposit) erro
 	defer depositUnLock(did)
 
 	err = DepositUpPointReview(did, uid, name, remark, state)
+	if err == nil {
 
-	if err == nil && state == DepositSuccess {
+		if state == DepositSuccess {
+			// 清除未未成功的订单计数
+			CacheDepositProcessingRem(record.UID)
+			amount := decimal.NewFromFloat(record.Amount)
 
-		// 清除未未成功的订单计数
-		CacheDepositProcessingRem(record.UID)
-
-		amount := decimal.NewFromFloat(record.Amount)
-
-		vals := g.Record{
-			"total_finish_amount": g.L(fmt.Sprintf("total_finish_amount+%s", amount.String())),
-			"daily_finish_amount": g.L(fmt.Sprintf("daily_finish_amount+%s", amount.String())),
-		}
-
-		err = BankCardUpdate(record.BankcardID, vals)
-		if err != nil {
-			fmt.Println("ManualReview BankCardUpdate = ", err)
-
-			return err
-		}
-
-		bc, err := BankCardByID(record.BankcardID)
-		if err != nil {
-			return err
-		}
-
-		total_finish_amount, _ := decimal.NewFromString(bc.TotalFinishAmount)
-		daily_finish_amount, _ := decimal.NewFromString(bc.DailyFinishAmount)
-
-		total_max_amount, _ := decimal.NewFromString(bc.TotalMaxAmount)
-		daily_max_amount, _ := decimal.NewFromString(bc.DailyMaxAmount)
-
-		if total_finish_amount.Cmp(total_max_amount) >= 0 {
-
-			vals = g.Record{
-				"state": "0",
+			vals := g.Record{
+				"total_finish_amount": g.L(fmt.Sprintf("total_finish_amount+%s", amount.String())),
+				"daily_finish_amount": g.L(fmt.Sprintf("daily_finish_amount+%s", amount.String())),
 			}
-			BankCardUpdate(record.BankcardID, vals)
-		}
-		if daily_finish_amount.Cmp(daily_max_amount) >= 0 {
-
-			vals = g.Record{
-				"state": "0",
+			err = BankCardUpdate(record.BankcardID, vals)
+			if err != nil {
+				fmt.Println("ManualReview BankCardUpdate = ", err)
+				return err
 			}
-			BankCardUpdate(record.BankcardID, vals)
 
+			bc, err := BankCardByID(record.BankcardID)
+			if err != nil {
+				return err
+			}
+
+			totalFinishAmount, _ := decimal.NewFromString(bc.TotalFinishAmount)
+			dailyFinishAmount, _ := decimal.NewFromString(bc.DailyFinishAmount)
+			totalMaxAmount, _ := decimal.NewFromString(bc.TotalMaxAmount)
+			dailyMaxAmount, _ := decimal.NewFromString(bc.DailyMaxAmount)
+
+			if totalFinishAmount.Cmp(totalMaxAmount) >= 0 {
+
+				vals = g.Record{
+					"state": "0",
+				}
+				BankCardUpdate(record.BankcardID, vals)
+			}
+
+			if dailyFinishAmount.Cmp(dailyMaxAmount) >= 0 {
+
+				vals = g.Record{
+					"state": "0",
+				}
+				BankCardUpdate(record.BankcardID, vals)
+			}
 		}
+
+		key := fmt.Sprintf("%s:finance:manual:%s", meta.Prefix, record.Username)
+		err = meta.MerchantRedis.Unlink(ctx, key).Err()
+		if err != nil {
+			_ = pushLog(err, helper.RedisErr)
+		}
+		return nil
 	}
 
 	return err
-
 }

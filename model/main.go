@@ -38,6 +38,7 @@ type MetaTable struct {
 	Program       string
 	Prefix        string
 	Lang          string
+	IndexUrl      string
 	Fcallback     string
 	IsDev         bool
 	EsPrefix      string
@@ -169,7 +170,7 @@ func pushLog(err error, code string) error {
 		"project":  meta.Program,
 		"flags":    code,
 		"filename": path,
-		"ts":       ts.In(loc).UnixMilli(),
+		"ts":       ts.In(loc).UnixMicro(),
 	}
 
 	query, _, _ := dialect.Insert("goerror").Rows(&fields).ToSQL()

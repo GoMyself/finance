@@ -105,12 +105,52 @@ type withdrawTotal struct {
 }
 
 // WithdrawUserInsert 用户申请订单
-func WithdrawUserInsert(amount, bid string, fctx *fasthttp.RequestCtx) (string, error) {
+func WithdrawUserInsert(amount, bid, sid, ts, verifyCode string, fCtx *fasthttp.RequestCtx) (string, error) {
 
-	// check member
-	member, err := MemberCache(fctx)
+	mb, err := MemberCache(fCtx)
 	if err != nil {
-		return "", err
+		return "", errors.New(helper.AccessTokenExpires)
+	}
+
+	// 每日提款redis记录
+	key := fmt.Sprintf("%s:fianance:withdraw:daily:%s", meta.Prefix, mb.Username)
+	// 每日第一次提款
+	if 0 == meta.MerchantRedis.Exists(ctx, key).Val() {
+
+		if !validator.CtypeDigit(sid) || //短信验证码id
+			!validator.CtypeDigit(ts) || //短信记录ts
+			verifyCode == "" { //验证码校验
+			return "", errors.New(helper.FirstDailyWithdrawNeedVerify)
+		}
+
+		clientContext := core.NewClientContext()
+		header := make(http.Header)
+		header.Set("X-Func-Name", "kms")
+		clientContext.Items().Set("httpRequestHeaders", header)
+		rCtx := core.WithContext(context.Background(), clientContext)
+		recs, err := grpc_t.Decrypt(rCtx, mb.UID, false, []string{"phone"})
+		if err != nil {
+			return "", errors.New(helper.GetRPCErr)
+		}
+
+		ip := helper.FromRequest(fCtx)
+		if verifyCode != "6666" {
+			ok, err := CheckSmsCaptcha(ip, sid, recs["phone"], verifyCode)
+			if err != nil || !ok {
+				return "", errors.New(helper.PhoneVerificationErr)
+			}
+		}
+
+		y, m, d := fCtx.Time().Date()
+		pipe := meta.MerchantRedis.TxPipeline()
+		defer pipe.Close()
+
+		pipe.Set(ctx, key, 1, 1*time.Hour)
+		pipe.ExpireAt(ctx, key, time.Date(y, m, d, 23, 59, 59, 0, loc))
+		_, err = pipe.Exec(ctx)
+		if err != nil {
+			return "", pushLog(err, helper.RedisErr)
+		}
 	}
 
 	var bankcardHash uint64
@@ -130,7 +170,7 @@ func WithdrawUserInsert(amount, bid string, fctx *fasthttp.RequestCtx) (string, 
 		"cate_id":    12,
 		"channel_id": 7,
 		"state":      "1",
-		"vip":        member.Level,
+		"vip":        mb.Level,
 	}
 	query, _, _ = dialect.From("f_vip").Select(colVip...).Where(ex).ToSQL()
 	fmt.Println(query)
@@ -162,17 +202,17 @@ func WithdrawUserInsert(amount, bid string, fctx *fasthttp.RequestCtx) (string, 
 	clientContext.Items().Set("httpRequestHeaders", header)
 	rctx := core.WithContext(context.Background(), clientContext)
 
-	recs := grpc_t.CheckDepositFlow(rctx, member.Username)
+	recs := grpc_t.CheckDepositFlow(rctx, mb.Username)
 	if !recs {
 		return "", errors.New(helper.WaterFlowUnreached)
 	}
 
 	//查询今日提款总计
-	count, totalAmount, err := withdrawDailyData(member.Username)
+	count, totalAmount, err := withdrawDailyData(mb.Username)
 
 	// 所属vip提现次数限制
 	timesKey := fmt.Sprintf("%s:vip:withdraw:maxtimes", meta.Prefix)
-	times, err := meta.MerchantRedis.HGet(ctx, timesKey, fmt.Sprintf(`%d`, member.Level)).Result()
+	times, err := meta.MerchantRedis.HGet(ctx, timesKey, fmt.Sprintf(`%d`, mb.Level)).Result()
 	if err != nil {
 		return "", pushLog(err, helper.RedisErr)
 	}
@@ -187,7 +227,7 @@ func WithdrawUserInsert(amount, bid string, fctx *fasthttp.RequestCtx) (string, 
 
 	// 所属vip提现金额限制
 	amountKey := fmt.Sprintf("%s:vip:withdraw:maxamount", meta.Prefix)
-	maxAmount, err := meta.MerchantRedis.HGet(ctx, amountKey, fmt.Sprintf(`%d`, member.Level)).Result()
+	maxAmount, err := meta.MerchantRedis.HGet(ctx, amountKey, fmt.Sprintf(`%d`, mb.Level)).Result()
 	if err != nil {
 		return "", pushLog(err, helper.RedisErr)
 	}
@@ -233,12 +273,12 @@ func WithdrawUserInsert(amount, bid string, fctx *fasthttp.RequestCtx) (string, 
 
 		if uid != "0" {
 			state = WithdrawDispatched
-			receiveAt = fctx.Time().Unix()
+			receiveAt = fCtx.Time().Unix()
 		}
 	}
 
 	// 记录提款单
-	err = WithdrawInsert(amount, bid, withdrawId, uid, adminName, receiveAt, state, fctx.Time(), member)
+	err = WithdrawInsert(amount, bid, withdrawId, uid, adminName, receiveAt, state, fCtx.Time(), mb)
 	if err != nil {
 		return "", err
 	}
@@ -260,7 +300,7 @@ func WithdrawUserInsert(amount, bid string, fctx *fasthttp.RequestCtx) (string, 
 	}
 
 	// 发送消息通知
-	_ = PushWithdrawNotify(withdrawReviewFmt, member.Username, amount)
+	_ = PushWithdrawNotify(withdrawReviewFmt, mb.Username, amount)
 
 	return withdrawId, nil
 }
@@ -524,7 +564,7 @@ func WithdrawList(ex g.Ex, ty uint8, startTime, endTime string, page, pageSize u
 }
 
 // 提款历史记录
-func WithdrawHistoryList(ex g.Ex, rangeParam map[string][]interface{}, ty uint8, startTime, endTime string, page, pageSize uint) (FWithdrawData, error) {
+func WithdrawHistoryList(ex g.Ex, rangeParam map[string][]interface{}, ty, startTime, endTime string, page, pageSize uint) (FWithdrawData, error) {
 
 	ex["prefix"] = meta.Prefix
 	if startTime != "" && endTime != "" {
@@ -543,7 +583,7 @@ func WithdrawHistoryList(ex g.Ex, rangeParam map[string][]interface{}, ty uint8,
 			return FWithdrawData{}, errors.New(helper.QueryTimeRangeErr)
 		}
 
-		if ty == 1 {
+		if ty == "1" {
 			rangeParam["created_at"] = []interface{}{startAt, endAt}
 		} else {
 			rangeParam["withdraw_at"] = []interface{}{startAt, endAt}
@@ -1409,13 +1449,13 @@ func withdrawOrderSuccess(query, bankcard string, order Withdraw) error {
 	title := "Thông Báo Rút Tiền Thành Công "
 	content := fmt.Sprintf("Quý Khách Của P3 Thân Mến:\nBạn Đã Rút Tiền Thành Công %s KVND,Vui Lòng Kiểm Tra Tiền Rút Của Bạn Đã Thành Công Về Tài Khoản Chưa .Nếu Bạn Có Bất Cứ Thắc Mắc Vấn Đề Gì Vui Lòng Liên Hệ CSKH Để Biết Thêm Chi Tiết.!!【P3】Rút Tiền Nhanh Chóng & An Toàn !",
 		decimal.NewFromFloat(order.Amount).Truncate(0).String())
-	err = messageSend(order.ID, title, "", content, "system", meta.Prefix, 0, 0, 2, []string{order.Username})
+	err = messageSend(order.ID, title, "", content, "system", meta.Prefix, 0, 0, 1, []string{order.Username})
 	if err != nil {
 		_ = pushLog(err, helper.ESErr)
 	}
 
 	//发送推送
-	msg := fmt.Sprintf(`{"ty":"2","amount": "%s", "ts":"%d"}`, order.Amount, time.Now().Unix())
+	msg := fmt.Sprintf(`{"ty":"2","amount": "%f", "ts":"%d","status":"success"}`, order.Amount, time.Now().Unix())
 
 	topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, order.UID)
 	err = meta.MerchantNats.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
@@ -1546,7 +1586,7 @@ func withdrawOrderFailed(query string, order Withdraw) error {
 	MemberUpdateCache(order.Username)
 
 	//发送推送
-	msg := fmt.Sprintf(`{"ty":"2","amount": "%s", "ts":"%d"}`, order.Amount, time.Now().Unix())
+	msg := fmt.Sprintf(`{"ty":"2","amount": "%f", "ts":"%d","status":"failed"}`, order.Amount, time.Now().Unix())
 
 	topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, order.UID)
 	err = meta.MerchantNats.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)

@@ -388,7 +388,24 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 			if err != nil {
 				return pushLog(err, helper.DBErr)
 			}
+			//发送推送
+			msg := fmt.Sprintf(`{"ty":"1","amount": "%f", "ts":"%d","status":"faild"}`, order.Amount, time.Now().Unix())
 
+			topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, order.UID)
+			err = meta.MerchantNats.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
+			if err != nil {
+				fmt.Println("merchantNats.Publish finance = ", err.Error())
+				return err
+			}
+			/*
+				fmt.Println("msg:", msg)
+				topic := fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID)
+				err = meta.Nats.Publish(topic, []byte(msg))
+				if err != nil {
+					fmt.Println("meta.MerchantNats.Publish = ", err.Error())
+				}
+				meta.Nats.Flush()
+			*/
 			return nil
 		}
 		// 存款成功 和 下分失败switch完成后处理
@@ -580,13 +597,33 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 		title := "Thông Báo Nạp Tiền Thành Công"
 		content := fmt.Sprintf("Quý Khách Của P3 Thân Mến:\nBạn Đã Nạp Tiền Thành Công %s KVND,Vui Lòng KIểm Tra Ngay,Nếu Bạn Có Bất Cứ Thắc Mắc Vấn Đề Gì Vui Lòng Liên Hệ CSKH Để Biết Thêm Chi Tiết.【P3】Chúc Bạn Cược Đâu Thắng Đó !!\n",
 			decimal.NewFromFloat(order.Amount).Truncate(0).String())
-		err = messageSend(order.ID, title, "", content, "system", meta.Prefix, 0, 0, 2, []string{order.Username})
+		err = messageSend(order.ID, title, "", content, "system", meta.Prefix, 0, 0, 1, []string{order.Username})
 		if err != nil {
 			_ = pushLog(err, helper.ESErr)
 		}
 		//发送推送
-		msg := fmt.Sprintf(`{"ty":"1","amount": "%s", "ts":"%d"}`, balanceAfter.String(), time.Now().Unix())
+		//msg := fmt.Sprintf(`{"ty":"1","amount": "%s", "ts":"%d"}`, balanceAfter.String(), time.Now().Unix())
+		msg := fmt.Sprintf(`{"ty":"1","amount": "%f", "ts":"%d","status":"success"}`, order.Amount, time.Now().Unix())
 
+		topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, order.UID)
+		err = meta.MerchantNats.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
+		if err != nil {
+			fmt.Println("merchantNats.Publish finance = ", err.Error())
+			return err
+		}
+		/*
+			msg := fmt.Sprintf(`{"ty":"1","amount": "%f", "ts":"%d","status":"success"}`, order.Amount, time.Now().Unix())
+			fmt.Println("msg:", msg)
+			topic := fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID)
+			err = meta.Nats.Publish(topic, []byte(msg))
+			if err != nil {
+				fmt.Println("meta.MerchantNats.Publish = ", err.Error())
+			}
+			meta.Nats.Flush()
+		*/
+	} else {
+		//发送推送
+		msg := fmt.Sprintf(`{"ty":"1","amount": "%f", "ts":"%d","status":"faild"}`, order.Amount, time.Now().Unix())
 		topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, order.UID)
 		err = meta.MerchantNats.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
 		if err != nil {
@@ -1088,13 +1125,13 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 		title := "Thông Báo Nạp Tiền Thành Công"
 		content := fmt.Sprintf("Quý Khách Của P3 Thân Mến:\nBạn Đã Nạp Tiền Thành Công %s KVND,Vui Lòng KIểm Tra Ngay,Nếu Bạn Có Bất Cứ Thắc Mắc Vấn Đề Gì Vui Lòng Liên Hệ CSKH Để Biết Thêm Chi Tiết.【P3】Chúc Bạn Cược Đâu Thắng Đó !!\n",
 			decimal.NewFromFloat(order.Amount).Truncate(0).String())
-		err = messageSend(order.ID, title, "", content, "system", meta.Prefix, 0, 0, 2, []string{order.Username})
+		err = messageSend(order.ID, title, "", content, "system", meta.Prefix, 0, 0, 1, []string{order.Username})
 		if err != nil {
 			_ = pushLog(err, helper.ESErr)
 		}
 
 		//发送推送
-		msg := fmt.Sprintf(`{"ty":"1","amount": "%s", "ts":"%d"}`, balanceAfter.String(), time.Now().Unix())
+		msg := fmt.Sprintf(`{"ty":"1","amount": "%s", "ts":"%d","status":"success"}`, order.Amount, time.Now().Unix())
 
 		topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, order.UID)
 		err = meta.MerchantNats.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
@@ -1102,6 +1139,7 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 			fmt.Println("merchantNats.Publish finance = ", err.Error())
 			return err
 		}
+
 		/*
 			err = meta.Nats.Publish(fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID), []byte(msg))
 			if err != nil {

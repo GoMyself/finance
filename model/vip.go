@@ -27,7 +27,7 @@ type Vip_t struct {
 
 // VipData 财务管理-会员等级通道-列表 response structure
 
-func VipList(level, flags string) ([]Vip_t, error) {
+func VipList(level, flags, cateId string) ([]Vip_t, error) {
 
 	var data []Vip_t
 
@@ -35,6 +35,10 @@ func VipList(level, flags string) ([]Vip_t, error) {
 		"vip":    level,
 		"flags":  flags,
 		"prefix": meta.Prefix,
+	}
+
+	if len(cateId) > 0 {
+		ex["cate_id"] = cateId
 	}
 
 	query, _, _ := dialect.From("f_vip").Select(colVip...).Where(ex).ToSQL()

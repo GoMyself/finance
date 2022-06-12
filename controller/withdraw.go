@@ -16,12 +16,6 @@ import (
 
 type WithdrawController struct{}
 
-// 会员申请提现
-type memberWithdrawParam struct {
-	BID    string `name:"bid" rule:"digit" msg:"bid error"` // 下发的银行卡或虚拟钱包的ID
-	Amount string `name:"amount" rule:"digit" min:"200" max:"1000000" msg:"amount error[200-1000000]"`
-}
-
 // 提现拒绝
 type withdrawReviewReject struct {
 	ID             string `name:"id" rule:"digit" msg:"id error"`
@@ -64,14 +58,13 @@ type withdrawRecord struct {
 // Withdraw 会员申请提现
 func (that *WithdrawController) Withdraw(ctx *fasthttp.RequestCtx) {
 
-	param := memberWithdrawParam{}
-	err := validator.Bind(ctx, &param)
-	if err != nil {
-		helper.Print(ctx, false, helper.ParamErr)
-		return
-	}
-
-	id, err := model.WithdrawUserInsert(param.Amount, param.BID, ctx)
+	bid := string(ctx.PostArgs().Peek("bid"))
+	amount := string(ctx.PostArgs().Peek("amount"))
+	sid := string(ctx.PostArgs().Peek("sid"))
+	ts := string(ctx.PostArgs().Peek("ts"))
+	verifyCode := string(ctx.PostArgs().Peek("verify_code"))
+	fmt.Println(bid, amount, sid, ts, verifyCode)
+	id, err := model.WithdrawUserInsert(amount, bid, sid, ts, verifyCode, ctx)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return
@@ -360,6 +353,8 @@ func (that *WithdrawController) RiskHistory(ctx *fasthttp.RequestCtx) {
 	confirmName := string(ctx.FormValue("confirm_name"))
 	vips := string(ctx.FormValue("vips"))
 	state := string(ctx.FormValue("state"))
+	ty := string(ctx.FormValue("ty"))
+
 	page, err := strconv.ParseUint(string(ctx.FormValue("page")), 10, 64)
 	if err != nil {
 		page = 1
@@ -472,7 +467,7 @@ func (that *WithdrawController) RiskHistory(ctx *fasthttp.RequestCtx) {
 		}
 	}
 
-	data, err := model.WithdrawHistoryList(ex, rangeParam, 1, startTime, endTime, uint(page), uint(pageSize))
+	data, err := model.WithdrawHistoryList(ex, rangeParam, ty, startTime, endTime, uint(page), uint(pageSize))
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return
@@ -497,6 +492,7 @@ func (that *WithdrawController) HistoryList(ctx *fasthttp.RequestCtx) {
 	maxAmount := string(ctx.FormValue("max_amount"))
 	minAmount := string(ctx.FormValue("min_amount"))
 	state := string(ctx.FormValue("state"))
+	ty := string(ctx.FormValue("ty"))
 
 	page, err := strconv.ParseUint(string(ctx.FormValue("page")), 10, 64)
 	if err != nil {
@@ -543,6 +539,8 @@ func (that *WithdrawController) HistoryList(ctx *fasthttp.RequestCtx) {
 		model.WithdrawSuccess,
 		model.WithdrawFailed,
 		model.WithdrawAbnormal,
+		model.WithdrawReviewReject,
+		model.WithdrawDispatched,
 	}
 	ex["state"] = baseState
 
@@ -573,7 +571,7 @@ func (that *WithdrawController) HistoryList(ctx *fasthttp.RequestCtx) {
 		}
 	}
 
-	data, err := model.WithdrawHistoryList(ex, rangeParam, 1, startTime, endTime, uint(page), uint(pageSize))
+	data, err := model.WithdrawHistoryList(ex, rangeParam, ty, startTime, endTime, uint(page), uint(pageSize))
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return

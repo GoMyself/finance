@@ -238,7 +238,7 @@ func RisksReceives() ([]Receive, error) {
 	var data []Receive
 	ex := g.Ex{
 		"state":    1,
-		"group_id": g.Op{"in": []interface{}{"381", "382", "383"}},
+		"group_id": g.Op{"in": []interface{}{"3", "4", "5"}},
 		"prefix":   meta.Prefix,
 	}
 	query, _, _ := dialect.From("tbl_admins").Select("id", "name").Where(ex).Order(g.C("name").Desc()).ToSQL()

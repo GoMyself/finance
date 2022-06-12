@@ -239,12 +239,17 @@ func Tunnel(fctx *fasthttp.RequestCtx, id string) (string, error) {
 	pipe := meta.MerchantRedis.TxPipeline()
 	defer pipe.Close()
 
+	exists := pipe.Exists(ctx, fmt.Sprintf("%s:DL:%s", meta.Prefix, u.UID))
 	rs := pipe.HMGet(ctx, meta.Prefix+":p:"+paymentId, "id", "fmin", "fmax", "et", "st", "amount_list")
 	re := pipe.HMGet(ctx, meta.Prefix+":pr:"+paymentId, "fmin", "fmax")
 	bk := pipe.Get(ctx, meta.Prefix+":BK:"+paymentId)
 
 	_, _ = pipe.Exec(ctx)
 
+	// 如果会员被锁定不返回渠道
+	if exists.Val() != 0 {
+		return "", pushLog(err, helper.RedisErr)
+	}
 	if rs.Err() != nil {
 		return "", pushLog(err, helper.RedisErr)
 	}

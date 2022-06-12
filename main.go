@@ -83,6 +83,7 @@ func main() {
 	mt.EsPrefix = cfg.EsPrefix
 	mt.Lang = cfg.Lang
 	mt.Fcallback = cfg.Fcallback
+	mt.IndexUrl = cfg.IndexUrl
 	mt.IsDev = cfg.IsDev
 
 	mt.Finance = content
@@ -130,8 +131,13 @@ func main() {
 		Name:               "finance",
 		MaxRequestBodySize: 51 * 1024 * 1024,
 	}
+
 	fmt.Printf("gitReversion = %s\r\nbuildGoVersion = %s\r\nbuildTime = %s\r\n", gitReversion, buildGoVersion, buildTime)
 	fmt.Println("Finance running", cfg.Port.Finance)
+
+	service := model.NewService(gitReversion, buildTime, buildGoVersion, helper.ServiceHttp)
+	go service.Start()
+
 	if err := srv.ListenAndServe(cfg.Port.Finance); err != nil {
 		log.Fatalf("Error in ListenAndServe: %s", err)
 	}
