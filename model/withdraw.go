@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/hprose/hprose-golang/v3/rpc/core"
+	"github.com/lucacasonato/mqtt"
 
 	"finance/contrib/helper"
 	"finance/contrib/validator"
@@ -1448,21 +1449,28 @@ func withdrawOrderSuccess(query, bankcard string, order Withdraw) error {
 	title := "Thông Báo Rút Tiền Thành Công "
 	content := fmt.Sprintf("Quý Khách Của P3 Thân Mến:\nBạn Đã Rút Tiền Thành Công %s KVND,Vui Lòng Kiểm Tra Tiền Rút Của Bạn Đã Thành Công Về Tài Khoản Chưa .Nếu Bạn Có Bất Cứ Thắc Mắc Vấn Đề Gì Vui Lòng Liên Hệ CSKH Để Biết Thêm Chi Tiết.!!【P3】Rút Tiền Nhanh Chóng & An Toàn !",
 		decimal.NewFromFloat(order.Amount).Truncate(0).String())
-	err = messageSend(order.ID, title, "", content, "system", meta.Prefix, 0, 0, 2, []string{order.Username})
+	err = messageSend(order.ID, title, "", content, "system", meta.Prefix, 0, 0, 1, []string{order.Username})
 	if err != nil {
 		_ = pushLog(err, helper.ESErr)
 	}
 
 	//发送推送
 	msg := fmt.Sprintf(`{"ty":"2","amount": "%f", "ts":"%d","status":"success"}`, order.Amount, time.Now().Unix())
-	fmt.Println("msg:", msg)
-	topic := fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID)
-	err = meta.Nats.Publish(topic, []byte(msg))
-	if err != nil {
-		fmt.Println("meta.Nats.Publish = ", err.Error())
-	}
-	meta.Nats.Flush()
 
+	topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, order.UID)
+	err = meta.MerchantNats.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
+	if err != nil {
+		fmt.Println("merchantNats.Publish finance = ", err.Error())
+		return err
+	}
+
+	/*
+		err = meta.Nats.Publish(fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID), []byte(msg))
+		if err != nil {
+			fmt.Println("meta.MerchantNats.Publish = ", err.Error())
+		}
+		meta.Nats.Flush()
+	*/
 	return nil
 }
 
@@ -1579,13 +1587,21 @@ func withdrawOrderFailed(query string, order Withdraw) error {
 
 	//发送推送
 	msg := fmt.Sprintf(`{"ty":"2","amount": "%f", "ts":"%d","status":"failed"}`, order.Amount, time.Now().Unix())
-	fmt.Println("msg:", msg)
-	topic := fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID)
-	err = meta.Nats.Publish(topic, []byte(msg))
+
+	topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, order.UID)
+	err = meta.MerchantNats.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
 	if err != nil {
-		fmt.Println("meta.MerchantNats.Publish = ", err.Error())
+		fmt.Println("merchantNats.Publish finance = ", err.Error())
+		return err
 	}
-	meta.Nats.Flush()
+
+	/*
+		err = meta.Nats.Publish(fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID), []byte(msg))
+		if err != nil {
+			fmt.Println("meta.MerchantNats.Publish = ", err.Error())
+		}
+		meta.Nats.Flush()
+	*/
 	return nil
 }
 

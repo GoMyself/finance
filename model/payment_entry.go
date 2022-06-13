@@ -9,6 +9,7 @@ import (
 	"time"
 
 	g "github.com/doug-martin/goqu/v9"
+	"github.com/lucacasonato/mqtt"
 	"github.com/shopspring/decimal"
 
 	"github.com/valyala/fasthttp"
@@ -314,16 +315,39 @@ func DepositManualRemark(cardID string) (string, error) {
 
 func PushWithdrawSuccess(uid string, amount float64) error {
 	msg := fmt.Sprintf(`{"amount": %.4f, "flags":"withdraw"}`, amount)
-	err := meta.Nats.Publish(uid, []byte(msg))
-	_ = meta.Nats.Flush()
-	fmt.Printf("Nats send[%s] a message: %s, error: %v\n", uid, msg, err)
-	return err
+
+	topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, uid)
+	err := meta.MerchantNats.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
+	if err != nil {
+		fmt.Println("merchantNats.Publish finance = ", err.Error())
+		return err
+	}
+
+	return nil
+	/*
+		err := meta.Nats.Publish(uid, []byte(msg))
+		_ = meta.Nats.Flush()
+		fmt.Printf("Nats send[%s] a message: %s, error: %v\n", uid, msg, err)
+		return err
+	*/
 }
 
 func PushDepositSuccess(uid string, amount float64) error {
 	msg := fmt.Sprintf(`{"amount": %.4f, "flags":"deposit"}`, amount)
-	err := meta.Nats.Publish(uid, []byte(msg))
-	_ = meta.Nats.Flush()
-	fmt.Printf("Nats send[%s] a message: %s, error: %v\n", uid, msg, err)
-	return err
+
+	topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, uid)
+	err := meta.MerchantNats.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
+	if err != nil {
+		fmt.Println("merchantNats.Publish finance = ", err.Error())
+		return err
+	}
+
+	return nil
+
+	/*
+		err := meta.Nats.Publish(uid, []byte(msg))
+		_ = meta.Nats.Flush()
+		fmt.Printf("Nats send[%s] a message: %s, error: %v\n", uid, msg, err)
+		return err
+	*/
 }

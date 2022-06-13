@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nats-io/nats.go"
+	"github.com/lucacasonato/mqtt"
 
 	g "github.com/doug-martin/goqu/v9"
 	_ "github.com/doug-martin/goqu/v9/dialect/mysql"
@@ -34,7 +34,7 @@ type MetaTable struct {
 	MerchantTD    *sqlx.DB
 	MerchantRedis *redis.ClusterClient
 	ES            *elastic.Client
-	Nats          *nats.Conn
+	MerchantNats  *mqtt.Client
 	Program       string
 	Prefix        string
 	Lang          string
@@ -190,7 +190,7 @@ func Close() {
 	meta.MerchantTD.Close()
 	_ = meta.MerchantDB.Close()
 	_ = meta.MerchantRedis.Close()
-	//meta.MQPool.Release()
+	meta.MerchantNats.DisconnectImmediately()
 }
 
 func AdminToken(ctx *fasthttp.RequestCtx) (map[string]string, error) {
@@ -248,14 +248,24 @@ func PushMerchantNotify(format, applyName, username, amount string) error {
 
 	msg := fmt.Sprintf(format, applyName, username, amount, applyName, username, amount, applyName, username, amount)
 	msg = strings.TrimSpace(msg)
-	err := meta.Nats.Publish(meta.Prefix+":merchant_notify", []byte(msg))
-	fmt.Printf("Nats send a message: %s\n", msg)
+
+	topic := fmt.Sprintf("%s/merchant", meta.Prefix)
+	err := meta.MerchantNats.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
 	if err != nil {
-		fmt.Printf("Nats send message error: %s\n", err.Error())
+		fmt.Println("merchantNats.Publish finance = ", err.Error())
 		return err
 	}
 
-	_ = meta.Nats.Flush()
+	/*
+		err := meta.Nats.Publish(meta.Prefix+":merchant_notify", []byte(msg))
+		fmt.Printf("Nats send a message: %s\n", msg)
+		if err != nil {
+			fmt.Printf("Nats send message error: %s\n", err.Error())
+			return err
+		}
+
+		_ = meta.Nats.Flush()
+	*/
 	return nil
 }
 
@@ -263,14 +273,24 @@ func PushWithdrawNotify(format, username, amount string) error {
 
 	msg := fmt.Sprintf(format, username, amount, username, amount, username, amount)
 	msg = strings.TrimSpace(msg)
-	err := meta.Nats.Publish(meta.Prefix+":merchant_notify", []byte(msg))
-	fmt.Printf("Nats send a message: %s\n", msg)
+
+	topic := fmt.Sprintf("%s/merchant", meta.Prefix)
+	err := meta.MerchantNats.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
 	if err != nil {
-		fmt.Printf("Nats send message error: %s\n", err.Error())
+		fmt.Println("merchantNats.Publish finance = ", err.Error())
 		return err
 	}
 
-	_ = meta.Nats.Flush()
+	/*
+		err := meta.Nats.Publish(meta.Prefix+":merchant_notify", []byte(msg))
+		fmt.Printf("Nats send a message: %s\n", msg)
+		if err != nil {
+			fmt.Printf("Nats send message error: %s\n", err.Error())
+			return err
+		}
+
+		_ = meta.Nats.Flush()
+	*/
 	return nil
 }
 
