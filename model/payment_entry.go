@@ -223,7 +223,7 @@ func paymentPushLog(data paymentTDLog) {
 		"merchant":      data.Merchant,
 		"channel":       data.Channel,
 		"flag":          data.Flag,
-		"ts":            ts.In(loc).UnixMilli(),
+		"ts":            ts.In(loc).UnixMicro(),
 	}
 
 	//fmt.Printf("%v \n", logInfo)
