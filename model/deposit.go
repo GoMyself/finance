@@ -392,7 +392,7 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 			msg := fmt.Sprintf(`{"ty":"1","amount": "%f", "ts":"%d","status":"faild"}`, order.Amount, time.Now().Unix())
 			fmt.Println(msg)
 			topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, order.UID)
-			err = meta.MerchantNats.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
+			err = meta.MerchantMqtt.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
 			if err != nil {
 				fmt.Println("merchantNats.Publish finance = ", err.Error())
 				return err
@@ -606,7 +606,7 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 		msg := fmt.Sprintf(`{"ty":"1","amount": "%f", "ts":"%d","status":"success"}`, order.Amount, time.Now().Unix())
 		fmt.Println(msg)
 		topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, order.UID)
-		err = meta.MerchantNats.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
+		err = meta.MerchantMqtt.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
 		if err != nil {
 			fmt.Println("merchantNats.Publish finance = ", err.Error())
 			return err
@@ -626,7 +626,7 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 		msg := fmt.Sprintf(`{"ty":"1","amount": "%f", "ts":"%d","status":"faild"}`, order.Amount, time.Now().Unix())
 		fmt.Println(msg)
 		topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, order.UID)
-		err = meta.MerchantNats.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
+		err = meta.MerchantMqtt.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
 		if err != nil {
 			fmt.Println("merchantNats.Publish finance = ", err.Error())
 			return err
@@ -1135,44 +1135,14 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 		msg := fmt.Sprintf(`{"ty":"1","amount": "%f", "ts":"%d","status":"success"}`, order.Amount, time.Now().Unix())
 		fmt.Println(msg)
 		topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, order.UID)
-		err = meta.MerchantNats.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
+		err = meta.MerchantMqtt.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
 		if err != nil {
 			fmt.Println("merchantNats.Publish finance = ", err.Error())
 			return err
 		}
-
-		/*
-			err = meta.Nats.Publish(fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID), []byte(msg))
-			if err != nil {
-				fmt.Println("meta.MerchantNats.Publish = ", err.Error())
-			}
-			meta.Nats.Flush()
-		*/
 	}
-	/*
-		// 存款成功发送到队列
-		if DepositSuccess == state {
-			param := map[string]interface{}{
-				"bean_ty":            "4",
-				"username":           order.Username,
-				"amount":             strconv.FormatFloat(order.Amount, 'f', -1, 64),
-				"deposit_created_at": strconv.FormatInt(order.CreatedAt, 10),
-				"deposit_success_at": strconv.FormatInt(now.Unix(), 10),
-			}
-			_, err = BeanPut("promo", param, 0)
-			if err != nil {
-				fmt.Println("user invite BeanPut err:", err.Error())
-			}
-		}
-	*/
 	return nil
 }
-
-/*
-func DepositManualRemarkCodeKey(bankcardID, code string) string {
-	return fmt.Sprintf("MR:%s:%s", bankcardID, code)
-}
-*/
 
 // DepositUSDTReview 线下USDT-存款审核
 func DepositUSDTReview(did, remark, name, adminUID, depositUID string, state int) error {

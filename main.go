@@ -57,7 +57,7 @@ func main() {
 	mt.ES = conn.InitES(cfg.Es.Host, cfg.Es.Username, cfg.Es.Password)
 	mt.MerchantRedis = conn.InitRedisCluster(cfg.Redis.Addr, cfg.Redis.Password)
 
-	mt.MerchantNats, err = mqtt.NewClient(mqtt.ClientOptions{
+	mt.MerchantMqtt, err = mqtt.NewClient(mqtt.ClientOptions{
 		// required
 		Servers: cfg.Nats.Servers,
 
@@ -71,7 +71,7 @@ func main() {
 		panic(err)
 	}
 
-	err = mt.MerchantNats.Connect(ctx)
+	err = mt.MerchantMqtt.Connect(ctx)
 	if err != nil {
 		panic(err)
 	}

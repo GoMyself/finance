@@ -317,7 +317,7 @@ func PushWithdrawSuccess(uid string, amount float64) error {
 	msg := fmt.Sprintf(`{"amount": %.4f, "flags":"withdraw"}`, amount)
 
 	topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, uid)
-	err := meta.MerchantNats.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
+	err := meta.MerchantMqtt.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
 	if err != nil {
 		fmt.Println("merchantNats.Publish finance = ", err.Error())
 		return err
@@ -336,7 +336,7 @@ func PushDepositSuccess(uid string, amount float64) error {
 	msg := fmt.Sprintf(`{"amount": %.4f, "flags":"deposit"}`, amount)
 
 	topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, uid)
-	err := meta.MerchantNats.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
+	err := meta.MerchantMqtt.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
 	if err != nil {
 		fmt.Println("merchantNats.Publish finance = ", err.Error())
 		return err

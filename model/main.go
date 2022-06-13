@@ -34,7 +34,7 @@ type MetaTable struct {
 	MerchantTD    *sqlx.DB
 	MerchantRedis *redis.ClusterClient
 	ES            *elastic.Client
-	MerchantNats  *mqtt.Client
+	MerchantMqtt  *mqtt.Client
 	Program       string
 	Prefix        string
 	Lang          string
@@ -190,7 +190,7 @@ func Close() {
 	meta.MerchantTD.Close()
 	_ = meta.MerchantDB.Close()
 	_ = meta.MerchantRedis.Close()
-	meta.MerchantNats.DisconnectImmediately()
+	meta.MerchantMqtt.DisconnectImmediately()
 }
 
 func AdminToken(ctx *fasthttp.RequestCtx) (map[string]string, error) {
@@ -250,7 +250,7 @@ func PushMerchantNotify(format, applyName, username, amount string) error {
 	msg = strings.TrimSpace(msg)
 
 	topic := fmt.Sprintf("%s/merchant", meta.Prefix)
-	err := meta.MerchantNats.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
+	err := meta.MerchantMqtt.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
 	if err != nil {
 		fmt.Println("merchantNats.Publish finance = ", err.Error())
 		return err
@@ -275,7 +275,7 @@ func PushWithdrawNotify(format, username, amount string) error {
 	msg = strings.TrimSpace(msg)
 
 	topic := fmt.Sprintf("%s/merchant", meta.Prefix)
-	err := meta.MerchantNats.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
+	err := meta.MerchantMqtt.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
 	if err != nil {
 		fmt.Println("merchantNats.Publish finance = ", err.Error())
 		return err

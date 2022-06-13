@@ -1461,7 +1461,7 @@ func withdrawOrderSuccess(query, bankcard string, order Withdraw) error {
 	msg := fmt.Sprintf(`{"ty":"2","amount": "%f", "ts":"%d","status":"success"}`, order.Amount, time.Now().Unix())
 	fmt.Println(msg)
 	topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, order.UID)
-	err = meta.MerchantNats.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
+	err = meta.MerchantMqtt.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
 	if err != nil {
 		fmt.Println("merchantNats.Publish finance = ", err.Error())
 		return err
@@ -1592,19 +1592,12 @@ func withdrawOrderFailed(query string, order Withdraw) error {
 	msg := fmt.Sprintf(`{"ty":"2","amount": "%f", "ts":"%d","status":"failed"}`, order.Amount, time.Now().Unix())
 	fmt.Println(msg)
 	topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, order.UID)
-	err = meta.MerchantNats.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
+	err = meta.MerchantMqtt.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
 	if err != nil {
 		fmt.Println("merchantNats.Publish finance = ", err.Error())
 		return err
 	}
 
-	/*
-		err = meta.Nats.Publish(fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID), []byte(msg))
-		if err != nil {
-			fmt.Println("meta.MerchantNats.Publish = ", err.Error())
-		}
-		meta.Nats.Flush()
-	*/
 	return nil
 }
 
