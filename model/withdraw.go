@@ -203,6 +203,7 @@ func WithdrawUserInsert(amount, bid, sid, ts, verifyCode string, fCtx *fasthttp.
 	rctx := core.WithContext(context.Background(), clientContext)
 
 	recs := grpc_t.CheckDepositFlow(rctx, mb.Username)
+	fmt.Println("recs:", recs)
 	if !recs {
 		return "", errors.New(helper.WaterFlowUnreached)
 	}
@@ -534,13 +535,14 @@ func WithdrawList(ex g.Ex, ty uint8, startTime, endTime string, page, pageSize u
 	}
 
 	if realName, ok := ex["real_name_hash"]; ok {
-		ex["real_name_hash"] = MurmurHash(realName.(string), 0)
+		ex["real_name_hash"] = fmt.Sprintf("%d", MurmurHash(realName.(string), 0))
 	}
 
 	var data FWithdrawData
 	if page == 1 {
 		var total withdrawTotal
 		query, _, _ := dialect.From("tbl_withdraw").Select(g.COUNT(1).As("t"), g.SUM("amount").As("agg")).Where(ex).ToSQL()
+		fmt.Println(query)
 		err := meta.MerchantDB.Get(&total, query)
 		if err != nil {
 			return data, pushLog(err, helper.DBErr)
@@ -555,6 +557,7 @@ func WithdrawList(ex g.Ex, ty uint8, startTime, endTime string, page, pageSize u
 	offset := (page - 1) * pageSize
 	query, _, _ := dialect.From("tbl_withdraw").
 		Select(colWithdraw...).Where(ex).Order(g.C("created_at").Desc()).Offset(offset).Limit(pageSize).ToSQL()
+	fmt.Println(query)
 	err := meta.MerchantDB.Select(&data.D, query)
 	if err != nil {
 		return data, pushLog(err, helper.DBErr)
