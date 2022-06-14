@@ -182,8 +182,7 @@ func pushLog(err error, code string) error {
 
 	}
 
-	note := fmt.Sprintf("Hệ thống lỗi %s", id)
-	return errors.New(note)
+	return fmt.Errorf("hệ thống lỗi %s", id)
 }
 
 func Close() {
@@ -256,16 +255,6 @@ func PushMerchantNotify(format, applyName, username, amount string) error {
 		return err
 	}
 
-	/*
-		err := meta.Nats.Publish(meta.Prefix+":merchant_notify", []byte(msg))
-		fmt.Printf("Nats send a message: %s\n", msg)
-		if err != nil {
-			fmt.Printf("Nats send message error: %s\n", err.Error())
-			return err
-		}
-
-		_ = meta.Nats.Flush()
-	*/
 	return nil
 }
 
@@ -281,50 +270,9 @@ func PushWithdrawNotify(format, username, amount string) error {
 		return err
 	}
 
-	/*
-		err := meta.Nats.Publish(meta.Prefix+":merchant_notify", []byte(msg))
-		fmt.Printf("Nats send a message: %s\n", msg)
-		if err != nil {
-			fmt.Printf("Nats send message error: %s\n", err.Error())
-			return err
-		}
-
-		_ = meta.Nats.Flush()
-	*/
 	return nil
 }
 
-/*
-func SystemLogWrite(content string, ctx *fasthttp.RequestCtx) {
-
-	admin, err := AdminToken(ctx)
-	if err != nil {
-		fmt.Println("admin not found")
-		return
-	}
-
-	var privTree PrivTree
-	path := string(ctx.Path())
-	err = meta.MerchantRedis.HGet(ctx, "priv_tree", path).Scan(&privTree)
-	if err != nil {
-		fmt.Println("system log get priv_tree", err.Error())
-		return
-	}
-
-	log := systemLog{
-		Title:     privTree.Parent.Parent.Name + "-" + privTree.Parent.Name,
-		UID:       admin["id"],
-		Name:      admin["name"],
-		Content:   content,
-		IP:        helper.FromRequest(ctx),
-		CreatedAt: ctx.Time().Unix(),
-	}
-
-	if err = meta.Zlog.Post(esPrefixIndex("system_log"), log); err != nil {
-		fmt.Println("zLog post err: ", err.Error())
-	}
-}
-*/
 
 func TimeFormat(t int64) string {
 	return time.Unix(t, 0).In(loc).Format("2006-01-02 15:04:05")
