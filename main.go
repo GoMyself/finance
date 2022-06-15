@@ -63,8 +63,8 @@ func main() {
 
 		// optional
 		ClientID:      helper.GenId(),
-		Username:      "admin",
-		Password:      "***",
+		Username:      cfg.Nats.Username,
+		Password:      cfg.Nats.Password,
 		AutoReconnect: true,
 	})
 	if err != nil {
