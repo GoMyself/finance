@@ -397,15 +397,6 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 				fmt.Println("merchantNats.Publish finance = ", err.Error())
 				return err
 			}
-			/*
-				fmt.Println("msg:", msg)
-				topic := fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID)
-				err = meta.Nats.Publish(topic, []byte(msg))
-				if err != nil {
-					fmt.Println("meta.MerchantNats.Publish = ", err.Error())
-				}
-				meta.Nats.Flush()
-			*/
 			return nil
 		}
 		// 存款成功 和 下分失败switch完成后处理
@@ -494,6 +485,32 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 
 		balanceAfter = decimal.NewFromFloat(balance.Balance).Add(money.Abs())
 	}
+	//如果存款有优惠
+	key := meta.Prefix + ":p:c:t:" + order.ChannelID
+	promoState, err := meta.MerchantRedis.HGet(ctx, key, "promo_state").Result()
+	if err != nil && err != redis.Nil {
+		//缓存没有配置就跳过
+		fmt.Println(err)
+	}
+	//开启了优惠
+	if promoState == "1" {
+		promoDiscount, err := meta.MerchantRedis.HGet(ctx, key, "promo_discount").Result()
+		if err != nil && err != redis.Nil {
+			//缓存没有配置就跳过
+			fmt.Println(err)
+		}
+		pd, _ := decimal.NewFromString(promoDiscount)
+		if pd.GreaterThan(decimal.Zero) {
+			//大于0就是优惠，给钱
+			money = money.Add(money.Mul(pd).Div(decimal.NewFromInt(100)))
+			balanceAfter = decimal.NewFromFloat(balance.Balance).Add(money.Abs())
+
+		} else if pd.LessThan(decimal.Zero) {
+			//小于0就是收费，扣钱
+			money = money.Sub(money.Mul(pd).Div(decimal.NewFromInt(100)))
+			balanceAfter = decimal.NewFromFloat(balance.Balance).Add(money.Abs())
+		}
+	}
 
 	// 3、更新余额
 	ex = g.Ex{
@@ -540,26 +557,6 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 		return pushLog(err, helper.DBErr)
 	}
 
-	/*
-		// 存款成功发送到队列
-		if DepositSuccess == state && cashType == TransactionDeposit {
-			param := map[string]interface{}{
-				"bean_ty":            "4",
-				"username":           order.Username,
-				"amount":             strconv.FormatFloat(order.Amount, 'f', -1, 64),
-				"deposit_created_at": strconv.FormatInt(order.CreatedAt, 10),
-				"deposit_success_at": strconv.FormatInt(now.Unix(), 10),
-			}
-
-			_, err = BeanPut("promo", param, 0)
-			if err != nil {
-				fmt.Println("user invite BeanPut err:", err.Error())
-			}
-
-			// 发送通知 存款成功
-			PushDepositSuccess(order.UID, order.Amount)
-		}
-	*/
 	fmt.Println("state:", state)
 	if DepositSuccess == state {
 
@@ -602,7 +599,6 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 			_ = pushLog(err, helper.ESErr)
 		}
 		//发送推送
-		//msg := fmt.Sprintf(`{"ty":"1","amount": "%s", "ts":"%d"}`, balanceAfter.String(), time.Now().Unix())
 		msg := fmt.Sprintf(`{"ty":"1","amount": "%f", "ts":"%d","status":"success"}`, order.Amount, time.Now().Unix())
 		fmt.Println(msg)
 		topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, order.UID)
@@ -611,16 +607,7 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 			fmt.Println("merchantNats.Publish finance = ", err.Error())
 			return err
 		}
-		/*
-			msg := fmt.Sprintf(`{"ty":"1","amount": "%f", "ts":"%d","status":"success"}`, order.Amount, time.Now().Unix())
-			fmt.Println("msg:", msg)
-			topic := fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID)
-			err = meta.Nats.Publish(topic, []byte(msg))
-			if err != nil {
-				fmt.Println("meta.MerchantNats.Publish = ", err.Error())
-			}
-			meta.Nats.Flush()
-		*/
+
 	} else {
 		//发送推送
 		msg := fmt.Sprintf(`{"ty":"1","amount": "%f", "ts":"%d","status":"faild"}`, order.Amount, time.Now().Unix())
@@ -631,14 +618,6 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 			fmt.Println("merchantNats.Publish finance = ", err.Error())
 			return err
 		}
-
-		/*
-			err = meta.Nats.Publish(fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID), []byte(msg))
-			if err != nil {
-				fmt.Println("meta.MerchantNats.Publish = ", err.Error())
-			}
-			meta.Nats.Flush()
-		*/
 	}
 
 	_ = MemberUpdateCache(order.Username)

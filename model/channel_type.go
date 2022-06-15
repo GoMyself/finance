@@ -23,10 +23,11 @@ func ChannelTypeCreateCache() {
 
 		key := meta.Prefix + ":p:c:t:" + value.ID
 		val := map[string]interface{}{
-			"promo_state": value.PromoState,
-			"sort":        value.Sort,
-			"name":        value.Name,
-			"id":          value.ID,
+			"promo_discount": value.PromoDiscount,
+			"promo_state":    value.PromoState,
+			"sort":           value.Sort,
+			"name":           value.Name,
+			"id":             value.ID,
 		}
 
 		pipe.Unlink(ctx, key)
