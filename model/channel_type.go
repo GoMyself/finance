@@ -10,7 +10,7 @@ func ChannelTypeCreateCache() {
 
 	var reocrd []Tunnel_t
 
-	query, _, _ := dialect.From("f_channel_type").Select("id", "name", "sort", "promo_state").ToSQL()
+	query, _, _ := dialect.From("f_channel_type").Select("id", "name", "sort", "promo_state", "promo_discount").ToSQL()
 	err := meta.MerchantDB.Select(&reocrd, query)
 	if err != nil {
 		fmt.Println("CreateChannelType meta.MerchantDB.Select = ", err.Error())
