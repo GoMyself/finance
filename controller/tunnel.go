@@ -42,6 +42,10 @@ func (that *TunnelController) Update(ctx *fasthttp.RequestCtx) {
 
 	//content := fmt.Sprintf("编辑【通道名称: %s】", tunnel.Name)
 	//defer model.SystemLogWrite(content, ctx)
+	if param.ID == "7" && param.Value != "0" {
+		helper.Print(ctx, false, helper.Blocked)
+		return
+	}
 
 	err = model.TunnelUpdate(param.ID, param.State, param.Value, param.Sort)
 	if err != nil {

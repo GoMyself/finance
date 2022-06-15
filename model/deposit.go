@@ -514,7 +514,7 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 		} else if pd.LessThan(decimal.Zero) {
 			//小于0就是收费，扣钱
 			fee = money.Mul(pd).Div(decimal.NewFromInt(100))
-			money = money.Sub(fee)
+			money = money.Add(fee)
 			balanceFeeAfter = decimal.NewFromFloat(balance.Balance).Add(money.Abs())
 			feeCashType = helper.TransactionDepositFee
 
@@ -527,7 +527,7 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 		"prefix": meta.Prefix,
 	}
 	br := g.Record{
-		"balance": g.L(fmt.Sprintf("balance+%s", amount)),
+		"balance": g.L(fmt.Sprintf("balance+%s", money.String())),
 	}
 	query, _, _ = dialect.Update("tbl_members").Set(br).Where(ex).ToSQL()
 	_, err = tx.Exec(query)
@@ -1072,7 +1072,7 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 		} else if pd.LessThan(decimal.Zero) {
 			//小于0就是收费，扣钱
 			fee = money.Mul(pd).Div(decimal.NewFromInt(100))
-			money = money.Sub(fee)
+			money = money.Add(fee)
 			balanceFeeAfter = decimal.NewFromFloat(balance.Balance).Add(money.Abs())
 			feeCashType = helper.TransactionDepositFee
 
@@ -1098,7 +1098,7 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 		"prefix": meta.Prefix,
 	}
 	br := g.Record{
-		"balance": g.L(fmt.Sprintf("balance+%s", amount)),
+		"balance": g.L(fmt.Sprintf("balance+%s", money.String())),
 	}
 	query, _, _ = dialect.Update("tbl_members").Set(br).Where(ex).ToSQL()
 	_, err = tx.Exec(query)
