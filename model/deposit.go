@@ -397,15 +397,6 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 				fmt.Println("merchantNats.Publish finance = ", err.Error())
 				return err
 			}
-			/*
-				fmt.Println("msg:", msg)
-				topic := fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID)
-				err = meta.Nats.Publish(topic, []byte(msg))
-				if err != nil {
-					fmt.Println("meta.MerchantNats.Publish = ", err.Error())
-				}
-				meta.Nats.Flush()
-			*/
 			return nil
 		}
 		// 存款成功 和 下分失败switch完成后处理
@@ -495,13 +486,48 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 		balanceAfter = decimal.NewFromFloat(balance.Balance).Add(money.Abs())
 	}
 
+	balanceFeeAfter := balanceAfter
+	fee := decimal.Zero
+	var feeCashType int
+	//如果存款有优惠
+	key := meta.Prefix + ":p:c:t:" + order.ChannelID
+	promoState, err := meta.MerchantRedis.HGet(ctx, key, "promo_state").Result()
+	if err != nil && err != redis.Nil {
+		//缓存没有配置就跳过
+		fmt.Println(err)
+	}
+	//开启了优惠
+	if promoState == "1" {
+		promoDiscount, err := meta.MerchantRedis.HGet(ctx, key, "promo_discount").Result()
+		if err != nil && err != redis.Nil {
+			//缓存没有配置就跳过
+			fmt.Println(err)
+		}
+		pd, _ := decimal.NewFromString(promoDiscount)
+		fmt.Println("promoDiscount:", promoDiscount)
+		if pd.GreaterThan(decimal.Zero) {
+			//大于0就是优惠，给钱
+			fee = money.Mul(pd).Div(decimal.NewFromInt(100))
+			money = money.Add(fee)
+			balanceFeeAfter = decimal.NewFromFloat(balance.Balance).Add(money.Abs())
+			feeCashType = helper.TransactionDepositBonus
+		} else if pd.LessThan(decimal.Zero) {
+			//小于0就是收费，扣钱
+			fee = money.Mul(pd).Div(decimal.NewFromInt(100))
+			money = money.Add(fee)
+			balanceFeeAfter = decimal.NewFromFloat(balance.Balance).Add(money.Abs())
+			feeCashType = helper.TransactionDepositFee
+
+		}
+	}
+
 	// 3、更新余额
 	ex = g.Ex{
 		"uid":    order.UID,
 		"prefix": meta.Prefix,
 	}
 	br := g.Record{
-		"balance": g.L(fmt.Sprintf("balance+%s", amount)),
+		"balance": g.L(fmt.Sprintf("balance+%s", money.String())),
 	}
 	query, _, _ = dialect.Update("tbl_members").Set(br).Where(ex).ToSQL()
 	_, err = tx.Exec(query)
@@ -517,7 +543,7 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 		Amount:       amount,
 		BeforeAmount: decimal.NewFromFloat(balance.Balance).String(),
 		BillNo:       order.ID,
-		CreatedAt:    now.UnixNano() / 1e6,
+		CreatedAt:    now.UnixMilli(),
 		ID:           id,
 		CashType:     cashType,
 		UID:          order.UID,
@@ -535,31 +561,35 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 		return pushLog(err, helper.DBErr)
 	}
 
+	if balanceFeeAfter.Cmp(balanceAfter) != 0 {
+		//手续费/优惠的帐变
+		id = helper.GenId()
+		mbTrans = memberTransaction{
+			AfterAmount:  balanceFeeAfter.String(),
+			Amount:       fee.String(),
+			BeforeAmount: balanceAfter.String(),
+			BillNo:       order.ID,
+			CreatedAt:    time.Now().UnixMilli(),
+			ID:           id,
+			CashType:     feeCashType,
+			UID:          order.UID,
+			Username:     order.Username,
+			Prefix:       meta.Prefix,
+		}
+
+		query, _, _ = dialect.Insert("tbl_balance_transaction").Rows(mbTrans).ToSQL()
+		_, err = tx.Exec(query)
+		if err != nil {
+			_ = tx.Rollback()
+			return pushLog(err, helper.DBErr)
+		}
+	}
+
 	err = tx.Commit()
 	if err != nil {
 		return pushLog(err, helper.DBErr)
 	}
 
-	/*
-		// 存款成功发送到队列
-		if DepositSuccess == state && cashType == TransactionDeposit {
-			param := map[string]interface{}{
-				"bean_ty":            "4",
-				"username":           order.Username,
-				"amount":             strconv.FormatFloat(order.Amount, 'f', -1, 64),
-				"deposit_created_at": strconv.FormatInt(order.CreatedAt, 10),
-				"deposit_success_at": strconv.FormatInt(now.Unix(), 10),
-			}
-
-			_, err = BeanPut("promo", param, 0)
-			if err != nil {
-				fmt.Println("user invite BeanPut err:", err.Error())
-			}
-
-			// 发送通知 存款成功
-			PushDepositSuccess(order.UID, order.Amount)
-		}
-	*/
 	fmt.Println("state:", state)
 	if DepositSuccess == state {
 
@@ -602,7 +632,6 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 			_ = pushLog(err, helper.ESErr)
 		}
 		//发送推送
-		//msg := fmt.Sprintf(`{"ty":"1","amount": "%s", "ts":"%d"}`, balanceAfter.String(), time.Now().Unix())
 		msg := fmt.Sprintf(`{"ty":"1","amount": "%f", "ts":"%d","status":"success"}`, order.Amount, time.Now().Unix())
 		fmt.Println(msg)
 		topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, order.UID)
@@ -611,16 +640,7 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 			fmt.Println("merchantNats.Publish finance = ", err.Error())
 			return err
 		}
-		/*
-			msg := fmt.Sprintf(`{"ty":"1","amount": "%f", "ts":"%d","status":"success"}`, order.Amount, time.Now().Unix())
-			fmt.Println("msg:", msg)
-			topic := fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID)
-			err = meta.Nats.Publish(topic, []byte(msg))
-			if err != nil {
-				fmt.Println("meta.MerchantNats.Publish = ", err.Error())
-			}
-			meta.Nats.Flush()
-		*/
+
 	} else {
 		//发送推送
 		msg := fmt.Sprintf(`{"ty":"1","amount": "%f", "ts":"%d","status":"faild"}`, order.Amount, time.Now().Unix())
@@ -631,14 +651,6 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 			fmt.Println("merchantNats.Publish finance = ", err.Error())
 			return err
 		}
-
-		/*
-			err = meta.Nats.Publish(fmt.Sprintf(`%s_%s_finance`, meta.Prefix, order.UID), []byte(msg))
-			if err != nil {
-				fmt.Println("meta.MerchantNats.Publish = ", err.Error())
-			}
-			meta.Nats.Flush()
-		*/
 	}
 
 	_ = MemberUpdateCache(order.Username)
@@ -1032,6 +1044,41 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 	}
 	balanceAfter := decimal.NewFromFloat(balance.Balance).Add(money)
 
+	balanceFeeAfter := balanceAfter
+	fee := decimal.Zero
+	var feeCashType int
+	//如果存款有优惠
+	key := meta.Prefix + ":p:c:t:" + order.ChannelID
+	promoState, err := meta.MerchantRedis.HGet(ctx, key, "promo_state").Result()
+	if err != nil && err != redis.Nil {
+		//缓存没有配置就跳过
+		fmt.Println(err)
+	}
+	//开启了优惠
+	if promoState == "1" {
+		promoDiscount, err := meta.MerchantRedis.HGet(ctx, key, "promo_discount").Result()
+		if err != nil && err != redis.Nil {
+			//缓存没有配置就跳过
+			fmt.Println(err)
+		}
+		pd, _ := decimal.NewFromString(promoDiscount)
+		fmt.Println("promoDiscount:", promoDiscount)
+		if pd.GreaterThan(decimal.Zero) {
+			//大于0就是优惠，给钱
+			fee = money.Mul(pd).Div(decimal.NewFromInt(100))
+			money = money.Add(fee)
+			balanceFeeAfter = decimal.NewFromFloat(balance.Balance).Add(money.Abs())
+			feeCashType = helper.TransactionDepositBonus
+		} else if pd.LessThan(decimal.Zero) {
+			//小于0就是收费，扣钱
+			fee = money.Mul(pd).Div(decimal.NewFromInt(100))
+			money = money.Add(fee)
+			balanceFeeAfter = decimal.NewFromFloat(balance.Balance).Add(money.Abs())
+			feeCashType = helper.TransactionDepositFee
+
+		}
+	}
+
 	// 开启事务
 	tx, err := meta.MerchantDB.Begin()
 	if err != nil {
@@ -1051,7 +1098,7 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 		"prefix": meta.Prefix,
 	}
 	br := g.Record{
-		"balance": g.L(fmt.Sprintf("balance+%s", amount)),
+		"balance": g.L(fmt.Sprintf("balance+%s", money.String())),
 	}
 	query, _, _ = dialect.Update("tbl_members").Set(br).Where(ex).ToSQL()
 	_, err = tx.Exec(query)
@@ -1067,7 +1114,7 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 		Amount:       amount,
 		BeforeAmount: decimal.NewFromFloat(balance.Balance).String(),
 		BillNo:       order.ID,
-		CreatedAt:    now.UnixNano() / 1e6,
+		CreatedAt:    now.UnixMilli(),
 		ID:           id,
 		CashType:     helper.TransactionDeposit,
 		UID:          order.UID,
@@ -1080,6 +1127,30 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 	if err != nil {
 		_ = tx.Rollback()
 		return pushLog(err, helper.DBErr)
+	}
+
+	if balanceFeeAfter.Cmp(balanceAfter) != 0 {
+		//手续费/优惠的帐变
+		id = helper.GenId()
+		mbTrans = memberTransaction{
+			AfterAmount:  balanceFeeAfter.String(),
+			Amount:       fee.String(),
+			BeforeAmount: balanceAfter.String(),
+			BillNo:       order.ID,
+			CreatedAt:    time.Now().UnixMilli(),
+			ID:           id,
+			CashType:     feeCashType,
+			UID:          order.UID,
+			Username:     order.Username,
+			Prefix:       meta.Prefix,
+		}
+
+		query, _, _ = dialect.Insert("tbl_balance_transaction").Rows(mbTrans).ToSQL()
+		_, err = tx.Exec(query)
+		if err != nil {
+			_ = tx.Rollback()
+			return pushLog(err, helper.DBErr)
+		}
 	}
 
 	err = tx.Commit()
