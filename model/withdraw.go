@@ -1270,7 +1270,7 @@ func WithdrawLock(id string) error {
 	key := fmt.Sprintf(withdrawOrderLockKey, id)
 	err := Lock(key)
 	if err != nil {
-		return pushLog(err, helper.RedisErr)
+		return err
 	}
 
 	return nil
