@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/lucacasonato/mqtt"
 
 	"finance/contrib/helper"
 
@@ -392,7 +391,7 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 			msg := fmt.Sprintf(`{"ty":"1","amount": "%f", "ts":"%d","status":"faild"}`, order.Amount, time.Now().Unix())
 			fmt.Println(msg)
 			topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, order.UID)
-			err = meta.MerchantMqtt.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
+			err = Publish(topic, []byte(msg))
 			if err != nil {
 				fmt.Println("merchantNats.Publish finance = ", err.Error())
 				return err
@@ -635,7 +634,7 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 		msg := fmt.Sprintf(`{"ty":"1","amount": "%f", "ts":"%d","status":"success"}`, order.Amount, time.Now().Unix())
 		fmt.Println(msg)
 		topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, order.UID)
-		err = meta.MerchantMqtt.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
+		err = Publish(topic, []byte(msg))
 		if err != nil {
 			fmt.Println("merchantNats.Publish finance = ", err.Error())
 			return err
@@ -646,7 +645,7 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 		msg := fmt.Sprintf(`{"ty":"1","amount": "%f", "ts":"%d","status":"faild"}`, order.Amount, time.Now().Unix())
 		fmt.Println(msg)
 		topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, order.UID)
-		err = meta.MerchantMqtt.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
+		err = Publish(topic, []byte(msg))
 		if err != nil {
 			fmt.Println("merchantNats.Publish finance = ", err.Error())
 			return err
@@ -1206,7 +1205,8 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 		msg := fmt.Sprintf(`{"ty":"1","amount": "%f", "ts":"%d","status":"success"}`, order.Amount, time.Now().Unix())
 		fmt.Println(msg)
 		topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, order.UID)
-		err = meta.MerchantMqtt.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
+
+		err = Publish(topic, []byte(msg))
 		if err != nil {
 			fmt.Println("merchantNats.Publish finance = ", err.Error())
 			return err

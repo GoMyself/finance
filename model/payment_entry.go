@@ -9,7 +9,6 @@ import (
 	"time"
 
 	g "github.com/doug-martin/goqu/v9"
-	"github.com/lucacasonato/mqtt"
 	"github.com/shopspring/decimal"
 
 	"github.com/valyala/fasthttp"
@@ -317,7 +316,7 @@ func PushWithdrawSuccess(uid string, amount float64) error {
 	msg := fmt.Sprintf(`{"amount": %.4f, "flags":"withdraw"}`, amount)
 
 	topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, uid)
-	err := meta.MerchantMqtt.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
+	err := Publish(topic, []byte(msg))
 	if err != nil {
 		fmt.Println("merchantNats.Publish finance = ", err.Error())
 		return err
@@ -336,7 +335,7 @@ func PushDepositSuccess(uid string, amount float64) error {
 	msg := fmt.Sprintf(`{"amount": %.4f, "flags":"deposit"}`, amount)
 
 	topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, uid)
-	err := meta.MerchantMqtt.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
+	err := Publish(topic, []byte(msg))
 	if err != nil {
 		fmt.Println("merchantNats.Publish finance = ", err.Error())
 		return err
