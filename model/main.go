@@ -260,19 +260,22 @@ func PushMerchantNotify(format, applyName, username, amount string) error {
 
 func PushWithdrawNotify(format, username, amount string) error {
 
+	ts := time.Now()
 	msg := fmt.Sprintf(format, username, amount, username, amount, username, amount)
 	msg = strings.TrimSpace(msg)
 
 	topic := fmt.Sprintf("%s/merchant", meta.Prefix)
 	err := meta.MerchantMqtt.Publish(ctx, topic, []byte(msg), mqtt.AtLeastOnce)
 	if err != nil {
+		fmt.Println("failed", time.Since(ts), err.Error())
 		fmt.Println("merchantNats.Publish finance = ", err.Error())
 		return err
 	}
 
+	fmt.Println("success", time.Since(ts))
+
 	return nil
 }
-
 
 func TimeFormat(t int64) string {
 	return time.Unix(t, 0).In(loc).Format("2006-01-02 15:04:05")
