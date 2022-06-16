@@ -1015,22 +1015,28 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 	}
 
 	now := time.Now()
-	record := g.Record{
-		"state":         state,
-		"confirm_at":    now.Unix(),
-		"confirm_uid":   uid,
-		"confirm_name":  name,
-		"review_remark": remark,
-	}
-	query, _, _ := dialect.Update("tbl_deposit").Set(record).Where(ex).ToSQL()
-
 	money := decimal.NewFromFloat(order.Amount)
 	amount := money.String()
 
 	if DepositCancelled == state {
+		record := g.Record{
+			"state":         state,
+			"confirm_at":    now.Unix(),
+			"confirm_uid":   uid,
+			"confirm_name":  name,
+			"review_remark": remark,
+		}
+		query, _, _ := dialect.Update("tbl_deposit").Set(record).Where(ex).ToSQL()
 		_, err = meta.MerchantDB.Exec(query)
 		if err != nil {
 			return pushLog(err, helper.DBErr)
+		}
+
+		title := "Thông Báo Nạp Tiền Thất Bại:"
+		content := fmt.Sprintf(" Quý Khách Của P3 Thân Mến :\n Đơn Nạp Tiền Của Quý Khách Xử Lý Thất Bại, Nguyên Nhân Do : %s. Nếu Có Bất Cứ Vấn Đề Thắc Mắc Vui Lòng Liên Hệ CSKH  Để Biết Thêm Chi Tiết. [P3] Cung Cấp Dịch Vụ Chăm Sóc 1:1 Mọi Lúc Cho Khách Hàng ! \n", remark)
+		err = messageSend(order.ID, title, "", content, "system", meta.Prefix, 0, 0, 1, []string{order.Username})
+		if err != nil {
+			_ = pushLog(err, helper.ESErr)
 		}
 
 		return nil
@@ -1075,7 +1081,6 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 			money = money.Add(fee)
 			balanceFeeAfter = decimal.NewFromFloat(balance.Balance).Add(money.Abs())
 			feeCashType = helper.TransactionDepositFee
-
 		}
 	}
 
@@ -1086,6 +1091,14 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 	}
 
 	// 2、更新订单状态
+	record := g.Record{
+		"state":         state,
+		"confirm_at":    now.Unix(),
+		"confirm_uid":   uid,
+		"confirm_name":  name,
+		"review_remark": remark,
+	}
+	query, _, _ := dialect.Update("tbl_deposit").Set(record).Where(ex).ToSQL()
 	_, err = tx.Exec(query)
 	if err != nil {
 		_ = tx.Rollback()
