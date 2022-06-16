@@ -185,8 +185,8 @@ func (that *BankCardController) Update(ctx *fasthttp.RequestCtx) {
 
 	id := string(ctx.PostArgs().Peek("id"))
 	state := string(ctx.PostArgs().Peek("state"))
-	total_max_amount := ctx.PostArgs().GetUintOrZero("total_max_amount")
-	daily_max_amount := ctx.PostArgs().GetUintOrZero("daily_max_amount")
+	totalMaxAmount := ctx.PostArgs().GetUfloatOrZero("total_max_amount")
+	dailyMaxAmount := ctx.PostArgs().GetUfloatOrZero("daily_max_amount")
 
 	//flags := string(ctx.PostArgs().Peek("flags"))
 	//code := string(ctx.PostArgs().Peek("code"))
@@ -204,11 +204,11 @@ func (that *BankCardController) Update(ctx *fasthttp.RequestCtx) {
 	if remark != "" {
 		rec["remark"] = validator.FilterInjection(remark)
 	}
-	if total_max_amount > 0 {
-		rec["total_max_amount"] = fmt.Sprintf("%d", total_max_amount)
+	if totalMaxAmount > 0 {
+		rec["total_max_amount"] = fmt.Sprintf("%f", totalMaxAmount)
 	}
-	if daily_max_amount > 0 {
-		rec["daily_max_amount"] = fmt.Sprintf("%d", daily_max_amount)
+	if dailyMaxAmount > 0 {
+		rec["daily_max_amount"] = fmt.Sprintf("%f", dailyMaxAmount)
 	}
 
 	err := model.BankCardUpdate(id, rec)
