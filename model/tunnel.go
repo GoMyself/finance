@@ -53,6 +53,7 @@ func TunnelUpdate(id, state, discount, seq string) error { // 校验渠道id和�
 		level := fmt.Sprintf("%d", i)
 		Create(level)
 	}
+	ChannelTypeCreateCache()
 	return nil
 }
 
