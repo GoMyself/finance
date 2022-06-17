@@ -114,7 +114,7 @@ func WithdrawUserInsert(amount, bid, sid, ts, verifyCode string, fCtx *fasthttp.
 	// 每日提款redis记录
 	key := fmt.Sprintf("%s:fianance:withdraw:daily:%s", meta.Prefix, mb.Username)
 	// 每日第一次提款
-	if 0 == meta.MerchantRedis.Exists(ctx, key).Val() {
+	if mb.Tester == "1" && 0 == meta.MerchantRedis.Exists(ctx, key).Val() {
 
 		if !validator.CtypeDigit(sid) || //短信验证码id
 			!validator.CtypeDigit(ts) || //短信记录ts
@@ -302,6 +302,25 @@ func WithdrawUserInsert(amount, bid, sid, ts, verifyCode string, fCtx *fasthttp.
 	// 发送消息通知
 	_ = PushWithdrawNotify(withdrawReviewFmt, mb.Username, amount)
 
+	fmt.Println(mb.Tester)
+	if mb.Tester == "0" {
+		record := g.Record{
+			"state":      WithdrawDealing,
+			"confirm_at": fCtx.Time().Unix(),
+		}
+
+		err = WithdrawUpdateInfo(withdrawId, record)
+		if err != nil {
+			pushLog(err, helper.WithdrawFailure)
+		}
+
+		err = withdrawUpdate(withdrawId, mb.UID, bid, WithdrawSuccess, fCtx.Time())
+		if err != nil {
+			err = fmt.Errorf("set order state [%d] to [%d] error: [%v]", state, WithdrawSuccess, err)
+			pushLog(err, helper.WithdrawFailure)
+		}
+
+	}
 	return withdrawId, nil
 }
 
