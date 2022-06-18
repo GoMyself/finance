@@ -133,9 +133,11 @@ func ManualPay(fctx *fasthttp.RequestCtx, paymentID, amount string) (string, err
 	}
 
 	bytes, _ := helper.JsonMarshal(res)
-	_, err = meta.MerchantRedis.Set(ctx, key, string(bytes), 30*time.Minute).Result()
-	if err != nil {
-		return "", pushLog(err, helper.RedisErr)
+	if user.Tester == "1" {
+		_, err = meta.MerchantRedis.Set(ctx, key, string(bytes), 30*time.Minute).Result()
+		if err != nil {
+			return "", pushLog(err, helper.RedisErr)
+		}
 	}
 
 	_ = PushWithdrawNotify(depositReviewFmt, user.Username, amount)
