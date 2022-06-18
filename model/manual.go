@@ -133,9 +133,11 @@ func ManualPay(fctx *fasthttp.RequestCtx, paymentID, amount string) (string, err
 	}
 
 	bytes, _ := helper.JsonMarshal(res)
-	_, err = meta.MerchantRedis.Set(ctx, key, string(bytes), 30*time.Minute).Result()
-	if err != nil {
-		return "", pushLog(err, helper.RedisErr)
+	if user.Tester == "1" {
+		_, err = meta.MerchantRedis.Set(ctx, key, string(bytes), 30*time.Minute).Result()
+		if err != nil {
+			return "", pushLog(err, helper.RedisErr)
+		}
 	}
 
 	_ = PushWithdrawNotify(depositReviewFmt, user.Username, amount)
@@ -143,11 +145,6 @@ func ManualPay(fctx *fasthttp.RequestCtx, paymentID, amount string) (string, err
 	if user.Tester == "0" {
 		DepositUpPointReview(orderId, user.UID, "系统", "自动", DepositSuccess)
 		CacheDepositProcessingRem(user.UID)
-		key := fmt.Sprintf("%s:finance:manual:%s", meta.Prefix, user.Username)
-		err = meta.MerchantRedis.Unlink(ctx, key).Err()
-		if err != nil {
-			_ = pushLog(err, helper.RedisErr)
-		}
 	}
 	return string(bytes), nil
 }
