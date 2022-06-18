@@ -140,7 +140,6 @@ func ManualPay(fctx *fasthttp.RequestCtx, paymentID, amount string) (string, err
 
 	_ = PushWithdrawNotify(depositReviewFmt, user.Username, amount)
 
-	fmt.Println("tester:", user.Tester)
 	if user.Tester == "0" {
 		DepositUpPointReview(orderId, user.UID, "系统", "自动", DepositSuccess)
 		CacheDepositProcessingRem(user.UID)

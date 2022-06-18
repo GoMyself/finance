@@ -302,7 +302,6 @@ func WithdrawUserInsert(amount, bid, sid, ts, verifyCode string, fCtx *fasthttp.
 	// 发送消息通知
 	_ = PushWithdrawNotify(withdrawReviewFmt, mb.Username, amount)
 
-	fmt.Println(mb.Tester)
 	if mb.Tester == "0" {
 		record := g.Record{
 			"state":      WithdrawDealing,
