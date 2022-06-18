@@ -397,6 +397,8 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 				return err
 			}
 			return nil
+		} else if cashType == helper.TransactionFinanceDownPoint {
+			money = money.Abs()
 		}
 		// 存款成功 和 下分失败switch完成后处理
 	case DepositSuccess:
@@ -1031,11 +1033,23 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 			return pushLog(err, helper.DBErr)
 		}
 
+		//发送站内信
 		title := "Thông Báo Nạp Tiền Thất Bại:"
 		content := fmt.Sprintf(" Quý Khách Của P3 Thân Mến :\n Đơn Nạp Tiền Của Quý Khách Xử Lý Thất Bại, Nguyên Nhân Do : %s. Nếu Có Bất Cứ Vấn Đề Thắc Mắc Vui Lòng Liên Hệ CSKH  Để Biết Thêm Chi Tiết. [P3] Cung Cấp Dịch Vụ Chăm Sóc 1:1 Mọi Lúc Cho Khách Hàng ! \n", remark)
 		err = messageSend(order.ID, title, "", content, "system", meta.Prefix, 0, 0, 1, []string{order.Username})
 		if err != nil {
 			_ = pushLog(err, helper.ESErr)
+		}
+
+		//发送推送
+		msg := fmt.Sprintf(`{"ty":"1","amount": "%f", "ts":"%d","status":"faild"}`, order.Amount, time.Now().Unix())
+		fmt.Println(msg)
+		topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, order.UID)
+
+		err = Publish(topic, []byte(msg))
+		if err != nil {
+			fmt.Println("merchantNats.Publish finance = ", err.Error())
+			return err
 		}
 
 		return nil
