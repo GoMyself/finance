@@ -1377,6 +1377,7 @@ func WithdrawDownPoint(did, bankcard string, state int, record g.Record) error {
 		return withdrawOrderSuccess(query, bankcard, order)
 	}
 
+	order.ReviewRemark = record["review_remark"].(string)
 	// 出款失败
 	return withdrawOrderFailed(query, order)
 }
