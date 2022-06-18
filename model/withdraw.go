@@ -1378,6 +1378,7 @@ func WithdrawDownPoint(did, bankcard string, state int, record g.Record) error {
 	}
 
 	order.ReviewRemark = record["review_remark"].(string)
+	order.WithdrawRemark = record["withdraw_remark"].(string)
 	// 出款失败
 	return withdrawOrderFailed(query, order)
 }
@@ -1589,7 +1590,7 @@ func withdrawOrderFailed(query string, order Withdraw) error {
 	MemberUpdateCache(order.Username)
 
 	title := "Thông Báo Rút Tiền Thất Bại :"
-	content := fmt.Sprintf("Quý Khách Của P3 Thân Mến :\n Đơn Rút Tiền Của Quý Khách Xử Lý Thất Bại, Nguyên Nhân Do : %s. Nếu Có Bất Cứ Vấn Đề Thắc Mắc Vui Lòng Liên Hệ CSKH  Để Biết Thêm Chi Tiết. [P3] Cung Cấp Dịch Vụ Chăm Sóc 1:1 Mọi Lúc Cho Khách Hàng ! \n", order.ReviewRemark)
+	content := fmt.Sprintf("Quý Khách Của P3 Thân Mến :\n Đơn Rút Tiền Của Quý Khách Xử Lý Thất Bại, Nguyên Nhân Do : %s. Nếu Có Bất Cứ Vấn Đề Thắc Mắc Vui Lòng Liên Hệ CSKH  Để Biết Thêm Chi Tiết. [P3] Cung Cấp Dịch Vụ Chăm Sóc 1:1 Mọi Lúc Cho Khách Hàng ! \n", order.WithdrawRemark)
 	err = messageSend(order.ID, title, "", content, "system", meta.Prefix, 0, 0, 1, []string{order.Username})
 	if err != nil {
 		_ = pushLog(err, helper.ESErr)
