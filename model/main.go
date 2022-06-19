@@ -173,13 +173,12 @@ func pushLog(err error, code string) error {
 		"ts":       ts.In(loc).UnixMicro(),
 	}
 
-	query, _, _ := dialect.Insert("goerror").Rows(&fields).ToSQL()
+	query, _, _ := dialect.Insert("finance_error").Rows(&fields).ToSQL()
 	//fmt.Println(query)
 	_, err1 := meta.MerchantTD.Exec(query)
 	if err1 != nil {
 		fmt.Println("insert goerror query = ", query)
 		fmt.Println("insert goerror err = ", err1.Error())
-
 	}
 
 	return fmt.Errorf("hệ thống lỗi %s", id)
