@@ -591,7 +591,6 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 		return pushLog(err, helper.DBErr)
 	}
 
-	fmt.Println("state:", state)
 	if DepositSuccess == state {
 
 		rec := g.Record{
@@ -604,24 +603,26 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 		}
 		query, _, _ = dialect.Update("tbl_members").Set(rec).Where(ex1).ToSQL()
 		fmt.Printf("memberFirstDeposit Update: %v\n", query)
-		_, err := meta.MerchantDB.Exec(query)
+		result, err := meta.MerchantDB.Exec(query)
 		if err != nil {
 			fmt.Println("update member first_amount err:", err.Error())
 		}
-
-		rec2 := g.Record{
-			"second_deposit_at":     order.CreatedAt,
-			"second_deposit_amount": order.Amount,
-		}
-		ex2 := g.Ex{
-			"username":          order.Username,
-			"second_deposit_at": 0,
-		}
-		query, _, _ = dialect.Update("tbl_members").Set(rec2).Where(ex2).ToSQL()
-		fmt.Printf("memberSecondDeposit Update: %v\n", query)
-		_, err = meta.MerchantDB.Exec(query)
-		if err != nil {
-			fmt.Println("update member second_amount err:", err.Error())
+		updateRows, _ := result.RowsAffected()
+		if updateRows == 0 {
+			rec = g.Record{
+				"second_deposit_at":     order.CreatedAt,
+				"second_deposit_amount": order.Amount,
+			}
+			ex = g.Ex{
+				"username":          order.Username,
+				"second_deposit_at": 0,
+			}
+			query, _, _ = dialect.Update("tbl_members").Set(rec).Where(ex).ToSQL()
+			fmt.Printf("memberSecondDeposit Update: %v\n", query)
+			_, err = meta.MerchantDB.Exec(query)
+			if err != nil {
+				fmt.Println("update member second_amount err:", err.Error())
+			}
 		}
 
 		//发送站内信
@@ -1199,24 +1200,27 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 		}
 		query, _, _ = dialect.Update("tbl_members").Set(rec).Where(ex1).ToSQL()
 		fmt.Printf("memberFirstDeposit Update: %v\n", query)
-		_, err := meta.MerchantDB.Exec(query)
+		result, err := meta.MerchantDB.Exec(query)
 		if err != nil {
 			fmt.Println("update member first_amount err:", err.Error())
 		}
 
-		rec2 := g.Record{
-			"second_deposit_at":     order.CreatedAt,
-			"second_deposit_amount": order.Amount,
-		}
-		ex2 := g.Ex{
-			"username":          order.Username,
-			"second_deposit_at": 0,
-		}
-		query, _, _ = dialect.Update("tbl_members").Set(rec2).Where(ex2).ToSQL()
-		fmt.Printf("memberSecondDeposit Update: %v\n", query)
-		_, err = meta.MerchantDB.Exec(query)
-		if err != nil {
-			fmt.Println("update member second_amount err:", err.Error())
+		updateRows, _ := result.RowsAffected()
+		if updateRows == 0 {
+			rec = g.Record{
+				"second_deposit_at":     order.CreatedAt,
+				"second_deposit_amount": order.Amount,
+			}
+			ex = g.Ex{
+				"username":          order.Username,
+				"second_deposit_at": 0,
+			}
+			query, _, _ = dialect.Update("tbl_members").Set(rec).Where(ex).ToSQL()
+			fmt.Printf("memberSecondDeposit Update: %v\n", query)
+			_, err = meta.MerchantDB.Exec(query)
+			if err != nil {
+				fmt.Println("update member second_amount err:", err.Error())
+			}
 		}
 
 		//发送站内信

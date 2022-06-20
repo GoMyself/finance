@@ -22,7 +22,7 @@ func ManualPay(fctx *fasthttp.RequestCtx, paymentID, amount string) (string, err
 	if err != nil {
 		return "", err
 	}
-
+	fmt.Println("user.Tester", user.Tester)
 	pipe := meta.MerchantRedis.TxPipeline()
 	defer pipe.Close()
 
