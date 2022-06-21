@@ -776,8 +776,12 @@ func withdrawMatchBank(pid, bid string) (Bank_t, error) {
 	query, _, _ := dialect.From("f_channel_banks").Select(colChannelBank...).Where(ex).Limit(1).ToSQL()
 	fmt.Println(query)
 	err := meta.MerchantDB.Get(&bank, query)
-	if err != nil {
+	if err != nil && err != sql.ErrNoRows {
 		return bank, pushLog(err, helper.DBErr)
+	}
+
+	if err == sql.ErrNoRows {
+		return bank, errors.New(helper.MemberBankcardChannelUnsupport)
 	}
 	// check bank, continue the for loop if bank not supported
 	//res, err := meta.MerchantRedis.Get(ctx, "BK:"+pid).Result()
