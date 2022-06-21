@@ -74,48 +74,102 @@ type DepositData struct {
 
 // DepositHistory 存款历史列表
 func DepositHistory(username, id, channelID, oid, state,
-	minAmount, maxAmount, startTime, endTime, cid string, timeFlag uint8, flag, page, pageSize, ty int) (FDepositData, error) {
+	minAmount, maxAmount, startTime, endTime, cid string, timeFlag uint8, flag, page, pageSize, ty, dty int) (FDepositData, error) {
 
 	data := FDepositData{}
-	param := map[string]interface{}{}
-	rangeParam := map[string][]interface{}{}
+
+	startAt, err := helper.TimeToLoc(startTime, loc)
+	if err != nil {
+		return data, errors.New(helper.DateTimeErr)
+	}
+
+	endAt, err := helper.TimeToLoc(endTime, loc)
+	if err != nil {
+		return data, errors.New(helper.DateTimeErr)
+	}
+	ex := g.Ex{"prefix": meta.Prefix}
+	if dty > 0 {
+		//首存
+		if dty == 1 {
+			ex["first_deposit_at"] = g.Op{"between": exp.NewRangeVal(startAt, endAt)}
+			var depositAts []string
+			query, _, _ := dialect.From("tbl_members").Select(g.C("first_deposit_at")).Where(ex).ToSQL()
+			fmt.Println(query)
+			err := meta.MerchantDB.Select(&depositAts, query)
+			if err != nil {
+				pushLog(err, helper.DBErr)
+			}
+			fmt.Println("depositAts:", depositAts)
+			if len(depositAts) > 0 {
+				ex = g.Ex{"prefix": meta.Prefix}
+				ex["created_at"] = depositAts
+			} else {
+				return data, nil
+			}
+		}
+
+		//二存
+		if dty == 2 {
+			ex["second_deposit_at"] = g.Op{"between": exp.NewRangeVal(startAt, endAt)}
+			var depositAts []string
+			query, _, _ := dialect.From("tbl_members").Select(g.C("second_deposit_at")).Where(ex).ToSQL()
+			fmt.Println(query)
+			err := meta.MerchantDB.Select(&depositAts, query)
+			if err != nil {
+				pushLog(err, helper.DBErr)
+			}
+			fmt.Println("depositAts:", depositAts)
+			if len(depositAts) > 0 {
+				ex = g.Ex{"prefix": meta.Prefix}
+				ex["created_at"] = depositAts
+			} else {
+				return data, nil
+			}
+		}
+
+	}
+
+	if timeFlag == 1 && dty == 0 {
+		ex["created_at"] = g.Op{"between": exp.NewRangeVal(startAt, endAt)}
+	} else if dty == 0 {
+		ex["confirm_at"] = g.Op{"between": exp.NewRangeVal(startAt, endAt)}
+	}
 
 	if username != "" {
-		param["username"] = username
+		ex["username"] = username
 	}
 
 	if id != "" {
-		param["_id"] = id
+		ex["id"] = id
 	}
 
 	if channelID != "" {
-		param["channel_id"] = channelID
+		ex["channel_id"] = channelID
 	}
 
 	if oid != "" {
-		param["oid"] = oid
+		ex["oid"] = oid
 	}
 
 	if cid != "" {
-		param["cid"] = cid
+		ex["cid"] = cid
 	}
 
 	if state != "" && state != "0" {
-		param["state"] = state
+		ex["state"] = state
 	} else {
-		rangeParam["state"] = []interface{}{DepositSuccess, DepositCancelled}
+		ex["state"] = []interface{}{DepositSuccess, DepositCancelled}
 	}
 
 	if ty != 0 {
-		param["flag"] = ty
+		ex["flag"] = ty
 	}
 
-	rangeParam["amount"] = []interface{}{0.00, 99999999999.00}
+	ex["amount"] = g.Op{"between": exp.NewRangeVal(0.00, 99999999999.00)}
 	// 下分列表
 	if flag == 1 {
-		rangeParam["amount"] = []interface{}{-99999999999.00, 0.00}
+		ex["amount"] = g.Op{"between": exp.NewRangeVal(-99999999999, 0.00)}
 	}
-
 	if minAmount != "" && maxAmount != "" {
 		minF, err := strconv.ParseFloat(minAmount, 64)
 		if err != nil {
@@ -127,30 +181,40 @@ func DepositHistory(username, id, channelID, oid, state,
 			return data, pushLog(err, helper.AmountErr)
 		}
 
-		rangeParam["amount"] = []interface{}{minF, maxF}
+		ex["amount"] = g.Op{"between": exp.NewRangeVal(minF, maxF)}
 	}
 
-	if startTime != "" && endTime != "" {
+	if page == 1 {
 
-		startAt, err := helper.TimeToLoc(startTime, loc)
+		var total depositTotal
+		query, _, _ := dialect.From("tbl_deposit").Select(g.COUNT(1).As("t"), g.SUM("amount").As("s")).Where(ex).ToSQL()
+		fmt.Println(query)
+		err := meta.MerchantDB.Get(&total, query)
 		if err != nil {
-			return data, errors.New(helper.DateTimeErr)
+			return data, pushLog(err, helper.DBErr)
 		}
 
-		endAt, err := helper.TimeToLoc(endTime, loc)
-		if err != nil {
-			return data, errors.New(helper.DateTimeErr)
+		if total.T.Int64 < 1 {
+			return data, nil
 		}
 
-		if timeFlag == 1 {
-			rangeParam["created_at"] = []interface{}{startAt, endAt}
-		} else {
-			rangeParam["confirm_at"] = []interface{}{startAt, endAt}
+		data.Agg = map[string]string{
+			"amount": fmt.Sprintf("%.4f", total.S.Float64),
 		}
+
+		data.T = total.T.Int64
 	}
 
-	aggField := map[string]string{"amount_agg": "amount"}
-	return DepositESQuery(esPrefixIndex("tbl_deposit"), "created_at", page, pageSize, param, rangeParam, aggField)
+	offset := uint((page - 1) * pageSize)
+	query, _, _ := dialect.From("tbl_deposit").Select(colsDeposit...).
+		Where(ex).Offset(offset).Limit(uint(pageSize)).Order(g.C("created_at").Desc()).ToSQL()
+	fmt.Println(query)
+	err = meta.MerchantDB.Select(&data.D, query)
+	if err != nil {
+		return data, pushLog(err, helper.DBErr)
+	}
+
+	return data, nil
 }
 
 func DepositDetail(username, state, channelID, timeFlag, startTime, endTime string, page, pageSize int) (FDepositData, error) {
