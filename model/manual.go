@@ -110,6 +110,7 @@ func ManualPay(fctx *fasthttp.RequestCtx, paymentID, amount string) (string, err
 		//"bank_code":     bankCode,
 		"bank_no": bc.BanklcardNo,
 		"level":   user.Level,
+		"tester":  user.Tester,
 	}
 
 	// 请求成功插入订单

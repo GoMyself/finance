@@ -53,6 +53,7 @@ type Deposit struct {
 	TopUID          string  `db:"top_uid" json:"top_uid" redis:"top_uid"`                               // 总代uid
 	TopName         string  `db:"top_name" json:"top_name" redis:"top_name"`                            // 总代用户名
 	Level           int     `db:"level" json:"level" redis:"level"`
+	Discount        float64 `db:"discount" json:"discount" redis:"discount"` // 存款优惠/存款手续费
 }
 
 // 存款数据
@@ -87,7 +88,7 @@ func DepositHistory(username, id, channelID, oid, state,
 	if err != nil {
 		return data, errors.New(helper.DateTimeErr)
 	}
-	ex := g.Ex{"prefix": meta.Prefix}
+	ex := g.Ex{"prefix": meta.Prefix, "tester": 1}
 	if dty > 0 {
 		//首存
 		if dty == 1 {
@@ -214,6 +215,12 @@ func DepositHistory(username, id, channelID, oid, state,
 		return data, pushLog(err, helper.DBErr)
 	}
 
+	for i := 0; i < len(data.D); i++ {
+		if data.D[i].ReviewRemark == "undefined" {
+			data.D[i].ReviewRemark = ""
+		}
+	}
+
 	return data, nil
 }
 
@@ -308,6 +315,8 @@ func DepositDetail(username, state, channelID, timeFlag, startTime, endTime stri
 func DepositList(ex g.Ex, startTime, endTime string, page, pageSize int) (DepositData, error) {
 
 	ex["prefix"] = meta.Prefix
+	ex["tester"] = 1
+
 	data := DepositData{}
 
 	if startTime != "" && endTime != "" {
@@ -584,6 +593,14 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 			feeCashType = helper.TransactionDepositFee
 
 		}
+		//修改存款订单的存款优惠
+		record["discount"] = fee
+		query, _, _ = dialect.Update("tbl_deposit").Set(record).Where(g.Ex{"id": order.ID}).ToSQL()
+		_, err = tx.Exec(query)
+		if err != nil {
+			_ = tx.Rollback()
+			return pushLog(err, helper.DBErr)
+		}
 	}
 
 	// 3、更新余额
@@ -781,6 +798,12 @@ func DepositManual(id, amount, remark, name, uid string) error {
 		return errors.New(helper.OrderExist)
 	}
 
+	key := meta.Prefix + ":member:" + order.Username
+	tester, err := meta.MerchantRedis.HGet(ctx, key, "tester").Result()
+	if err != nil {
+		tester = "1"
+	}
+
 	tx, err := meta.MerchantDB.Begin()
 	if err != nil {
 		return errors.New(helper.TransErr)
@@ -824,6 +847,7 @@ func DepositManual(id, amount, remark, name, uid string) error {
 		"bank_code":         order.BankCode,
 		"bank_no":           order.BankNo,
 		"level":             order.Level,
+		"tester":            tester,
 	}
 	query, _, _ := dialect.Insert("tbl_deposit").Rows(d).ToSQL()
 	_, err = tx.Exec(query)
@@ -952,6 +976,7 @@ func DepositReduce(username, amount, remark, name, uid string) error {
 		"review_remark": remark,
 		"finance_type":  helper.TransactionDeposit,
 		"level":         mb.Level,
+		"tester":        mb.Tester,
 	}
 	query, _, _ = dialect.Insert("tbl_deposit").Rows(d).ToSQL()
 	_, err = tx.Exec(query)
@@ -1003,6 +1028,7 @@ func DepositReduce(username, amount, remark, name, uid string) error {
 		"apply_at":       uint32(now.Unix()),
 		"apply_uid":      uid,  // 申请人
 		"apply_name":     name, // 申请人
+		"tester":         mb.Tester,
 	}
 
 	query, _, _ = dialect.Insert("tbl_member_adjust").Rows(record).ToSQL()
@@ -1146,7 +1172,6 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 			fmt.Println(err)
 		}
 		pd, _ := decimal.NewFromString(promoDiscount)
-		fmt.Println("promoDiscount:", promoDiscount)
 		if pd.GreaterThan(decimal.Zero) {
 			//大于0就是优惠，给钱
 			fee = money.Mul(pd).Div(decimal.NewFromInt(100))
@@ -1176,6 +1201,10 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 		"confirm_name":  name,
 		"review_remark": remark,
 	}
+	if promoState == "1" {
+		record["discount"] = fee
+	}
+
 	query, _, _ := dialect.Update("tbl_deposit").Set(record).Where(ex).ToSQL()
 	_, err = tx.Exec(query)
 	if err != nil {

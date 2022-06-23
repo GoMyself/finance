@@ -70,6 +70,7 @@ func NewestPay(fctx *fasthttp.RequestCtx, pid, amount, bid string) (map[string]s
 		"protocol_type":     "",
 		"address":           "",
 		"flag":              DepositFlagThird,
+		"tester":            user.Tester,
 	}
 
 	// 请求成功插入订单
