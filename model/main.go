@@ -184,6 +184,16 @@ func pushLog(err error, code string) error {
 	return fmt.Errorf("hệ thống lỗi %s", id)
 }
 
+func tdInsert(tbl string, record g.Record) {
+
+	query, _, _ := dialect.Insert(tbl).Rows(record).ToSQL()
+	fmt.Println(query)
+	_, err := meta.MerchantTD.Exec(query)
+	if err != nil {
+		fmt.Println("update td = ", err.Error(), record)
+	}
+}
+
 func Close() {
 	meta.MerchantTD.Close()
 	_ = meta.MerchantDB.Close()

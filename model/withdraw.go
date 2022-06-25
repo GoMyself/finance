@@ -133,11 +133,9 @@ func WithdrawUserInsert(amount, bid, sid, ts, verifyCode string, fCtx *fasthttp.
 		}
 
 		ip := helper.FromRequest(fCtx)
-		if verifyCode != "6666" {
-			ok, err := CheckSmsCaptcha(ip, sid, recs["phone"], verifyCode)
-			if err != nil || !ok {
-				return "", errors.New(helper.PhoneVerificationErr)
-			}
+		ok, err := CheckSmsCaptcha(ip, ts, sid, recs["phone"], verifyCode)
+		if err != nil || !ok {
+			return "", errors.New(helper.PhoneVerificationErr)
 		}
 
 		y, m, d := fCtx.Time().Date()
