@@ -410,6 +410,7 @@ func WithdrawInsert(amount, bid, withdrawID, confirmUid, confirmName string, rec
 		"confirm_name":        confirmName,
 		"wallet_flag":         MemberWallet,
 		"level":               member.Level,
+		"tester":              member.Tester,
 	}
 
 	// 开启事务 写账变 更新redis  查询提款
@@ -585,6 +586,7 @@ func WithdrawList(ex g.Ex, ty uint8, startTime, endTime string, page, pageSize u
 func WithdrawHistoryList(ex g.Ex, rangeParam map[string][]interface{}, ty, startTime, endTime string, page, pageSize uint) (FWithdrawData, error) {
 
 	ex["prefix"] = meta.Prefix
+	ex["tester"] = "1"
 	if startTime != "" && endTime != "" {
 
 		startAt, err := helper.TimeToLoc(startTime, loc)

@@ -53,6 +53,7 @@ type Deposit struct {
 	TopUID          string  `db:"top_uid" json:"top_uid" redis:"top_uid"`                               // 总代uid
 	TopName         string  `db:"top_name" json:"top_name" redis:"top_name"`                            // 总代用户名
 	Level           int     `db:"level" json:"level" redis:"level"`
+	Discount        float64 `db:"discount" json:"discount" redis:"discount"` // 存款优惠/存款手续费
 }
 
 // 存款数据
@@ -74,48 +75,102 @@ type DepositData struct {
 
 // DepositHistory 存款历史列表
 func DepositHistory(username, id, channelID, oid, state,
-	minAmount, maxAmount, startTime, endTime, cid string, timeFlag uint8, flag, page, pageSize, ty int) (FDepositData, error) {
+	minAmount, maxAmount, startTime, endTime, cid string, timeFlag uint8, flag, page, pageSize, ty, dty int) (FDepositData, error) {
 
 	data := FDepositData{}
-	param := map[string]interface{}{}
-	rangeParam := map[string][]interface{}{}
+
+	startAt, err := helper.TimeToLoc(startTime, loc)
+	if err != nil {
+		return data, errors.New(helper.DateTimeErr)
+	}
+
+	endAt, err := helper.TimeToLoc(endTime, loc)
+	if err != nil {
+		return data, errors.New(helper.DateTimeErr)
+	}
+	ex := g.Ex{"prefix": meta.Prefix, "tester": 1}
+	if dty > 0 {
+		//首存
+		if dty == 1 {
+			ex["first_deposit_at"] = g.Op{"between": exp.NewRangeVal(startAt, endAt)}
+			var depositAts []string
+			query, _, _ := dialect.From("tbl_members").Select(g.C("first_deposit_at")).Where(ex).ToSQL()
+			fmt.Println(query)
+			err := meta.MerchantDB.Select(&depositAts, query)
+			if err != nil {
+				pushLog(err, helper.DBErr)
+			}
+			fmt.Println("depositAts:", depositAts)
+			if len(depositAts) > 0 {
+				ex = g.Ex{"prefix": meta.Prefix}
+				ex["created_at"] = depositAts
+			} else {
+				return data, nil
+			}
+		}
+
+		//二存
+		if dty == 2 {
+			ex["second_deposit_at"] = g.Op{"between": exp.NewRangeVal(startAt, endAt)}
+			var depositAts []string
+			query, _, _ := dialect.From("tbl_members").Select(g.C("second_deposit_at")).Where(ex).ToSQL()
+			fmt.Println(query)
+			err := meta.MerchantDB.Select(&depositAts, query)
+			if err != nil {
+				pushLog(err, helper.DBErr)
+			}
+			fmt.Println("depositAts:", depositAts)
+			if len(depositAts) > 0 {
+				ex = g.Ex{"prefix": meta.Prefix}
+				ex["created_at"] = depositAts
+			} else {
+				return data, nil
+			}
+		}
+
+	}
+
+	if timeFlag == 1 && dty == 0 {
+		ex["created_at"] = g.Op{"between": exp.NewRangeVal(startAt, endAt)}
+	} else if dty == 0 {
+		ex["confirm_at"] = g.Op{"between": exp.NewRangeVal(startAt, endAt)}
+	}
 
 	if username != "" {
-		param["username"] = username
+		ex["username"] = username
 	}
 
 	if id != "" {
-		param["_id"] = id
+		ex["id"] = id
 	}
 
 	if channelID != "" {
-		param["channel_id"] = channelID
+		ex["channel_id"] = channelID
 	}
 
 	if oid != "" {
-		param["oid"] = oid
+		ex["oid"] = oid
 	}
 
 	if cid != "" {
-		param["cid"] = cid
+		ex["cid"] = cid
 	}
 
 	if state != "" && state != "0" {
-		param["state"] = state
+		ex["state"] = state
 	} else {
-		rangeParam["state"] = []interface{}{DepositSuccess, DepositCancelled}
+		ex["state"] = []interface{}{DepositSuccess, DepositCancelled}
 	}
 
 	if ty != 0 {
-		param["flag"] = ty
+		ex["flag"] = ty
 	}
 
-	rangeParam["amount"] = []interface{}{0.00, 99999999999.00}
+	ex["amount"] = g.Op{"between": exp.NewRangeVal(0.00, 99999999999.00)}
 	// 下分列表
 	if flag == 1 {
-		rangeParam["amount"] = []interface{}{-99999999999.00, 0.00}
+		ex["amount"] = g.Op{"between": exp.NewRangeVal(-99999999999, 0.00)}
 	}
-
 	if minAmount != "" && maxAmount != "" {
 		minF, err := strconv.ParseFloat(minAmount, 64)
 		if err != nil {
@@ -127,30 +182,46 @@ func DepositHistory(username, id, channelID, oid, state,
 			return data, pushLog(err, helper.AmountErr)
 		}
 
-		rangeParam["amount"] = []interface{}{minF, maxF}
+		ex["amount"] = g.Op{"between": exp.NewRangeVal(minF, maxF)}
 	}
 
-	if startTime != "" && endTime != "" {
+	if page == 1 {
 
-		startAt, err := helper.TimeToLoc(startTime, loc)
+		var total depositTotal
+		query, _, _ := dialect.From("tbl_deposit").Select(g.COUNT(1).As("t"), g.SUM("amount").As("s")).Where(ex).ToSQL()
+		fmt.Println(query)
+		err := meta.MerchantDB.Get(&total, query)
 		if err != nil {
-			return data, errors.New(helper.DateTimeErr)
+			return data, pushLog(err, helper.DBErr)
 		}
 
-		endAt, err := helper.TimeToLoc(endTime, loc)
-		if err != nil {
-			return data, errors.New(helper.DateTimeErr)
+		if total.T.Int64 < 1 {
+			return data, nil
 		}
 
-		if timeFlag == 1 {
-			rangeParam["created_at"] = []interface{}{startAt, endAt}
-		} else {
-			rangeParam["confirm_at"] = []interface{}{startAt, endAt}
+		data.Agg = map[string]string{
+			"amount": fmt.Sprintf("%.4f", total.S.Float64),
+		}
+
+		data.T = total.T.Int64
+	}
+
+	offset := uint((page - 1) * pageSize)
+	query, _, _ := dialect.From("tbl_deposit").Select(colsDeposit...).
+		Where(ex).Offset(offset).Limit(uint(pageSize)).Order(g.C("created_at").Desc()).ToSQL()
+	fmt.Println(query)
+	err = meta.MerchantDB.Select(&data.D, query)
+	if err != nil {
+		return data, pushLog(err, helper.DBErr)
+	}
+
+	for i := 0; i < len(data.D); i++ {
+		if data.D[i].ReviewRemark == "undefined" {
+			data.D[i].ReviewRemark = ""
 		}
 	}
 
-	aggField := map[string]string{"amount_agg": "amount"}
-	return DepositESQuery(esPrefixIndex("tbl_deposit"), "created_at", page, pageSize, param, rangeParam, aggField)
+	return data, nil
 }
 
 func DepositDetail(username, state, channelID, timeFlag, startTime, endTime string, page, pageSize int) (FDepositData, error) {
@@ -244,6 +315,8 @@ func DepositDetail(username, state, channelID, timeFlag, startTime, endTime stri
 func DepositList(ex g.Ex, startTime, endTime string, page, pageSize int) (DepositData, error) {
 
 	ex["prefix"] = meta.Prefix
+	ex["tester"] = 1
+
 	data := DepositData{}
 
 	if startTime != "" && endTime != "" {
@@ -520,6 +593,14 @@ func DepositUpPoint(did, uid, name, remark string, state int) error {
 			feeCashType = helper.TransactionDepositFee
 
 		}
+		//修改存款订单的存款优惠
+		record["discount"] = fee
+		query, _, _ = dialect.Update("tbl_deposit").Set(record).Where(g.Ex{"id": order.ID}).ToSQL()
+		_, err = tx.Exec(query)
+		if err != nil {
+			_ = tx.Rollback()
+			return pushLog(err, helper.DBErr)
+		}
 	}
 
 	// 3、更新余额
@@ -717,6 +798,12 @@ func DepositManual(id, amount, remark, name, uid string) error {
 		return errors.New(helper.OrderExist)
 	}
 
+	key := meta.Prefix + ":member:" + order.Username
+	tester, err := meta.MerchantRedis.HGet(ctx, key, "tester").Result()
+	if err != nil {
+		tester = "1"
+	}
+
 	tx, err := meta.MerchantDB.Begin()
 	if err != nil {
 		return errors.New(helper.TransErr)
@@ -760,6 +847,7 @@ func DepositManual(id, amount, remark, name, uid string) error {
 		"bank_code":         order.BankCode,
 		"bank_no":           order.BankNo,
 		"level":             order.Level,
+		"tester":            tester,
 	}
 	query, _, _ := dialect.Insert("tbl_deposit").Rows(d).ToSQL()
 	_, err = tx.Exec(query)
@@ -888,6 +976,7 @@ func DepositReduce(username, amount, remark, name, uid string) error {
 		"review_remark": remark,
 		"finance_type":  helper.TransactionDeposit,
 		"level":         mb.Level,
+		"tester":        mb.Tester,
 	}
 	query, _, _ = dialect.Insert("tbl_deposit").Rows(d).ToSQL()
 	_, err = tx.Exec(query)
@@ -939,6 +1028,7 @@ func DepositReduce(username, amount, remark, name, uid string) error {
 		"apply_at":       uint32(now.Unix()),
 		"apply_uid":      uid,  // 申请人
 		"apply_name":     name, // 申请人
+		"tester":         mb.Tester,
 	}
 
 	query, _, _ = dialect.Insert("tbl_member_adjust").Rows(record).ToSQL()
@@ -1082,7 +1172,6 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 			fmt.Println(err)
 		}
 		pd, _ := decimal.NewFromString(promoDiscount)
-		fmt.Println("promoDiscount:", promoDiscount)
 		if pd.GreaterThan(decimal.Zero) {
 			//大于0就是优惠，给钱
 			fee = money.Mul(pd).Div(decimal.NewFromInt(100))
@@ -1112,6 +1201,10 @@ func DepositUpPointReview(did, uid, name, remark string, state int) error {
 		"confirm_name":  name,
 		"review_remark": remark,
 	}
+	if promoState == "1" {
+		record["discount"] = fee
+	}
+
 	query, _, _ := dialect.Update("tbl_deposit").Set(record).Where(ex).ToSQL()
 	_, err = tx.Exec(query)
 	if err != nil {

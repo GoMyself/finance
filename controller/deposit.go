@@ -68,6 +68,7 @@ type depositListParam struct {
 	Page      int    `rule:"digit" default:"1" min:"1" msg:"page error" name:"page"`          // 页码
 	PageSize  int    `rule:"digit" min:"10" max:"200" msg:"page_size error" name:"page_size"` // 页大小
 	Ty        int    `rule:"digit" min:"0" max:"4" default:"0" name:"ty"`                     // 1 三方订单 2 usdt 订单 3 线下转卡 4 线下转USDT
+	Dty       int    `rule:"none" default:"0" name:"dty"`
 }
 
 //Detail 会员列表-存款信息
@@ -186,8 +187,13 @@ func (that *DepositController) History(ctx *fasthttp.RequestCtx) {
 		}
 	}
 
+	if param.StartTime == "" || param.EndTime == "" {
+		helper.Print(ctx, false, helper.ParamErr)
+		return
+	}
+
 	data, err := model.DepositHistory(param.Username, param.ID, param.ChannelID, param.OID, strconv.Itoa(param.State),
-		param.MinAmount, param.MaxAmount, param.StartTime, param.EndTime, param.CID, param.TimeFlag, param.Flag, param.Page, param.PageSize, param.Ty)
+		param.MinAmount, param.MaxAmount, param.StartTime, param.EndTime, param.CID, param.TimeFlag, param.Flag, param.Page, param.PageSize, param.Ty, param.Dty)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return
