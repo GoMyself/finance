@@ -20,7 +20,7 @@ func CheckSmsCaptcha(ip, ts, sid, phone, code string) (bool, error) {
 
 	if code == val {
 		its, _ := strconv.ParseInt(ts, 10, 64)
-		tdInsert("mail_log", g.Record{
+		tdInsert("sms_log", g.Record{
 			"ts":         its,
 			"state":      "2",
 			"updated_at": time.Now().Unix(),
