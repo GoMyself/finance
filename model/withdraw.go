@@ -197,13 +197,13 @@ func WithdrawUserInsert(amount, bid, sid, ts, verifyCode string, fCtx *fasthttp.
 	header := make(http.Header)
 	header.Set("X-Func-Name", "CheckDepositFlow")
 	clientContext.Items().Set("httpRequestHeaders", header)
-	//rctx := core.WithContext(context.Background(), clientContext)
+	rctx := core.WithContext(context.Background(), clientContext)
 
-	//recs := grpc_t.CheckDepositFlow(rctx, mb.Username)
-	//fmt.Println("recs:", recs)
-	//if !recs {
-	//	return "", errors.New(helper.WaterFlowUnreached)
-	//}
+	recs := grpc_t.CheckDepositFlow(rctx, mb.Username)
+	fmt.Println("recs:", recs)
+	if !recs {
+		return "", errors.New(helper.WaterFlowUnreached)
+	}
 
 	//查询今日提款总计
 	count, totalAmount, err := withdrawDailyData(mb.Username)
