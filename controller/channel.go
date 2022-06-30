@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"github.com/shopspring/decimal"
 	"strings"
 
 	"finance/contrib/helper"
@@ -266,6 +267,52 @@ func (that *ChannelController) Update(ctx *fasthttp.RequestCtx) {
 		"comment":     param.Comment,
 		"amount_list": param.AmountList,
 	}
+
+	if len(param.AmountList) > 0 {
+		min, err := decimal.NewFromString(param.FMin)
+		if err != nil {
+			helper.Print(ctx, false, helper.AmountErr)
+			return
+		}
+		max, err := decimal.NewFromString(param.FMax)
+		if err != nil {
+			helper.Print(ctx, false, helper.AmountErr)
+			return
+		}
+		if strings.Contains(param.AmountList, ",") {
+			list := strings.Split(param.AmountList, ",")
+			for _, v := range list {
+				amount, err := decimal.NewFromString(v)
+				if err != nil {
+					helper.Print(ctx, false, helper.AmountErr)
+					return
+				}
+				if amount.LessThan(min) {
+					helper.Print(ctx, false, helper.AmountErr)
+					return
+				}
+				if amount.GreaterThan(max) {
+					helper.Print(ctx, false, helper.AmountErr)
+					return
+				}
+			}
+		} else {
+			amount, err := decimal.NewFromString(param.AmountList)
+			if err != nil {
+				helper.Print(ctx, false, helper.AmountErr)
+				return
+			}
+			if amount.LessThan(min) {
+				helper.Print(ctx, false, helper.AmountErr)
+				return
+			}
+			if amount.GreaterThan(max) {
+				helper.Print(ctx, false, helper.AmountErr)
+				return
+			}
+		}
+	}
+
 	err = model.ChannelUpdate(fields, device)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
