@@ -17,7 +17,7 @@ func CheckSmsCaptcha(ip, ts, sid, phone, code string) (bool, error) {
 	val, err := cmd.Result()
 	fmt.Println("CheckSmsCaptcha", cmd.String())
 	if err != nil && err != redis.Nil {
-		return false, errors.New(helper.CaptchaErr)
+		return false, pushLog(err, helper.RedisErr)
 	}
 
 	if code == val {
