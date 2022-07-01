@@ -15,9 +15,8 @@ func CheckSmsCaptcha(ip, ts, sid, phone, code string) (bool, error) {
 	key := fmt.Sprintf("%s:sms:%s%s%s", meta.Prefix, phone, ip, sid)
 	cmd := meta.MerchantRedis.Get(ctx, key)
 	val, err := cmd.Result()
-	fmt.Println("CheckSmsCaptcha", cmd.String())
 	if err != nil && err != redis.Nil {
-		return false, pushLog(err, helper.RedisErr)
+		return false, pushLog(fmt.Errorf("CheckSmsCaptcha cmd : %s ,error : %s ", cmd.String(), err.Error()), helper.RedisErr)
 	}
 
 	if code == val {
