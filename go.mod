@@ -40,7 +40,7 @@ require (
 	github.com/silenceper/pool v1.0.0
 	github.com/spaolacci/murmur3 v1.1.0
 	github.com/tinylib/msgp v1.1.5
-	github.com/valyala/fasthttp v1.34.0
+	github.com/valyala/fasthttp v1.36.0
 	github.com/valyala/fastjson v1.6.3
 	github.com/wI2L/jettison v0.7.1
 	github.com/wenzhenxi/gorsa v0.0.0-20210524035706-528c7050d703
@@ -50,7 +50,9 @@ require (
 )
 
 require (
+	github.com/ip2location/ip2location-go/v9 v9.4.0
 	github.com/lucacasonato/mqtt v0.2.0
+	github.com/meilisearch/meilisearch-go v0.19.1
 	github.com/taosdata/driver-go/v2 v2.0.1-0.20220512023129-15f5b9c4b11c
 )
 
@@ -63,6 +65,7 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/google/uuid v1.3.0 // indirect
