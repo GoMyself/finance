@@ -52,8 +52,9 @@ type Deposit struct {
 	ParentName      string  `db:"parent_name" json:"parent_name" redis:"parent_name"`                   //上级代理名
 	TopUID          string  `db:"top_uid" json:"top_uid" redis:"top_uid"`                               // 总代uid
 	TopName         string  `db:"top_name" json:"top_name" redis:"top_name"`                            // 总代用户名
-	Level           int     `db:"level" json:"level" redis:"level"`
-	Discount        float64 `db:"discount" json:"discount" redis:"discount"` // 存款优惠/存款手续费
+	Level           int     `db:"level" json:"level" redis:"level"`                                     //会员等级
+	Discount        float64 `db:"discount" json:"discount" redis:"discount"`                            // 存款优惠/存款手续费
+	GroupName       string  `db:"-" json:"group_name" redis:"group_name"`                               //团队名称
 }
 
 // 存款数据
@@ -74,7 +75,7 @@ type DepositData struct {
 }
 
 // DepositHistory 存款历史列表
-func DepositHistory(username, id, channelID, oid, state,
+func DepositHistory(username, parentName, groupName, id, channelID, oid, state,
 	minAmount, maxAmount, startTime, endTime, cid string, timeFlag uint8, flag, page, pageSize, ty, dty int) (FDepositData, error) {
 
 	data := FDepositData{}
@@ -138,6 +139,19 @@ func DepositHistory(username, id, channelID, oid, state,
 
 	if username != "" {
 		ex["username"] = username
+	}
+	if parentName != "" {
+		ex["parent_name"] = parentName
+	}
+	if groupName != "" {
+		topName, err := TopNameByGroup(groupName)
+		if err != nil {
+			pushLog(err, helper.DBErr)
+		}
+		if topName == "" {
+			return data, errors.New(helper.UsernameErr)
+		}
+		ex["top_name"] = topName
 	}
 
 	if id != "" {
@@ -219,6 +233,11 @@ func DepositHistory(username, id, channelID, oid, state,
 		if data.D[i].ReviewRemark == "undefined" {
 			data.D[i].ReviewRemark = ""
 		}
+		mb, err := GetMemberCache(data.D[i].Username)
+		if err != nil {
+			return data, pushLog(err, helper.RedisErr)
+		}
+		data.D[i].GroupName = mb.GroupName
 	}
 
 	return data, nil
