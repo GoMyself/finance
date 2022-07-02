@@ -53,6 +53,7 @@ var grpc_t struct {
 	DecryptAll func(rctx context.Context, uids []string, hide bool, field []string) (map[string]map[string]string, error)
 
 	CheckDepositFlow func(rctx context.Context, username string) bool
+	FinshDepositFlow func(rctx context.Context, username, billNo, adminId, adminName string) bool
 }
 
 var (

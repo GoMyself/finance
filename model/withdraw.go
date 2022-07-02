@@ -1465,6 +1465,18 @@ func withdrawOrderSuccess(query, bankcard string, order Withdraw) error {
 	}
 	MemberUpdateCache(order.Username)
 
+	// 提现完成流水
+	clientContext := core.NewClientContext()
+	header := make(http.Header)
+	header.Set("X-Func-Name", "FinshDepositFlow")
+	clientContext.Items().Set("httpRequestHeaders", header)
+	rctx := core.WithContext(context.Background(), clientContext)
+
+	recs := grpc_t.FinshDepositFlow(rctx, order.Username, order.ID, order.ConfirmUID, order.ConfirmName)
+	fmt.Println("recs:", recs)
+	if !recs {
+		pushLog(err, helper.DBErr)
+	}
 	// 修改会员提款限制
 	date := time.Unix(order.CreatedAt, 0).Format("20060102")
 	_ = withDrawDailyLimitUpdate(money, date, order.Username)
