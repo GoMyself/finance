@@ -50,9 +50,8 @@ require (
 )
 
 require (
-	github.com/ip2location/ip2location-go/v9 v9.4.0
+	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/lucacasonato/mqtt v0.2.0
-	github.com/meilisearch/meilisearch-go v0.19.1
 	github.com/taosdata/driver-go/v2 v2.0.1-0.20220512023129-15f5b9c4b11c
 )
 
@@ -65,7 +64,6 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/google/uuid v1.3.0 // indirect
