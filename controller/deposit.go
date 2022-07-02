@@ -52,23 +52,25 @@ type reduceDepositParam struct {
 
 // 订单列表
 type depositListParam struct {
-	ID        string `rule:"none" name:"id"`
-	Username  string `rule:"none" msg:"username error" name:"username"`
-	State     int    `rule:"none" default:"0" name:"state"`
-	OID       string `rule:"none" name:"oid"`
-	CID       string `rule:"none" json:"cid"`
-	ChannelID string `rule:"none" name:"channel_id"`
-	Automatic string `rule:"none" name:"automatic"`
-	Flag      int    `rule:"digit" name:"flag" min:"1" max:"2"`                               //1=下分历史和下分列表
-	TimeFlag  uint8  `rule:"digit" default:"1" min:"0" max:"1" name:"time_flag"`              // 时间类型  1:创建时间 0:完成时间
-	StartTime string `rule:"none" msg:"start_time error" name:"start_time"`                   // 查询开始时间
-	EndTime   string `rule:"none" msg:"end_time error" name:"end_time"`                       // 查询结束时间
-	MinAmount string `rule:"none" msg:"min_amount error" name:"min_amount"`                   //
-	MaxAmount string `rule:"none" msg:"max_amount error" name:"max_amount"`                   //
-	Page      int    `rule:"digit" default:"1" min:"1" msg:"page error" name:"page"`          // 页码
-	PageSize  int    `rule:"digit" min:"10" max:"200" msg:"page_size error" name:"page_size"` // 页大小
-	Ty        int    `rule:"digit" min:"0" max:"4" default:"0" name:"ty"`                     // 1 三方订单 2 usdt 订单 3 线下转卡 4 线下转USDT
-	Dty       int    `rule:"none" default:"0" name:"dty"`
+	ID         string `rule:"none" name:"id"`
+	Username   string `rule:"none" msg:"username error" name:"username"`
+	ParentName string `rule:"none" msg:"parent_name error" name:"parent_name"`
+	GroupName  string `rule:"none" msg:"group_name error" name:"group_name"`
+	State      int    `rule:"none" default:"0" name:"state"`
+	OID        string `rule:"none" name:"oid"`
+	CID        string `rule:"none" json:"cid"`
+	ChannelID  string `rule:"none" name:"channel_id"`
+	Automatic  string `rule:"none" name:"automatic"`
+	Flag       int    `rule:"digit" name:"flag" min:"1" max:"2"`                               //1=下分历史和下分列表
+	TimeFlag   uint8  `rule:"digit" default:"1" min:"0" max:"1" name:"time_flag"`              // 时间类型  1:创建时间 0:完成时间
+	StartTime  string `rule:"none" msg:"start_time error" name:"start_time"`                   // 查询开始时间
+	EndTime    string `rule:"none" msg:"end_time error" name:"end_time"`                       // 查询结束时间
+	MinAmount  string `rule:"none" msg:"min_amount error" name:"min_amount"`                   //
+	MaxAmount  string `rule:"none" msg:"max_amount error" name:"max_amount"`                   //
+	Page       int    `rule:"digit" default:"1" min:"1" msg:"page error" name:"page"`          // 页码
+	PageSize   int    `rule:"digit" min:"10" max:"200" msg:"page_size error" name:"page_size"` // 页大小
+	Ty         int    `rule:"digit" min:"0" max:"4" default:"0" name:"ty"`                     // 1 三方订单 2 usdt 订单 3 线下转卡 4 线下转USDT
+	Dty        int    `rule:"none" default:"0" name:"dty"`
 }
 
 //Detail 会员列表-存款信息
@@ -192,7 +194,7 @@ func (that *DepositController) History(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	data, err := model.DepositHistory(param.Username, param.ID, param.ChannelID, param.OID, strconv.Itoa(param.State),
+	data, err := model.DepositHistory(param.Username, param.ParentName, param.GroupName, param.ID, param.ChannelID, param.OID, strconv.Itoa(param.State),
 		param.MinAmount, param.MaxAmount, param.StartTime, param.EndTime, param.CID, param.TimeFlag, param.Flag, param.Page, param.PageSize, param.Ty, param.Dty)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())

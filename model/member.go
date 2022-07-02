@@ -109,6 +109,35 @@ func MemberCache(fctx *fasthttp.RequestCtx) (Member, error) {
 	return m, nil
 }
 
+// GetMemberCache 通过用户名获取用户在redis中的数据
+func GetMemberCache(username string) (Member, error) {
+
+	m := Member{}
+
+	key := meta.Prefix + ":member:" + username
+
+	pipe := meta.MerchantRedis.TxPipeline()
+	defer pipe.Close()
+
+	exist := pipe.Exists(ctx, key)
+	rs := pipe.HMGet(ctx, key, "uid", "username", "password", "birth", "birth_hash", "realname_hash", "email_hash", "phone_hash", "zalo_hash", "prefix", "tester", "withdraw_pwd", "regip", "reg_device", "reg_url", "created_at", "last_login_ip", "last_login_at", "source_id", "first_deposit_at", "first_deposit_amount", "first_bet_at", "first_bet_amount", "", "", "top_uid", "top_name", "parent_uid", "parent_name", "bankcard_total", "last_login_device", "last_login_source", "remarks", "state", "level", "balance", "lock_amount", "commission", "group_name", "agency_type", "address", "avatar")
+
+	_, err := pipe.Exec(ctx)
+	if err != nil {
+		return m, pushLog(err, helper.RedisErr)
+	}
+
+	if exist.Val() == 0 {
+		return m, errors.New(helper.UsernameErr)
+	}
+
+	if err = rs.Scan(&m); err != nil {
+		return m, pushLog(rs.Err(), helper.RedisErr)
+	}
+
+	return m, nil
+}
+
 type MemberInfo struct {
 	UID                 string `db:"uid" json:"uid"`
 	Username            string `db:"username" json:"username"`                           //会员名
@@ -175,6 +204,20 @@ func MemberGetByName(username string) (Member, error) {
 
 	t := dialect.From("tbl_members")
 	query, _, _ := t.Select(colsMember...).Where(g.Ex{"username": username, "prefix": meta.Prefix}).Limit(1).ToSQL()
+	err := meta.MerchantDB.Get(&m, query)
+	if err != nil {
+		return m, pushLog(err, helper.DBErr)
+	}
+
+	return m, nil
+}
+
+func TopNameByGroup(groupName string) (string, error) {
+
+	var m string
+
+	t := dialect.From("tbl_members")
+	query, _, _ := t.Select("top_name").Where(g.Ex{"group_name": groupName, "prefix": meta.Prefix}).Limit(1).ToSQL()
 	err := meta.MerchantDB.Get(&m, query)
 	if err != nil {
 		return m, pushLog(err, helper.DBErr)

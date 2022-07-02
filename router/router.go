@@ -306,10 +306,10 @@ func SetupRouter(b BuildInfo) *router.Router {
 	post(route_merchant_group, "/bankcard/update", bankCardCtl.Update)
 	// [商户后台] 财务管理-存款管理-线下转卡-删除银行卡
 	get(route_merchant_group, "/bankcard/delete", bankCardCtl.Delete)
-
+	// usdt展示
 	get(route_merchant_group, "/usdt/info", usdtCtl.Info)
+	// usdt修改配置
 	post(route_merchant_group, "/usdt/update", usdtCtl.Update)
-
 	// [商户后台] 风控管理-风控配置-接单控制-关闭自动派单
 	get(route_merchant_group, "/risks/close", risksCtl.CloseAuto)
 	// [商户后台] 风控管理-风控配置-接单控制-开启自动派单
