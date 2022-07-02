@@ -90,6 +90,22 @@ func DepositHistory(username, parentName, groupName, id, channelID, oid, state,
 		return data, errors.New(helper.DateTimeErr)
 	}
 	ex := g.Ex{"prefix": meta.Prefix, "tester": 1}
+	if username != "" {
+		ex["username"] = username
+	}
+	if parentName != "" {
+		ex["parent_name"] = parentName
+	}
+	if groupName != "" {
+		topName, err := TopNameByGroup(groupName)
+		if err != nil {
+			pushLog(err, helper.DBErr)
+		}
+		if topName == "" {
+			return data, errors.New(helper.UsernameErr)
+		}
+		ex["top_name"] = topName
+	}
 	if dty > 0 {
 		//首存
 		if dty == 1 {
@@ -135,23 +151,6 @@ func DepositHistory(username, parentName, groupName, id, channelID, oid, state,
 		ex["created_at"] = g.Op{"between": exp.NewRangeVal(startAt, endAt)}
 	} else if dty == 0 {
 		ex["confirm_at"] = g.Op{"between": exp.NewRangeVal(startAt, endAt)}
-	}
-
-	if username != "" {
-		ex["username"] = username
-	}
-	if parentName != "" {
-		ex["parent_name"] = parentName
-	}
-	if groupName != "" {
-		topName, err := TopNameByGroup(groupName)
-		if err != nil {
-			pushLog(err, helper.DBErr)
-		}
-		if topName == "" {
-			return data, errors.New(helper.UsernameErr)
-		}
-		ex["top_name"] = topName
 	}
 
 	if id != "" {
