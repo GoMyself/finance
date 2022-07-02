@@ -40,7 +40,7 @@ require (
 	github.com/silenceper/pool v1.0.0
 	github.com/spaolacci/murmur3 v1.1.0
 	github.com/tinylib/msgp v1.1.5
-	github.com/valyala/fasthttp v1.34.0
+	github.com/valyala/fasthttp v1.36.0
 	github.com/valyala/fastjson v1.6.3
 	github.com/wI2L/jettison v0.7.1
 	github.com/wenzhenxi/gorsa v0.0.0-20210524035706-528c7050d703
@@ -63,10 +63,12 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
+	github.com/ip2location/ip2location-go/v9 v9.4.0 // indirect
 	github.com/jonboulle/clockwork v0.2.3 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/klauspost/compress v1.15.0 // indirect
@@ -74,6 +76,7 @@ require (
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
+	github.com/meilisearch/meilisearch-go v0.19.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/nats-io/jwt v0.3.2 // indirect
 	github.com/nats-io/nats-server/v2 v2.1.2 // indirect
