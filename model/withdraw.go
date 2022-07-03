@@ -1473,10 +1473,11 @@ func withdrawOrderSuccess(query, bankcard string, order Withdraw) error {
 	rctx := core.WithContext(context.Background(), clientContext)
 
 	recs := grpc_t.FinshDepositFlow(rctx, order.Username, order.ID, order.ConfirmUID, order.ConfirmName)
-	fmt.Println("recs:", recs)
+	fmt.Println("FinshDepositFlow:recs:", recs)
 	if !recs {
-		pushLog(err, helper.DBErr)
+		fmt.Println("FinshDepositFlow is false")
 	}
+
 	// 修改会员提款限制
 	date := time.Unix(order.CreatedAt, 0).Format("20060102")
 	_ = withDrawDailyLimitUpdate(money, date, order.Username)
