@@ -117,11 +117,13 @@ func Pay(user Member, p FPay, amount, bid string) (paymentDepositResp, error) {
 
 	fmt.Println("Pay orderId = ", orderId)
 
-	// 检查用户的存款行为是否过于频繁
-	err = cacheDepositProcessing(user.UID, time.Now().Unix())
-	if err != nil {
-		return data, err
-	}
+	/*
+		// 检查用户的存款行为是否过于频繁
+		err = cacheDepositProcessing(user.UID, time.Now().Unix())
+		if err != nil {
+			return data, err
+		}
+	*/
 	// 向渠道方发送存款订单请求
 	data, err = payment.Pay(orderId, ch["name"], amount, bid)
 	fmt.Println("Pay  payment.Pay err = ", err)
