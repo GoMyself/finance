@@ -1430,6 +1430,18 @@ func withdrawOrderSuccess(query, bankcard string, order Withdraw) error {
 		return err
 	}
 
+	// 提现完成流水
+	clientContext := core.NewClientContext()
+	header := make(http.Header)
+	header.Set("X-Func-Name", "FinshDepositFlow")
+	clientContext.Items().Set("httpRequestHeaders", header)
+	rctx := core.WithContext(context.Background(), clientContext)
+
+	recs := grpc_t.FinshDepositFlow(rctx, order.Username, order.ID, order.ConfirmUID, order.ConfirmName)
+	fmt.Println("FinshDepositFlow:recs:", recs)
+	if !recs {
+		fmt.Println("FinshDepositFlow is false")
+	}
 	//开启事务
 	tx, err := meta.MerchantDB.Begin()
 	if err != nil {
@@ -1463,20 +1475,8 @@ func withdrawOrderSuccess(query, bankcard string, order Withdraw) error {
 	if err != nil {
 		return pushLog(err, helper.DBErr)
 	}
+
 	MemberUpdateCache(order.Username)
-
-	// 提现完成流水
-	clientContext := core.NewClientContext()
-	header := make(http.Header)
-	header.Set("X-Func-Name", "FinshDepositFlow")
-	clientContext.Items().Set("httpRequestHeaders", header)
-	rctx := core.WithContext(context.Background(), clientContext)
-
-	recs := grpc_t.FinshDepositFlow(rctx, order.Username, order.ID, order.ConfirmUID, order.ConfirmName)
-	fmt.Println("FinshDepositFlow:recs:", recs)
-	if !recs {
-		fmt.Println("FinshDepositFlow is false")
-	}
 
 	// 修改会员提款限制
 	date := time.Unix(order.CreatedAt, 0).Format("20060102")
