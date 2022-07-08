@@ -296,13 +296,15 @@ func WithdrawUserInsert(amount, bid, sid, ts, verifyCode string, fCtx *fasthttp.
 			}
 		*/
 	}
+	if mb.Tester == "1" {
 
-	// 发送消息通知
-	_ = PushWithdrawNotify(withdrawReviewFmt, mb.Username, amount)
+		// 发送消息通知
+		_ = PushWithdrawNotify(withdrawReviewFmt, mb.Username, amount)
+	}
 
 	if mb.Tester == "0" {
 		record := g.Record{
-			"state":      WithdrawDealing,
+			"state":      WithdrawSuccess,
 			"confirm_at": fCtx.Time().Unix(),
 		}
 
@@ -310,14 +312,8 @@ func WithdrawUserInsert(amount, bid, sid, ts, verifyCode string, fCtx *fasthttp.
 		if err != nil {
 			pushLog(err, helper.WithdrawFailure)
 		}
-
-		err = withdrawUpdate(withdrawId, mb.UID, bid, WithdrawSuccess, fCtx.Time())
-		if err != nil {
-			err = fmt.Errorf("set order state [%d] to [%d] error: [%v]", state, WithdrawSuccess, err)
-			pushLog(err, helper.WithdrawFailure)
-		}
-
 	}
+
 	return withdrawId, nil
 }
 
