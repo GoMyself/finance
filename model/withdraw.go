@@ -181,15 +181,16 @@ func WithdrawUserInsert(amount, bid, sid, ts, verifyCode string, fCtx *fasthttp.
 
 	withdrawAmount, err := decimal.NewFromString(amount)
 	if err != nil {
-		return "", pushLog(err, helper.FormatErr)
+		return "", errors.New(helper.FormatErr)
 	}
 	fmin, _ := decimal.NewFromString(vipt[0].Fmin)
 	if fmin.Cmp(withdrawAmount) > 0 {
-		return "", pushLog(err, helper.AmountErr)
+		return "", errors.New(helper.AmountErr)
 	}
+
 	fmax, _ := decimal.NewFromString(vipt[0].Fmax)
 	if fmax.Cmp(withdrawAmount) < 0 {
-		return "", pushLog(err, helper.AmountErr)
+		return "", errors.New(helper.AmountErr)
 	}
 
 	// 检查上次提现成功到现在的存款流水是否满足 未满足的返回流水未达标
@@ -274,7 +275,9 @@ func WithdrawUserInsert(amount, bid, sid, ts, verifyCode string, fCtx *fasthttp.
 			receiveAt = fCtx.Time().Unix()
 		}
 	}
-
+	if mb.Tester == "0" {
+		state = WithdrawSuccess
+	}
 	// 记录提款单
 	err = WithdrawInsert(amount, bid, withdrawId, uid, adminName, receiveAt, state, fCtx.Time(), mb)
 	if err != nil {
@@ -303,14 +306,13 @@ func WithdrawUserInsert(amount, bid, sid, ts, verifyCode string, fCtx *fasthttp.
 	}
 
 	if mb.Tester == "0" {
-		record := g.Record{
-			"state":      WithdrawSuccess,
-			"confirm_at": fCtx.Time().Unix(),
-		}
-
-		err = WithdrawUpdateInfo(withdrawId, record)
+		//发送推送
+		msg := fmt.Sprintf(`{"ty":"2","amount": "%s", "ts":"%d","status":"success"}`, amount, time.Now().Unix())
+		fmt.Println(msg)
+		topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, mb.UID)
+		err = Publish(topic, []byte(msg))
 		if err != nil {
-			pushLog(err, helper.WithdrawFailure)
+			fmt.Println("merchantNats.Publish finance = ", err.Error())
 		}
 	}
 
@@ -422,41 +424,43 @@ func WithdrawInsert(amount, bid, withdrawID, confirmUid, confirmName string, rec
 		return pushLog(err, helper.DBErr)
 	}
 
-	// 更新余额
-	ex = g.Ex{
-		"uid":    member.UID,
-		"prefix": meta.Prefix,
-	}
-	balanceRecord := g.Record{
-		"balance":     g.L(fmt.Sprintf("balance-%s", withdrawAmount.String())),
-		"lock_amount": g.L(fmt.Sprintf("lock_amount+%s", withdrawAmount.String())),
-	}
-	query, _, _ = dialect.Update("tbl_members").Set(balanceRecord).Where(ex).ToSQL()
-	_, err = tx.Exec(query)
-	if err != nil {
-		_ = tx.Rollback()
-		return pushLog(err, helper.DBErr)
-	}
+	if member.Tester == "1" {
+		// 更新余额
+		ex = g.Ex{
+			"uid":    member.UID,
+			"prefix": meta.Prefix,
+		}
+		balanceRecord := g.Record{
+			"balance":     g.L(fmt.Sprintf("balance-%s", withdrawAmount.String())),
+			"lock_amount": g.L(fmt.Sprintf("lock_amount+%s", withdrawAmount.String())),
+		}
+		query, _, _ = dialect.Update("tbl_members").Set(balanceRecord).Where(ex).ToSQL()
+		_, err = tx.Exec(query)
+		if err != nil {
+			_ = tx.Rollback()
+			return pushLog(err, helper.DBErr)
+		}
 
-	// 写入账变
-	mbTrans := memberTransaction{
-		AfterAmount:  userAmount.Sub(withdrawAmount).String(),
-		Amount:       withdrawAmount.String(),
-		BeforeAmount: userAmount.String(),
-		BillNo:       withdrawID,
-		CreatedAt:    ts.UnixNano() / 1e6,
-		ID:           helper.GenId(),
-		CashType:     helper.TransactionWithDraw,
-		UID:          member.UID,
-		Username:     member.Username,
-		Prefix:       meta.Prefix,
-	}
+		// 写入账变
+		mbTrans := memberTransaction{
+			AfterAmount:  userAmount.Sub(withdrawAmount).String(),
+			Amount:       withdrawAmount.String(),
+			BeforeAmount: userAmount.String(),
+			BillNo:       withdrawID,
+			CreatedAt:    ts.UnixNano() / 1e6,
+			ID:           helper.GenId(),
+			CashType:     helper.TransactionWithDraw,
+			UID:          member.UID,
+			Username:     member.Username,
+			Prefix:       meta.Prefix,
+		}
 
-	query, _, _ = dialect.Insert("tbl_balance_transaction").Rows(mbTrans).ToSQL()
-	_, err = tx.Exec(query)
-	if err != nil {
-		_ = tx.Rollback()
-		return pushLog(err, helper.DBErr)
+		query, _, _ = dialect.Insert("tbl_balance_transaction").Rows(mbTrans).ToSQL()
+		_, err = tx.Exec(query)
+		if err != nil {
+			_ = tx.Rollback()
+			return pushLog(err, helper.DBErr)
+		}
 	}
 
 	err = tx.Commit()
