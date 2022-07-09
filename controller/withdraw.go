@@ -887,6 +887,10 @@ func (that *WithdrawController) Review(ctx *fasthttp.RequestCtx) {
 	}
 
 	if param.Ty == 1 { // 三方代付
+		if decimal.NewFromFloat(withdraw.Amount).Cmp(decimal.NewFromInt(100000)) >= 0 {
+			helper.Print(ctx, false, helper.WithdrawBan)
+			return
+		}
 		err = model.WithdrawHandToAuto(withdraw.UID, withdraw.Username, withdraw.ID, param.Pid, withdraw.BID, withdraw.Amount, ctx.Time())
 		if err != nil {
 			helper.Print(ctx, false, err.Error())
