@@ -26,6 +26,7 @@ func NewestPay(fctx *fasthttp.RequestCtx, pid, amount, bid string) (map[string]s
 		return res, errors.New(helper.ChannelNotExist)
 	}
 
+	fmt.Println("NewestPay p:", p)
 	data, err = Pay(user, p, amount, bid)
 	if err != nil {
 		/*
@@ -73,7 +74,7 @@ func NewestPay(fctx *fasthttp.RequestCtx, pid, amount, bid string) (map[string]s
 		"tester":            user.Tester,
 	}
 
-	if len(bid) > 0 {
+	if len(bid) > 0 && bid != "0" {
 		d["bank_code"] = bid
 	}
 
