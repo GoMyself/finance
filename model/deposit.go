@@ -106,12 +106,13 @@ func DepositHistory(username, parentName, groupName, id, channelID, oid, state,
 		}
 		ex["top_name"] = topName
 	}
+	or := g.Or()
 	if dty > 0 {
 		//首存
 		if dty == 1 {
 			ex["first_deposit_at"] = g.Op{"between": exp.NewRangeVal(startAt, endAt)}
-			var depositAts []string
-			query, _, _ := dialect.From("tbl_members").Select(g.C("first_deposit_at")).Where(ex).ToSQL()
+			var depositAts []FirstDeposit
+			query, _, _ := dialect.From("tbl_members").Select(g.C("first_deposit_at").As("deposit_at"), g.C("uid")).Where(ex).ToSQL()
 			fmt.Println(query)
 			err := meta.MerchantDB.Select(&depositAts, query)
 			if err != nil {
@@ -120,7 +121,11 @@ func DepositHistory(username, parentName, groupName, id, channelID, oid, state,
 			fmt.Println("depositAts:", depositAts)
 			if len(depositAts) > 0 {
 				ex = g.Ex{"prefix": meta.Prefix}
-				ex["created_at"] = depositAts
+				//ex["created_at"] = depositAts
+				//
+				for _, v := range depositAts {
+					or.Append(g.And(g.C("uid").Eq(v.Uid), g.C("created_at").Eq(v.DepositAt)))
+				}
 			} else {
 				return data, nil
 			}
@@ -129,8 +134,8 @@ func DepositHistory(username, parentName, groupName, id, channelID, oid, state,
 		//二存
 		if dty == 2 {
 			ex["second_deposit_at"] = g.Op{"between": exp.NewRangeVal(startAt, endAt)}
-			var depositAts []string
-			query, _, _ := dialect.From("tbl_members").Select(g.C("second_deposit_at")).Where(ex).ToSQL()
+			var depositAts []FirstDeposit
+			query, _, _ := dialect.From("tbl_members").Select(g.C("second_deposit_at").As("deposit_at"), g.C("uid")).Where(ex).ToSQL()
 			fmt.Println(query)
 			err := meta.MerchantDB.Select(&depositAts, query)
 			if err != nil {
@@ -139,7 +144,9 @@ func DepositHistory(username, parentName, groupName, id, channelID, oid, state,
 			fmt.Println("depositAts:", depositAts)
 			if len(depositAts) > 0 {
 				ex = g.Ex{"prefix": meta.Prefix}
-				ex["created_at"] = depositAts
+				for _, v := range depositAts {
+					or.Append(g.And(g.C("uid").Eq(v.Uid), g.C("created_at").Eq(v.DepositAt)))
+				}
 			} else {
 				return data, nil
 			}
@@ -201,7 +208,7 @@ func DepositHistory(username, parentName, groupName, id, channelID, oid, state,
 	if page == 1 {
 
 		var total depositTotal
-		query, _, _ := dialect.From("tbl_deposit").Select(g.COUNT(1).As("t"), g.SUM("amount").As("s")).Where(ex).ToSQL()
+		query, _, _ := dialect.From("tbl_deposit").Select(g.COUNT(1).As("t"), g.SUM("amount").As("s")).Where(g.And(ex, or)).ToSQL()
 		fmt.Println(query)
 		err := meta.MerchantDB.Get(&total, query)
 		if err != nil {
@@ -221,7 +228,7 @@ func DepositHistory(username, parentName, groupName, id, channelID, oid, state,
 
 	offset := uint((page - 1) * pageSize)
 	query, _, _ := dialect.From("tbl_deposit").Select(colsDeposit...).
-		Where(ex).Offset(offset).Limit(uint(pageSize)).Order(g.C("created_at").Desc()).ToSQL()
+		Where(g.And(ex, or)).Offset(offset).Limit(uint(pageSize)).Order(g.C("created_at").Desc()).ToSQL()
 	fmt.Println(query)
 	err = meta.MerchantDB.Select(&data.D, query)
 	if err != nil {

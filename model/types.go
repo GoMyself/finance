@@ -229,3 +229,8 @@ type Message struct {
 	SendAt   int64  `json:"send_at"`   //发送时间
 	Prefix   string `json:"prefix"`    //商户前缀
 }
+
+type FirstDeposit struct {
+	DepositAt int64  `db:"deposit_at"`
+	Uid       string `db:"uid"`
+}
