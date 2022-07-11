@@ -1465,6 +1465,7 @@ func deposit(record g.Record) error {
 
 	query, _, _ := dialect.Insert("tbl_deposit").Rows(record).ToSQL()
 	_, err := meta.MerchantDB.Exec(query)
+	fmt.Println("deposit insert:", query)
 	if err != nil {
 		return err
 

@@ -77,6 +77,7 @@ func NewestPay(fctx *fasthttp.RequestCtx, pid, amount, bid string) (map[string]s
 		d["bank_code"] = bid
 	}
 
+	fmt.Println("deposit d:", d)
 	// 请求成功插入订单
 	err = deposit(d)
 	if err != nil {

@@ -3,6 +3,7 @@ package controller
 import (
 	"finance/contrib/helper"
 	"finance/model"
+	"fmt"
 
 	"github.com/valyala/fasthttp"
 )
@@ -81,6 +82,7 @@ func (that *PayController) Pay(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	fmt.Println("bid:", bid)
 	// 新支付走if里面的代码
 	if _, ok := newestPay[id]; ok {
 		//fmt.Println("Pay newestPay id = ", id)
