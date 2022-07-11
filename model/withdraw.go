@@ -18,7 +18,6 @@ import (
 
 	g "github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
-	"github.com/olivere/elastic/v7"
 	"github.com/shopspring/decimal"
 	"github.com/valyala/fasthttp"
 )
@@ -67,9 +66,9 @@ type Withdraw struct {
 
 // FWithdrawData 取款数据
 type FWithdrawData struct {
-	T   int64             `json:"t"`
-	D   []Withdraw        `json:"d"`
-	Agg map[string]string `json:"agg"`
+	T   int64      `json:"t"`
+	D   []Withdraw `json:"d"`
+	Agg Withdraw   `json:"agg"`
 }
 
 type WithdrawData struct {
@@ -79,9 +78,9 @@ type WithdrawData struct {
 }
 
 type WithdrawListData struct {
-	T   int64             `json:"t"`
-	D   []withdrawCols    `json:"d"`
-	Agg map[string]string `json:"agg"`
+	T   int64          `json:"t"`
+	D   []withdrawCols `json:"d"`
+	Agg Withdraw       `json:"agg"`
 }
 
 type withdrawCols struct {
@@ -565,8 +564,8 @@ func WithdrawList(ex g.Ex, ty uint8, startTime, endTime string, page, pageSize u
 		}
 
 		data.T = total.T.Int64
-		data.Agg = map[string]string{
-			"amount": decimal.NewFromFloat(total.Agg.Float64).Truncate(4).String(),
+		data.Agg = Withdraw{
+			Amount: total.Agg.Float64,
 		}
 	}
 
@@ -614,36 +613,33 @@ func WithdrawHistoryList(ex g.Ex, rangeParam map[string][]interface{}, ty, start
 		ex["real_name_hash"] = MurmurHash(realName.(string), 0)
 	}
 
-	aggField := map[string]string{
-		"amount": "amount",
-	}
-
-	data := FWithdrawData{Agg: map[string]string{}}
-	total, esData, aggData, err := EsSearch(
-		esPrefixIndex("tbl_withdraw"),
-		"created_at",
-		int(page),
-		int(pageSize), withdrawFields, ex, rangeParam, aggField)
-	if err != nil {
-		return data, err
-	}
-
-	for k, v := range aggField {
-		amount, _ := aggData.Sum(k)
-		if amount != nil {
-			data.Agg[v] = fmt.Sprintf("%.4f", *amount.Value)
-		}
-	}
-
-	data.T = total
-	for _, v := range esData {
-		withdraw := Withdraw{}
-		withdraw.ID = v.Id
-		err = helper.JsonUnmarshal(v.Source, &withdraw)
+	data := FWithdrawData{}
+	if page == 1 {
+		query, _, _ := dialect.From("tbl_withdraw").Select(g.COUNT("id")).Where(ex).ToSQL()
+		fmt.Println(query)
+		err := meta.MerchantDB.Get(&data.T, query)
 		if err != nil {
-			return data, errors.New(helper.FormatErr)
+			return data, pushLog(err, helper.DBErr)
 		}
-		data.D = append(data.D, withdraw)
+
+		if data.T == 0 {
+			return data, nil
+		}
+
+		query, _, _ = dialect.From("tbl_withdraw").Select(g.SUM("amount").As("amount")).Where(ex).ToSQL()
+		fmt.Println(query)
+		err = meta.MerchantDB.Get(&data.Agg, query)
+		if err != nil {
+			return data, pushLog(err, helper.DBErr)
+		}
+	}
+	offset := (page - 1) * pageSize
+	query, _, _ := dialect.From("tbl_withdraw").Select(colsWithdraw...).Where(ex).
+		Offset(offset).Limit(pageSize).Order(g.C("created_at").Desc()).ToSQL()
+	fmt.Println(query)
+	err := meta.MerchantDB.Select(&data.D, query)
+	if err != nil {
+		return data, pushLog(err, helper.DBErr)
 	}
 
 	return data, nil
@@ -1229,39 +1225,40 @@ func withdrawGetBankcard(id, bid string) (string, error) {
 // 获取银行卡成功失败的次数
 func WithdrawBanKCardNumber(bid string) (int, int) {
 
-	query := elastic.NewBoolQuery().Must(elastic.NewTermQuery("bid", bid), elastic.NewTermQuery("prefix", meta.Prefix))
-	aggParam := map[string]*elastic.TermsAggregation{"state": elastic.NewTermsAggregation().Field("state")}
+	//query := elastic.NewBoolQuery().Must(elastic.NewTermQuery("bid", bid), elastic.NewTermQuery("prefix", meta.Prefix))
+	//aggParam := map[string]*elastic.TermsAggregation{"state": elastic.NewTermsAggregation().Field("state")}
+	//
+	//fsc := elastic.NewFetchSourceContext(true)
+	//esService := meta.ES.Search().FetchSourceContext(fsc).Query(query).Size(0)
+	//for k, v := range aggParam {
+	//	esService = esService.Aggregation(k, v)
+	//}
+	//resOrder, err := esService.Index(esPrefixIndex("tbl_withdraw")).Do(ctx)
+	//if err != nil {
+	//	return 0, 0
+	//}
+	//
+	//agg, ok := resOrder.Aggregations.Terms("state")
+	//if !ok {
+	//	return 0, 0
+	//}
+	//
+	//var (
+	//	success int
+	//	fail    int
+	//)
+	//for _, v := range agg.Buckets {
+	//	if WithdrawSuccess == int(v.Key.(float64)) {
+	//		success += int(v.DocCount)
+	//	}
+	//
+	//	if WithdrawReviewReject == int(v.Key.(float64)) || WithdrawAbnormal == int(v.Key.(float64)) || WithdrawFailed == int(v.Key.(float64)) {
+	//		fail += int(v.DocCount)
+	//	}
+	//}
 
-	fsc := elastic.NewFetchSourceContext(true)
-	esService := meta.ES.Search().FetchSourceContext(fsc).Query(query).Size(0)
-	for k, v := range aggParam {
-		esService = esService.Aggregation(k, v)
-	}
-	resOrder, err := esService.Index(esPrefixIndex("tbl_withdraw")).Do(ctx)
-	if err != nil {
-		return 0, 0
-	}
-
-	agg, ok := resOrder.Aggregations.Terms("state")
-	if !ok {
-		return 0, 0
-	}
-
-	var (
-		success int
-		fail    int
-	)
-	for _, v := range agg.Buckets {
-		if WithdrawSuccess == int(v.Key.(float64)) {
-			success += int(v.DocCount)
-		}
-
-		if WithdrawReviewReject == int(v.Key.(float64)) || WithdrawAbnormal == int(v.Key.(float64)) || WithdrawFailed == int(v.Key.(float64)) {
-			fail += int(v.DocCount)
-		}
-	}
-
-	return success, fail
+	//return success, fail
+	return 0, 0
 }
 
 func bankcardListDBByIDs(ids []string) (map[string]MemberBankCard, error) {
