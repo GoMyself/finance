@@ -234,3 +234,8 @@ type FirstDeposit struct {
 	DepositAt int64  `db:"deposit_at"`
 	Uid       string `db:"uid"`
 }
+
+type StateNum struct {
+	T     int   `json:"t" db:"t"`
+	State int64 `json:"state" db:"state"`
+}

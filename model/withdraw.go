@@ -1225,40 +1225,28 @@ func withdrawGetBankcard(id, bid string) (string, error) {
 // 获取银行卡成功失败的次数
 func WithdrawBanKCardNumber(bid string) (int, int) {
 
-	//query := elastic.NewBoolQuery().Must(elastic.NewTermQuery("bid", bid), elastic.NewTermQuery("prefix", meta.Prefix))
-	//aggParam := map[string]*elastic.TermsAggregation{"state": elastic.NewTermsAggregation().Field("state")}
-	//
-	//fsc := elastic.NewFetchSourceContext(true)
-	//esService := meta.ES.Search().FetchSourceContext(fsc).Query(query).Size(0)
-	//for k, v := range aggParam {
-	//	esService = esService.Aggregation(k, v)
-	//}
-	//resOrder, err := esService.Index(esPrefixIndex("tbl_withdraw")).Do(ctx)
-	//if err != nil {
-	//	return 0, 0
-	//}
-	//
-	//agg, ok := resOrder.Aggregations.Terms("state")
-	//if !ok {
-	//	return 0, 0
-	//}
-	//
-	//var (
-	//	success int
-	//	fail    int
-	//)
-	//for _, v := range agg.Buckets {
-	//	if WithdrawSuccess == int(v.Key.(float64)) {
-	//		success += int(v.DocCount)
-	//	}
-	//
-	//	if WithdrawReviewReject == int(v.Key.(float64)) || WithdrawAbnormal == int(v.Key.(float64)) || WithdrawFailed == int(v.Key.(float64)) {
-	//		fail += int(v.DocCount)
-	//	}
-	//}
+	ex := g.Ex{
+		"bid":    bid,
+		"prefix": meta.Prefix,
+	}
+	var data []StateNum
+	var successNum int
+	var failNum int
+	query, _, _ := dialect.From("tbl_withdraw").Select(g.COUNT("id").As("t"), g.C("state").As("state")).Where(ex).ToSQL()
+	err := meta.MerchantDB.Select(&data, query)
+	if err != nil && err != sql.ErrNoRows {
+		return 0, 0
+	}
+	for _, v := range data {
+		if v.State == WithdrawSuccess {
+			successNum += v.T
+		}
+		if v.State == WithdrawReviewReject || v.State == WithdrawAbnormal || v.State == WithdrawFailed {
+			failNum += v.T
+		}
+	}
 
-	//return success, fail
-	return 0, 0
+	return successNum, failNum
 }
 
 func bankcardListDBByIDs(ids []string) (map[string]MemberBankCard, error) {
