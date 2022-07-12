@@ -74,7 +74,15 @@ func NewestPay(fctx *fasthttp.RequestCtx, pid, amount, bid string) (map[string]s
 		"tester":            user.Tester,
 	}
 
-	if len(bid) > 0 && bid != "0" {
+	//只针对越南支付，才统计查看银行编码存库到bank_code字段
+	var vNPay = map[string]bool{
+		"171560943702910226": true, // VN支付 Online
+		"439141987451271871": true, // VN支付 Offline
+		"440046584965688018": true, // VN支付 MOMO
+		"440058675832531078": true, // VN支付 QR Banking
+	}
+
+	if len(bid) > 0 && bid != "0" && vNPay[pid] {
 		d["bank_code"] = bid
 	}
 
