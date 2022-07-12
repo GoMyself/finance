@@ -285,14 +285,6 @@ func PushWithdrawNotify(format, username, amount string) error {
 	return nil
 }
 
-func TimeFormat(t int64) string {
-	return time.Unix(t, 0).In(loc).Format("2006-01-02 15:04:05")
-}
-
-func esPrefixIndex(index string) string {
-	return meta.EsPrefix + index
-}
-
 func Lock(id string) error {
 
 	val := fmt.Sprintf("%s:%s%s", meta.Prefix, defaultRedisKeyPrefix, id)
