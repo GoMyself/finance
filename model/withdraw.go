@@ -62,6 +62,7 @@ type Withdraw struct {
 	TopUID            string  `db:"top_uid"             json:"top_uid"            redis:"top_uid"`              // 总代uid
 	TopName           string  `db:"top_name"            json:"top_name"           redis:"top_name"`             // 总代用户名
 	Level             int     `db:"level"               json:"level"              redis:"level"`
+	Balance           int     `db:"balance"               json:"balance"              redis:"balance"`
 }
 
 // FWithdrawData 取款数据
@@ -408,6 +409,7 @@ func WithdrawInsert(amount, bid, withdrawID, confirmUid, confirmName string, rec
 		"wallet_flag":         MemberWallet,
 		"level":               member.Level,
 		"tester":              member.Tester,
+		"balance":             userAmount.Sub(withdrawAmount).String(),
 	}
 
 	// 开启事务 写账变 更新redis  查询提款
@@ -959,6 +961,7 @@ func WithdrawDealListData(data FWithdrawData) (WithdrawListData, error) {
 
 	}
 	userMap := map[string]MBBalance{}
+
 	if len(data.D) > 0 {
 		var uids []string
 
@@ -1016,17 +1019,17 @@ func WithdrawDealListData(data FWithdrawData) (WithdrawListData, error) {
 	cids, _ := channelCateMap(pids)
 
 	// 处理返回前端的数据
-	for k, v := range data.D {
+	for _, v := range data.D {
 
-		fmt.Println("k = ", k)
+		//fmt.Println("k = ", k)
 		w := withdrawCols{
 			Withdraw:           v,
 			MemberBankNo:       recs[v.UID]["bankcard"+v.BID],
 			MemberBankRealName: recs[v.UID]["realname"],
 			MemberRealName:     recs[v.UID]["realname"],
 			MemberTags:         tags[v.Username],
-			Balance:            userMap[v.UID].Balance,
-			LockAmount:         userMap[v.UID].LockAmount,
+			//Balance:            userMap[v.UID].Balance,
+			LockAmount: userMap[v.UID].LockAmount,
 		}
 
 		// 匹配银行卡信息
