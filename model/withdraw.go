@@ -95,7 +95,7 @@ type withdrawCols struct {
 	MemberBankAddress  string  `json:"member_bank_address"`
 	MemberRealName     string  `json:"member_real_name"`
 	MemberTags         string  `json:"member_tags"`
-	Balance            float64 `db:"balance"     json:"balance"     redis:"balance"    ` //余额
+	Balance            string  `db:"balance"     json:"balance"     redis:"balance"    ` //余额
 	LockAmount         float64 `db:"lock_amount" json:"lock_amount" redis:"lock_amount"` //锁定额度
 }
 
@@ -309,7 +309,7 @@ func WithdrawUserInsert(amount, bid, sid, ts, verifyCode string, fCtx *fasthttp.
 	if mb.Tester == "0" {
 		//发送推送
 		msg := fmt.Sprintf(`{"ty":"2","amount": "%s", "ts":"%d","status":"success"}`, amount, time.Now().Unix())
-		fmt.Println(msg)
+		//fmt.Println(msg)
 		topic := fmt.Sprintf("%s/%s/finance", meta.Prefix, mb.UID)
 		err = Publish(topic, []byte(msg))
 		if err != nil {
@@ -560,7 +560,7 @@ func WithdrawList(ex g.Ex, ty uint8, startTime, endTime string, page, pageSize u
 	if page == 1 {
 		var total withdrawTotal
 		query, _, _ := dialect.From("tbl_withdraw").Select(g.COUNT(1).As("t"), g.SUM("amount").As("agg")).Where(ex).ToSQL()
-		fmt.Println(query)
+		//fmt.Println(query)
 		err := meta.MerchantDB.Get(&total, query)
 		if err != nil {
 			return data, pushLog(err, helper.DBErr)
@@ -575,7 +575,7 @@ func WithdrawList(ex g.Ex, ty uint8, startTime, endTime string, page, pageSize u
 	offset := (page - 1) * pageSize
 	query, _, _ := dialect.From("tbl_withdraw").
 		Select(colWithdraw...).Where(ex).Order(g.C("created_at").Desc()).Offset(offset).Limit(pageSize).ToSQL()
-	fmt.Println(query)
+	//fmt.Println(query)
 	err := meta.MerchantDB.Select(&data.D, query)
 	if err != nil {
 		return data, pushLog(err, helper.DBErr)
@@ -1032,8 +1032,8 @@ func WithdrawDealListData(data FWithdrawData) (WithdrawListData, error) {
 			MemberBankRealName: recs[v.UID]["realname"],
 			MemberRealName:     recs[v.UID]["realname"],
 			MemberTags:         tags[v.Username],
-			//Balance:            userMap[v.UID].Balance,
-			LockAmount: userMap[v.UID].LockAmount,
+			Balance:            v.Balance,
+			LockAmount:         userMap[v.UID].LockAmount,
 		}
 
 		// 匹配银行卡信息
