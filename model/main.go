@@ -21,7 +21,6 @@ import (
 	rpchttp "github.com/hprose/hprose-golang/v3/rpc/http"
 	. "github.com/hprose/hprose-golang/v3/rpc/http/fasthttp"
 	"github.com/jmoiron/sqlx"
-	"github.com/olivere/elastic/v7"
 	"github.com/shopspring/decimal"
 	"github.com/spaolacci/murmur3"
 	"github.com/valyala/fasthttp"
@@ -33,7 +32,6 @@ type MetaTable struct {
 	MerchantDB    *sqlx.DB
 	MerchantTD    *sqlx.DB
 	MerchantRedis *redis.ClusterClient
-	ES            *elastic.Client
 	MerchantMqtt  *mqtt.Client
 	Program       string
 	Prefix        string
@@ -175,6 +173,7 @@ func pushLog(err error, code string) error {
 	}
 
 	query, _, _ := dialect.Insert("finance_error").Rows(&fields).ToSQL()
+	fmt.Println(query)
 	_, err1 := meta.MerchantTD.Exec(query)
 	if err1 != nil {
 		fmt.Println("insert goerror query = ", query)
@@ -284,14 +283,6 @@ func PushWithdrawNotify(format, username, amount string) error {
 	fmt.Println("success", time.Since(ts))
 
 	return nil
-}
-
-func TimeFormat(t int64) string {
-	return time.Unix(t, 0).In(loc).Format("2006-01-02 15:04:05")
-}
-
-func esPrefixIndex(index string) string {
-	return meta.EsPrefix + index
 }
 
 func Lock(id string) error {

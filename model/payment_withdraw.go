@@ -4,6 +4,7 @@ import (
 	"errors"
 	"finance/contrib/helper"
 	"fmt"
+	"github.com/wI2L/jettison"
 
 	g "github.com/doug-martin/goqu/v9"
 	"github.com/valyala/fasthttp"
@@ -140,6 +141,18 @@ func WithdrawalCallBack(fctx *fasthttp.RequestCtx, payment_id string) {
 		err = fmt.Errorf("set order state [%d] to [%d] error: [%v]", order.State, data.State, err)
 		pushLog(err, helper.WithdrawFailure)
 		fctx.SetBody([]byte(`failed`))
+		return
+	}
+
+	if data.Resp != nil {
+		fctx.SetStatusCode(200)
+		fctx.SetContentType("application/json")
+		bytes, err := jettison.Marshal(data.Resp)
+		if err != nil {
+			fctx.SetBody([]byte(err.Error()))
+			return
+		}
+		fctx.SetBody(bytes)
 		return
 	}
 
