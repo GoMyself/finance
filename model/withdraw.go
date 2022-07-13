@@ -63,7 +63,7 @@ type Withdraw struct {
 	TopUID            string  `db:"top_uid"             json:"top_uid"            redis:"top_uid"`              // 总代uid
 	TopName           string  `db:"top_name"            json:"top_name"           redis:"top_name"`             // 总代用户名
 	Level             int     `db:"level"               json:"level"              redis:"level"`
-	Balance           int     `db:"balance"               json:"balance"              redis:"balance"`
+	Balance           string  `db:"balance"               json:"balance"              redis:"balance"`
 }
 
 // FWithdrawData 取款数据
