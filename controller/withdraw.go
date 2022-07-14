@@ -369,8 +369,7 @@ func (that *WithdrawController) RiskHistory(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	ex := make(map[string]interface{})
-	rangeParam := map[string][]interface{}{}
+	ex := g.Ex{}
 	if realName != "" {
 		if len([]rune(id)) > 30 {
 			helper.Print(ctx, false, helper.RealNameFMTErr)
@@ -393,7 +392,7 @@ func (that *WithdrawController) RiskHistory(ctx *fasthttp.RequestCtx) {
 			return
 		}
 
-		rangeParam["amount"] = []interface{}{minAmountInt, maxAmountInt}
+		ex["amount"] = g.Op{"between": exp.NewRangeVal(minAmountInt, maxAmountInt)}
 	}
 
 	if username != "" {
@@ -462,12 +461,12 @@ func (that *WithdrawController) RiskHistory(ctx *fasthttp.RequestCtx) {
 		}
 
 		ex = map[string]interface{}{
-			"_id":   id,
+			"id":    id,
 			"state": baseState,
 		}
 	}
 
-	data, err := model.WithdrawHistoryList(ex, rangeParam, ty, startTime, endTime, uint(page), uint(pageSize))
+	data, err := model.WithdrawHistoryList(ex, ty, startTime, endTime, uint(page), uint(pageSize))
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return
@@ -508,8 +507,7 @@ func (that *WithdrawController) HistoryList(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	ex := make(map[string]interface{})
-	rangeParam := map[string][]interface{}{}
+	ex := g.Ex{}
 	if minAmount != "" && maxAmount != "" {
 		if !validator.CheckStringDigit(minAmount) || !validator.CheckStringDigit(maxAmount) {
 			helper.Print(ctx, false, helper.AmountErr)
@@ -523,7 +521,7 @@ func (that *WithdrawController) HistoryList(ctx *fasthttp.RequestCtx) {
 			return
 		}
 
-		rangeParam["amount"] = []interface{}{minAmountInt, maxAmountInt}
+		ex["amount"] = g.Op{"between": exp.NewRangeVal(minAmountInt, maxAmountInt)}
 	}
 
 	if username != "" {
@@ -566,12 +564,12 @@ func (that *WithdrawController) HistoryList(ctx *fasthttp.RequestCtx) {
 		}
 
 		ex = map[string]interface{}{
-			"_id":   id,
+			"id":    id,
 			"state": baseState,
 		}
 	}
 
-	data, err := model.WithdrawHistoryList(ex, rangeParam, ty, startTime, endTime, uint(page), uint(pageSize))
+	data, err := model.WithdrawHistoryList(ex, ty, startTime, endTime, uint(page), uint(pageSize))
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return
