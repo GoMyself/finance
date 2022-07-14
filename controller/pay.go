@@ -136,7 +136,7 @@ func (that *PayController) PayQrDetail(ctx *fasthttp.RequestCtx) {
 	orderNo := string(ctx.PostArgs().Peek("order_no"))
 
 	if len(orderNo) <= 0 {
-		helper.Print(ctx, false, helper.OrderNoIsEmpty)
+		helper.Print(ctx, false, helper.ParamNull)
 		return
 	}
 
