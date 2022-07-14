@@ -128,6 +128,8 @@ func SetupRouter(b BuildInfo) *router.Router {
 	get(nil, "/finance/tunnel", payCtl.Tunnel)
 	// [前台] 发起存款
 	post(nil, "/finance/pay", payCtl.Pay)
+	// [前台] 扫码支付订单支付界面
+	post(nil, "/finance/qrDetail", payCtl.PayQrDetail)
 	// [前台] 用户申请提现
 	post(nil, "/finance/withdraw", wdCtl.Withdraw)
 	// [前台] 用户提现剩余次数和额度

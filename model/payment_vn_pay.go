@@ -64,6 +64,30 @@ type vnPayCallBack struct {
 	Sign            string `json:"sign"`
 }
 
+type qrPayResp struct {
+	Code string `json:"code"`
+	Msg  string `json:"msg"`
+	Data struct {
+		OrderNo      string `json:"orderNo"`
+		Account      string `json:"account"`      //收款账号
+		Name         string `json:"name"`         //收款人姓名
+		QrCodeUrl    string `json:"qrCodeUrl"`    //二维码
+		Amount       string `json:"amount"`       //支付金额
+		PayCode      string `json:"payCode"`      //收款确认码
+		BankCode     string `json:"bankCode"`     //收款银行编码
+		UserCode     string `json:"userCode"`     //付款银行编码(用户选择的银行)
+		PayResult    string `json:"payResult"`    //充值结果，用于通知用户充值结果。Create,创建。Success，成功
+		PayInPicH5   string `json:"payInPicH5"`   //收款银行图片h5
+		PayInPicWeb  string `json:"payInPicWeb"`  //收款银行图片web
+		PayOutPicH5  string `json:"payOutPicH5"`  //付款银行图片H5
+		PayOutPicWeb string `json:"payOutPicWeb"` //付款银行图片H5
+		Style        string `json:"style"`        //模板样式 1：样式1，2：样式2，3：样式3
+		EndSecond    string `json:"endSecond"`    //倒计时，通过请求计算
+		StartDate    string `json:"startDate"`    //支付计时时间
+
+	} `json:"data"`
+}
+
 func (that *VnPayment) New() {
 
 	appID := meta.Finance["vn"]["app_id"].(string)
@@ -350,6 +374,69 @@ func (that *VnPayment) sign(args map[string]string, method string) string {
 	}
 
 	qs = qs + "&appsecret=" + that.Conf.PayKey
+	fmt.Println(qs)
+	sg := strings.ToLower(helper.GetMD5Hash(helper.GetMD5Hash(helper.GetMD5Hash(qs))))
+	return sg
+}
+
+//VnQrDetail 根据订单获取扫码支付的页面数据
+func VnQrDetail(orderNo string) (qrPayResp, error) {
+
+	merchantNo := meta.Finance["vn"]["merchan_no"].(string) //商户号
+	payKey := meta.Finance["vn"]["key"].(string)            //加密密钥
+	apiUrl := meta.Finance["vn"]["api"].(string)            //请求的域名
+	appID := meta.Finance["vn"]["app_id"].(string)          //公司apiCode
+	merchant := meta.Finance["vn"]["merchan"].(string)      //商户号apiCode
+
+	data := qrPayResp{}
+	var path string
+	fmt.Println("VnQrDetail qrDetail orderId = ", orderNo)
+
+	now := time.Now()
+	recs := map[string]string{
+		"merchantNo": merchantNo, // 商户编号
+		"orderNo":    orderNo,    // 支付返回的三方的订单号
+	}
+
+	tp := fmt.Sprintf("%d", now.UnixMilli())
+	recs["timestamp"] = tp
+	recs["sign"] = sign(recs, payKey)
+	delete(recs, "timestamp")
+	body, err := helper.JsonMarshal(recs)
+	if err != nil {
+		return data, errors.New(helper.FormatErr)
+	}
+	header := map[string]string{
+		"Content-Type": "application/json",
+		"Nonce":        helper.MD5Hash(helper.GenId()),
+		"Timestamp":    tp,
+		"x-Request-Id": helper.GenId(),
+	}
+
+	path = "/v1/api/pay/detail/"
+	uri := fmt.Sprintf("%s%s%s/%s/%s", apiUrl, path, appID, merchant, orderNo)
+
+	v, err := httpDoTimeout("p3 pay", body, "POST", uri, header, time.Second*8)
+	if err != nil {
+		fmt.Println("VnQrDetail uri = ", uri)
+		fmt.Println("VnQrDetail httpDoTimeout err = ", err)
+		fmt.Println("VnQrDetail body = ", string(v))
+		return data, errors.New(helper.PayServerErr)
+	}
+
+	fmt.Println("VnQrDetail body = ", string(v))
+	if err = helper.JsonUnmarshal(v, &data); err != nil {
+		return data, fmt.Errorf("json format err: %s", err.Error())
+	}
+	return data, nil
+}
+
+// sign 组装加签参数
+func sign(args map[string]string, payKey string) string {
+
+	qs := fmt.Sprintf(`merchantNo=%s&orderNo=%s&timestamp=%s`,
+		args["merchantNo"], args["orderNo"], args["timestamp"])
+	qs = qs + "&appsecret=" + payKey
 	fmt.Println(qs)
 	sg := strings.ToLower(helper.GetMD5Hash(helper.GetMD5Hash(helper.GetMD5Hash(qs))))
 	return sg
