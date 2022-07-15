@@ -192,6 +192,7 @@ func (that *VnPayment) Pay(orderId, ch, amount, bid string) (paymentDepositResp,
 
 	data.Addr = res.Data.Link
 	data.OrderID = res.Data.OrderNo
+	data.useLink = 1
 
 	return data, nil
 }
