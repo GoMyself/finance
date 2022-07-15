@@ -82,7 +82,7 @@ type qrPayResp struct {
 		PayOutPicH5  string `json:"payOutPicH5"`  //付款银行图片H5
 		PayOutPicWeb string `json:"payOutPicWeb"` //付款银行图片H5
 		Style        string `json:"style"`        //模板样式 1：样式1，2：样式2，3：样式3
-		EndSecond    string `json:"endSecond"`    //倒计时，通过请求计算
+		EndSecond    uint64 `json:"endSecond"`    //倒计时，通过请求计算
 		StartDate    string `json:"startDate"`    //支付计时时间
 
 	} `json:"data"`
