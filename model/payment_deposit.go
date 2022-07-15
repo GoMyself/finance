@@ -85,7 +85,7 @@ func NewestPay(fctx *fasthttp.RequestCtx, pid, amount, bid string) (map[string]s
 
 	res["id"] = data.OrderID
 	res["url"] = data.Addr
-
+	res["useLink"] = data.UseLink
 	return res, nil
 }
 
