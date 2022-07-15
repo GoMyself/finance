@@ -106,6 +106,11 @@ func MemberCache(fctx *fasthttp.RequestCtx) (Member, error) {
 		return m, pushLog(rs.Err(), helper.RedisErr)
 	}
 
+	// 黑名单会员
+	if _, ok := blackUser[m.Username]; ok {
+		return m, errors.New(helper.AccessTokenExpires)
+	}
+
 	return m, nil
 }
 

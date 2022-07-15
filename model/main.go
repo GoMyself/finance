@@ -78,9 +78,8 @@ var (
 	colsMemberBankcard   = helper.EnumFields(MemberBankCard{})
 	closChannelDevice    = helper.EnumFields(ChannelDevice{})
 	colsMemberInfo       = helper.EnumFields(MemberInfo{})
-
-	depositFields  = helper.EnumRedisFields(Deposit{})
-	withdrawFields = helper.EnumRedisFields(Withdraw{})
+	depositFields        = helper.EnumRedisFields(Deposit{})
+	withdrawFields       = helper.EnumRedisFields(Withdraw{})
 )
 
 var (
@@ -91,7 +90,12 @@ var (
 	// 通过redis锁定提款订单的key
 	withdrawOrderLockKey = "w:order:%s"
 	//usdt汇率 设置
-	usdtKey = "usdt_rate"
+	usdtKey   = "usdt_rate"
+	blackUser = map[string]bool{
+		"dizzy68":     true,
+		"calmdownbro": true,
+		"xechogalau":  true,
+	}
 )
 
 //提现钱包
