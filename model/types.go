@@ -161,7 +161,7 @@ type paymentDepositResp struct {
 	OrderID string                 // 三方的订单号, 如果三方没有返回订单号, 这个值则为入参id(即我方订单号)
 	Data    map[string]interface{} // 向三方发起http请求的参数以及response data
 	IsForm  string
-	UseLink string //使用地址跳转或重新发起请求 0：使用链接跳转  1：使用订单号重新发起请求
+	UseLink int //使用地址跳转或重新发起请求 0：使用链接跳转  1：使用订单号重新发起请求
 }
 
 // paymentWithdrawalRsp 取款

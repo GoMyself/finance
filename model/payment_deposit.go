@@ -4,6 +4,7 @@ import (
 	"errors"
 	"finance/contrib/helper"
 	"fmt"
+	"strconv"
 
 	g "github.com/doug-martin/goqu/v9"
 	"github.com/valyala/fasthttp"
@@ -85,7 +86,7 @@ func NewestPay(fctx *fasthttp.RequestCtx, pid, amount, bid string) (map[string]s
 
 	res["id"] = data.OrderID
 	res["url"] = data.Addr
-	res["useLink"] = data.UseLink
+	res["useLink"] = strconv.Itoa(data.UseLink)
 	return res, nil
 }
 
