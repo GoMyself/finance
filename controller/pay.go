@@ -145,5 +145,5 @@ func (that *PayController) PayQrDetail(ctx *fasthttp.RequestCtx) {
 		helper.Print(ctx, false, err.Error())
 		return
 	}
-	helper.Print(ctx, true, res)
+	helper.Print(ctx, true, res.Data)
 }
