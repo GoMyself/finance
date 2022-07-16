@@ -130,3 +130,20 @@ func (that *PayController) Cate(ctx *fasthttp.RequestCtx) {
 
 	helper.PrintJson(ctx, true, data)
 }
+
+func (that *PayController) PayQrDetail(ctx *fasthttp.RequestCtx) {
+
+	orderNo := string(ctx.PostArgs().Peek("order_no"))
+
+	if len(orderNo) <= 0 {
+		helper.Print(ctx, false, helper.ParamNull)
+		return
+	}
+
+	res, err := model.VnQrDetail(orderNo)
+	if err != nil {
+		helper.Print(ctx, false, err.Error())
+		return
+	}
+	helper.Print(ctx, true, res.Data)
+}
