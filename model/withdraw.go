@@ -584,10 +584,12 @@ func WithdrawList(ex g.Ex, ty uint8, startTime, endTime string, page, pageSize u
 }
 
 // 提款历史记录
-func WithdrawHistoryList(ex g.Ex, rangeParam map[string][]interface{}, ty, startTime, endTime string, page, pageSize uint) (FWithdrawData, error) {
+func WithdrawHistoryList(ex g.Ex, ty, startTime, endTime string, page, pageSize uint) (FWithdrawData, error) {
 
 	ex["prefix"] = meta.Prefix
 	ex["tester"] = "1"
+	fmt.Println("startTime:", startTime)
+	fmt.Println("endtime:", endTime)
 	if startTime != "" && endTime != "" {
 
 		startAt, err := helper.TimeToLoc(startTime, loc)
@@ -605,9 +607,9 @@ func WithdrawHistoryList(ex g.Ex, rangeParam map[string][]interface{}, ty, start
 		}
 
 		if ty == "1" {
-			rangeParam["created_at"] = []interface{}{startAt, endAt}
+			ex["created_at"] = g.Op{"between": exp.NewRangeVal(startAt, endAt)}
 		} else {
-			rangeParam["withdraw_at"] = []interface{}{startAt, endAt}
+			ex["withdraw_at"] = g.Op{"between": exp.NewRangeVal(startAt, endAt)}
 		}
 	}
 
