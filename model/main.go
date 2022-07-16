@@ -90,12 +90,7 @@ var (
 	// 通过redis锁定提款订单的key
 	withdrawOrderLockKey = "w:order:%s"
 	//usdt汇率 设置
-	usdtKey   = "usdt_rate"
-	blackUser = map[string]bool{
-		"dizzy68":     true,
-		"calmdownbro": true,
-		"xechogalau":  true,
-	}
+	usdtKey = "usdt_rate"
 )
 
 //提现钱包
