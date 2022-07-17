@@ -4,6 +4,7 @@ import (
 	"errors"
 	"finance/contrib/helper"
 	"fmt"
+	"sort"
 	"time"
 
 	g "github.com/doug-martin/goqu/v9"
@@ -125,6 +126,10 @@ func CacheRefreshPaymentBanks(id string) error {
 	bkey := meta.Prefix + ":BK:" + id
 	pipe.Unlink(ctx, bkey)
 	if len(bankResult) > 0 {
+		sort.Slice(bankResult, func(i, j int) bool {
+			return bankResult[i].Sort < bankResult[j].Sort
+		})
+
 		s, err := helper.JsonMarshal(bankResult)
 		if err != nil {
 			return errors.New(helper.FormatErr)
