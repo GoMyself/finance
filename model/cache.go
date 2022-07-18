@@ -126,8 +126,12 @@ func CacheRefreshPaymentBanks(id string) error {
 	bkey := meta.Prefix + ":BK:" + id
 	pipe.Unlink(ctx, bkey)
 	if len(bankResult) > 0 {
-		sort.Slice(bankResult, func(i, j int) bool {
-			return bankResult[i].Sort < bankResult[j].Sort
+		sort.SliceStable(bankResult, func(i, j int) bool {
+			if bankResult[i].Sort < bankResult[j].Sort {
+				return true
+			}
+
+			return false
 		})
 
 		s, err := helper.JsonMarshal(bankResult)
