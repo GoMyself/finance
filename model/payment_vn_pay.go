@@ -150,6 +150,12 @@ func (that *VnPayment) Pay(orderId, ch, amount, bid string) (paymentDepositResp,
 	tp := fmt.Sprintf("%d", now.UnixMilli())
 	recs["timestamp"] = tp
 	recs["sign"] = that.sign(recs, "deposit")
+	if cno == p3MOMO {
+		recs["channelCode"] = "MOMO"
+	}
+	if cno == p3ZALO {
+		recs["channelCode"] = "ZALO"
+	}
 	delete(recs, "timestamp")
 	body, err := helper.JsonMarshal(recs)
 	if err != nil {
@@ -169,12 +175,6 @@ func (that *VnPayment) Pay(orderId, ch, amount, bid string) (paymentDepositResp,
 	}
 	if cno == p3QR || cno == p3MOMO || cno == p3ZALO || cno == p3VIETTELPAY {
 		path = "/v1/api/pay/scan/"
-	}
-	if cno == p3MOMO {
-		recs["channelCode"] = "MOMO"
-	}
-	if cno == p3ZALO {
-		recs["channelCode"] = "ZALO"
 	}
 
 	uri := fmt.Sprintf("%s%s%s/%s/%s", that.Conf.Domain, path, that.Conf.AppID, that.Conf.Merchan, orderId)
