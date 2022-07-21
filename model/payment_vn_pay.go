@@ -149,13 +149,13 @@ func (that *VnPayment) Pay(orderId, ch, amount, bid string) (paymentDepositResp,
 
 	tp := fmt.Sprintf("%d", now.UnixMilli())
 	recs["timestamp"] = tp
-	recs["sign"] = that.sign(recs, "deposit")
 	if cno == p3MOMO {
 		recs["channelCode"] = "MOMO"
 	}
 	if cno == p3ZALO {
 		recs["channelCode"] = "ZALO"
 	}
+	recs["sign"] = that.sign(recs, "deposit")
 	delete(recs, "timestamp")
 	body, err := helper.JsonMarshal(recs)
 	if err != nil {
