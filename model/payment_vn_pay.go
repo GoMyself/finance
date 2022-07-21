@@ -12,10 +12,12 @@ import (
 )
 
 const (
-	p3Online  = "online"
-	p3Offline = "offline"
-	p3QR      = "qr"
-	p3MOMO    = "momo"
+	p3Online     = "online"
+	p3Offline    = "offline"
+	p3QR         = "qr"
+	p3MOMO       = "momo"
+	p3ZALO       = "zalo"
+	p3VIETTELPAY = "viettelpay"
 )
 
 type vnPayConf struct {
@@ -109,6 +111,8 @@ func (that *VnPayment) New() {
 			"offline":    p3Offline,
 			"momo":       p3MOMO,
 			"QR Banking": p3QR,
+			"zalo":       p3ZALO,
+			"viettelpay": p3VIETTELPAY,
 		},
 	}
 }
@@ -142,9 +146,7 @@ func (that *VnPayment) Pay(orderId, ch, amount, bid string) (paymentDepositResp,
 	if cno == p3Online || cno == p3Offline {
 		recs["bankDirct"] = cno
 	}
-	if cno == p3MOMO {
-		recs["channelCode"] = "MOMO"
-	}
+
 	tp := fmt.Sprintf("%d", now.UnixMilli())
 	recs["timestamp"] = tp
 	recs["sign"] = that.sign(recs, "deposit")
@@ -165,11 +167,14 @@ func (that *VnPayment) Pay(orderId, ch, amount, bid string) (paymentDepositResp,
 	if cno == p3Offline {
 		path = "/v1/api/offline/deposit/"
 	}
-	if cno == p3QR {
+	if cno == p3QR || cno == p3MOMO || cno == p3ZALO || cno == p3VIETTELPAY {
 		path = "/v1/api/pay/scan/"
 	}
 	if cno == p3MOMO {
-		path = "/v1/api/pay/scan/"
+		recs["channelCode"] = "MOMO"
+	}
+	if cno == p3ZALO {
+		recs["channelCode"] = "ZALO"
 	}
 
 	uri := fmt.Sprintf("%s%s%s/%s/%s", that.Conf.Domain, path, that.Conf.AppID, that.Conf.Merchan, orderId)

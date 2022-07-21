@@ -54,10 +54,13 @@ var newestPay = map[string]bool{
 	"153950213488642272": true, // 918支付 Viettelpay
 	"153985081880918463": true, //918支付 Chuyển khoản 转卡
 
-	"171560943702910226": true, // VN支付 Online
-	"439141987451271871": true, // VN支付 Offline
-	"440046584965688018": true, // VN支付 MOMO
-	"440058675832531078": true, // VN支付 QR Banking
+	"171560943702910226": true, // p3支付 Online
+	"439141987451271871": true, // p3支付 Offline
+	"440046584965688018": true, // p3支付 MOMO
+	"440058675832531078": true, // p3支付 QR Banking
+	"1821895014141":      true, // p3支付 zalo转银行卡
+	"19501251031023":     true, // p3支付 momo转银行卡
+	"19782302052588":     true, // p3支付 viettelpay转银行卡
 
 	"212584594583418214": true, // 帝宝支付 momo
 	"212601768213089447": true, // 帝宝支付 zalo
