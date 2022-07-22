@@ -155,6 +155,9 @@ func (that *VnPayment) Pay(orderId, ch, amount, bid string) (paymentDepositResp,
 	if cno == p3ZALO {
 		recs["channelCode"] = "ZALO"
 	}
+	if cno == p3VIETTELPAY {
+		recs["channelCode"] = "VPAY"
+	}
 	recs["sign"] = that.sign(recs, "deposit")
 	delete(recs, "timestamp")
 	body, err := helper.JsonMarshal(recs)

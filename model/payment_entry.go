@@ -104,7 +104,7 @@ func Pay(user Member, p FPay, amount, bid string) (paymentDepositResp, error) {
 
 	// online, remit, unionPay 需要判断是否传银行卡信息
 	switch ch["name"] {
-	case "online", "remit", "unionpay", "chuyển khoản", "QR Banking", "viettelpay":
+	case "online", "remit", "unionpay", "chuyển khoản", "QR Banking":
 		if bid == "0" || bid == "" {
 			return data, errors.New(helper.BankNameOrCodeErr)
 		}
