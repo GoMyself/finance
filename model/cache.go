@@ -63,6 +63,7 @@ type Payment_t struct {
 	CateID      string `db:"cate_id" redis:"cate_id" json:"cate_id"`             //渠道ID
 	ChannelID   string `db:"channel_id" redis:"channel_id" json:"channel_id"`    //通道id
 	ChannelName string `redis:"channel_name" json:"channel_name"`                //通道id
+	PaymentName string `db:"payment_name" json:"payment_name"`                   //子通道名称
 	Comment     string `db:"comment" redis:"comment" json:"comment"`             //
 	CreatedAt   string `db:"created_at" redis:"created_at" json:"created_at"`    //创建时间
 	Et          string `db:"et" redis:"et" json:"et"`                            //结束时间
@@ -162,22 +163,23 @@ func CacheRefreshPayment(id string) error {
 	defer pipe.Close()
 
 	value := map[string]interface{}{
-		"amount":      val.Amount,
-		"devices":     val.Devices,
-		"cate_id":     val.CateID,
-		"channel_id":  val.ChannelID,
-		"comment":     val.Comment,
-		"created_at":  val.CreatedAt,
-		"et":          val.Et,
-		"fmax":        val.Fmax,
-		"fmin":        val.Fmin,
-		"gateway":     val.Gateway,
-		"id":          val.ID,
-		"quota":       val.Quota,
-		"sort":        val.Sort,
-		"st":          val.St,
-		"state":       val.State,
-		"amount_list": val.AmountList,
+		"amount":       val.Amount,
+		"devices":      val.Devices,
+		"cate_id":      val.CateID,
+		"channel_id":   val.ChannelID,
+		"payment_name": val.PaymentName,
+		"comment":      val.Comment,
+		"created_at":   val.CreatedAt,
+		"et":           val.Et,
+		"fmax":         val.Fmax,
+		"fmin":         val.Fmin,
+		"gateway":      val.Gateway,
+		"id":           val.ID,
+		"quota":        val.Quota,
+		"sort":         val.Sort,
+		"st":           val.St,
+		"state":        val.State,
+		"amount_list":  val.AmountList,
 	}
 	pkey := meta.Prefix + ":p:" + id
 	pipe.Unlink(ctx, pkey)
@@ -227,7 +229,7 @@ func CachePayment(id string) (FPay, error) {
 
 func Tunnel(fctx *fasthttp.RequestCtx, id string) (string, error) {
 
-	m := Payment_t{}
+	a := &fastjson.Arena{}
 
 	u, err := MemberCache(fctx)
 	if err != nil {
@@ -239,7 +241,7 @@ func Tunnel(fctx *fasthttp.RequestCtx, id string) (string, error) {
 	//	key = fmt.Sprintf("p:%d:%s", 9, id)
 	//}
 
-	paymentId, err := meta.MerchantRedis.RPopLPush(ctx, key, key).Result()
+	paymentIds, err := meta.MerchantRedis.LRange(ctx, key, 0, -1).Result()
 	if err != nil {
 		fmt.Println("SMembers = ", err.Error())
 		return "[]", nil
@@ -248,51 +250,100 @@ func Tunnel(fctx *fasthttp.RequestCtx, id string) (string, error) {
 	pipe := meta.MerchantRedis.TxPipeline()
 	defer pipe.Close()
 
-	exists := pipe.Exists(ctx, fmt.Sprintf("%s:DL:%s", meta.Prefix, u.UID))
-	rs := pipe.HMGet(ctx, meta.Prefix+":p:"+paymentId, "id", "fmin", "fmax", "et", "st", "amount_list")
-	re := pipe.HMGet(ctx, meta.Prefix+":pr:"+paymentId, "fmin", "fmax")
-	bk := pipe.Get(ctx, meta.Prefix+":BK:"+paymentId)
+	ll := len(paymentIds)
+	rs := make([]*redis.SliceCmd, ll)
+	re := make([]*redis.SliceCmd, ll)
+	bk := make([]*redis.StringCmd, ll)
 
-	_, _ = pipe.Exec(ctx)
+	exists := pipe.Exists(ctx, fmt.Sprintf("%s:DL:%s", meta.Prefix, u.UID))
+	for i, v := range paymentIds {
+		rs[i] = pipe.HMGet(ctx, meta.Prefix+":p:"+v, "id", "fmin", "fmax", "et", "st", "amount_list", "payment_name", "sort")
+		re[i] = pipe.HMGet(ctx, meta.Prefix+":pr:"+v, "fmin", "fmax")
+		bk[i] = pipe.Get(ctx, meta.Prefix+":BK:"+v)
+	}
+
+	pipe.Exec(ctx)
 
 	// 如果会员被锁定不返回渠道
 	if exists.Val() != 0 {
-		return "", pushLog(err, helper.RedisErr)
-	}
-	if rs.Err() != nil {
-		return "", pushLog(err, helper.RedisErr)
-	}
-	if err := rs.Scan(&m); err != nil {
-		return "", pushLog(err, helper.RedisErr)
+		return "[]", pushLog(err, helper.RedisErr)
 	}
 
-	var (
-		fmin, fmax string
-		ok         bool
-	)
-	scope := re.Val()
-	if fmin, ok = scope[0].(string); !ok {
-		return "", errors.New(helper.TunnelMinLimitErr)
+	arr := a.NewArray()
+
+	for i := 0; i < ll; i++ {
+
+		var (
+			fmin, fmax string
+			ok         bool
+			m          Payment_t
+		)
+
+		scope := re[i].Val()
+		if fmin, ok = scope[0].(string); !ok {
+			return "", errors.New(helper.TunnelMinLimitErr)
+		}
+
+		if fmax, ok = scope[1].(string); !ok {
+			return "", errors.New(helper.TunnelMaxLimitErr)
+		}
+
+		if err := rs[i].Scan(&m); err != nil {
+			return "", pushLog(err, helper.RedisErr)
+		}
+
+		obj := fastjson.MustParse(`{"id":"0","bank":[], "fmin":"0","fmax":"0", "amount_list": ""}`)
+		obj.Set("id", fastjson.MustParse(fmt.Sprintf(`"%s"`, m.ID)))
+		obj.Set("fmin", fastjson.MustParse(fmt.Sprintf(`"%s"`, fmin)))
+		obj.Set("fmax", fastjson.MustParse(fmt.Sprintf(`"%s"`, fmax)))
+		obj.Set("sort", fastjson.MustParse(fmt.Sprintf(`"%s"`, m.Sort)))
+		obj.Set("payment_name", fastjson.MustParse(fmt.Sprintf(`"%s"`, m.PaymentName)))
+		obj.Set("amount_list", fastjson.MustParse(fmt.Sprintf(`"%s"`, m.AmountList)))
+
+		banks := bk[i].Val()
+		if len(banks) > 0 {
+			obj.Set("bank", fastjson.MustParse(banks))
+		}
+
+		arr.SetArrayItem(i, obj)
+		obj = nil
 	}
+	str := arr.String()
+	/*
+		if rs.Err() != nil {
+			return "", pushLog(err, helper.RedisErr)
+		}
+		if err := rs.Scan(&m); err != nil {
+			return "", pushLog(err, helper.RedisErr)
+		}
 
-	if fmax, ok = scope[1].(string); !ok {
-		return "", errors.New(helper.TunnelMaxLimitErr)
-	}
+		var (
+			fmin, fmax string
+			ok         bool
+		)
+		scope := re.Val()
+		if fmin, ok = scope[0].(string); !ok {
+			return "", errors.New(helper.TunnelMinLimitErr)
+		}
 
-	base := fastjson.MustParse(`{"id":"0","bank":[], "fmin":"0","fmax":"0", "amount_list": ""}`)
-	base.Set("id", fastjson.MustParse(fmt.Sprintf(`"%s"`, m.ID)))
-	base.Set("fmin", fastjson.MustParse(fmt.Sprintf(`"%s"`, fmin)))
-	base.Set("fmax", fastjson.MustParse(fmt.Sprintf(`"%s"`, fmax)))
-	base.Set("amount_list", fastjson.MustParse(fmt.Sprintf(`"%s"`, m.AmountList)))
+		if fmax, ok = scope[1].(string); !ok {
+			return "", errors.New(helper.TunnelMaxLimitErr)
+		}
 
-	banks := bk.Val()
-	if len(banks) > 0 {
-		base.Set("bank", fastjson.MustParse(banks))
-	}
+		base := fastjson.MustParse(`{"id":"0","bank":[], "fmin":"0","fmax":"0", "amount_list": ""}`)
+		base.Set("id", fastjson.MustParse(fmt.Sprintf(`"%s"`, m.ID)))
+		base.Set("fmin", fastjson.MustParse(fmt.Sprintf(`"%s"`, fmin)))
+		base.Set("fmax", fastjson.MustParse(fmt.Sprintf(`"%s"`, fmax)))
+		base.Set("amount_list", fastjson.MustParse(fmt.Sprintf(`"%s"`, m.AmountList)))
 
-	str := base.String()
-	base = nil
+		banks := bk.Val()
+		if len(banks) > 0 {
+			base.Set("bank", fastjson.MustParse(banks))
+		}
 
+		str := base.String()
+		base = nil
+	*/
 	return str, nil
 }
 
@@ -329,9 +380,9 @@ func Cate(fctx *fasthttp.RequestCtx) (string, error) {
 	obj := a.NewArray()
 	recs := recs_temp.Val()
 
-	fmt.Println("key = ", key)
-	fmt.Println("exists.Val() = ", exists.Val())
-	fmt.Println("recs = ", recs)
+	//fmt.Println("key = ", key)
+	//fmt.Println("exists.Val() = ", exists.Val())
+	//fmt.Println("recs = ", recs)
 
 	for i, value := range recs {
 		val := fastjson.MustParse(value)
