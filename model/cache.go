@@ -60,24 +60,24 @@ type PaymentDetail struct {
 }
 
 type Payment_t struct {
-	CateID      string `db:"cate_id" redis:"cate_id" json:"cate_id"`             //渠道ID
-	ChannelID   string `db:"channel_id" redis:"channel_id" json:"channel_id"`    //通道id
-	ChannelName string `redis:"channel_name" json:"channel_name"`                //通道id
-	PaymentName string `db:"payment_name" json:"payment_name"`                   //子通道名称
-	Comment     string `db:"comment" redis:"comment" json:"comment"`             //
-	CreatedAt   string `db:"created_at" redis:"created_at" json:"created_at"`    //创建时间
-	Et          string `db:"et" redis:"et" json:"et"`                            //结束时间
-	Fmax        string `db:"fmax" redis:"fmax" json:"fmax"`                      //最大支付金额
-	Fmin        string `db:"fmin" redis:"fmin" json:"fmin"`                      //最小支付金额
-	Gateway     string `db:"gateway" redis:"gateway" json:"gateway"`             //支付网关
-	ID          string `db:"id" redis:"id" json:"id"`                            //
-	Quota       string `db:"quota" redis:"quota" json:"quota"`                   //每天限额
-	Amount      string `db:"amount" redis:"amount" json:"amount"`                //每天限额
-	Sort        string `db:"sort" redis:"sort" json:"sort"`                      //
-	St          string `db:"st" redis:"st" json:"st"`                            //开始时间
-	State       string `db:"state" redis:"state" json:"state"`                   //0:关闭1:开启
-	Devices     string `db:"devices" redis:"devices" json:"devices"`             //设备号
-	AmountList  string `db:"amount_list" redis:"amount_list" json:"amount_list"` // 固定金额列表
+	CateID      string `db:"cate_id" redis:"cate_id" json:"cate_id"`                //渠道ID
+	ChannelID   string `db:"channel_id" redis:"channel_id" json:"channel_id"`       //通道id
+	ChannelName string `redis:"channel_name" json:"channel_name"`                   //通道id
+	PaymentName string `db:"payment_name" redis:"payment_name" json:"payment_name"` //子通道名称
+	Comment     string `db:"comment" redis:"comment" json:"comment"`                //
+	CreatedAt   string `db:"created_at" redis:"created_at" json:"created_at"`       //创建时间
+	Et          string `db:"et" redis:"et" json:"et"`                               //结束时间
+	Fmax        string `db:"fmax" redis:"fmax" json:"fmax"`                         //最大支付金额
+	Fmin        string `db:"fmin" redis:"fmin" json:"fmin"`                         //最小支付金额
+	Gateway     string `db:"gateway" redis:"gateway" json:"gateway"`                //支付网关
+	ID          string `db:"id" redis:"id" json:"id"`                               //
+	Quota       string `db:"quota" redis:"quota" json:"quota"`                      //每天限额
+	Amount      string `db:"amount" redis:"amount" json:"amount"`                   //每天限额
+	Sort        string `db:"sort" redis:"sort" json:"sort"`                         //
+	St          string `db:"st" redis:"st" json:"st"`                               //开始时间
+	State       string `db:"state" redis:"state" json:"state"`                      //0:关闭1:开启
+	Devices     string `db:"devices" redis:"devices" json:"devices"`                //设备号
+	AmountList  string `db:"amount_list" redis:"amount_list" json:"amount_list"`    // 固定金额列表
 }
 
 func CacheRefreshPaymentBanks(id string) error {
@@ -292,14 +292,13 @@ func Tunnel(fctx *fasthttp.RequestCtx, id string) (string, error) {
 			return "", pushLog(err, helper.RedisErr)
 		}
 
-		obj := fastjson.MustParse(`{"id":"0","bank":[], "fmin":"0","fmax":"0", "amount_list": ""}`)
+		obj := fastjson.MustParse(`{"id":"0","bank":[], "fmin":"0","fmax":"0", "amount_list": "","sort":"0","payment_name":""}`)
 		obj.Set("id", fastjson.MustParse(fmt.Sprintf(`"%s"`, m.ID)))
 		obj.Set("fmin", fastjson.MustParse(fmt.Sprintf(`"%s"`, fmin)))
 		obj.Set("fmax", fastjson.MustParse(fmt.Sprintf(`"%s"`, fmax)))
 		obj.Set("sort", fastjson.MustParse(fmt.Sprintf(`"%s"`, m.Sort)))
 		obj.Set("payment_name", fastjson.MustParse(fmt.Sprintf(`"%s"`, m.PaymentName)))
 		obj.Set("amount_list", fastjson.MustParse(fmt.Sprintf(`"%s"`, m.AmountList)))
-
 		banks := bk[i].Val()
 		if len(banks) > 0 {
 			obj.Set("bank", fastjson.MustParse(banks))
@@ -551,22 +550,23 @@ func Create(level string) {
 	for _, val := range payments {
 
 		value := map[string]interface{}{
-			"amount":      val.Amount,
-			"devices":     val.Devices,
-			"cate_id":     val.CateID,
-			"channel_id":  val.ChannelID,
-			"comment":     val.Comment,
-			"created_at":  val.CreatedAt,
-			"et":          val.Et,
-			"fmax":        val.Fmax,
-			"fmin":        val.Fmin,
-			"gateway":     val.Gateway,
-			"id":          val.ID,
-			"quota":       val.Quota,
-			"sort":        val.Sort,
-			"st":          val.St,
-			"state":       val.State,
-			"amount_list": val.AmountList,
+			"amount":       val.Amount,
+			"devices":      val.Devices,
+			"cate_id":      val.CateID,
+			"channel_id":   val.ChannelID,
+			"comment":      val.Comment,
+			"payment_name": val.PaymentName,
+			"created_at":   val.CreatedAt,
+			"et":           val.Et,
+			"fmax":         val.Fmax,
+			"fmin":         val.Fmin,
+			"gateway":      val.Gateway,
+			"id":           val.ID,
+			"quota":        val.Quota,
+			"sort":         val.Sort,
+			"st":           val.St,
+			"state":        val.State,
+			"amount_list":  val.AmountList,
 		}
 		pipe.LPush(ctx, meta.Prefix+":p:"+level+":"+val.ChannelID, val.ID)
 		pipe.HMSet(ctx, meta.Prefix+":p:"+val.ID, value)

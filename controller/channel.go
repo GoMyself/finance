@@ -226,10 +226,10 @@ func (that *ChannelController) Update(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if payment.State == "1" {
-		helper.Print(ctx, false, helper.UpdateMustCloseFirst)
-		return
-	}
+	//if payment.State == "1" {
+	//	helper.Print(ctx, false, helper.UpdateMustCloseFirst)
+	//	return
+	//}
 
 	// 三方渠道
 	cate, err := model.CateByID(payment.CateID)
