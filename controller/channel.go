@@ -15,10 +15,11 @@ import (
 type ChannelController struct{}
 
 type channelParam struct {
-	CateID    string `rule:"digit" msg:"cate_id error" name:"cate_id"`                         // 渠道id
-	ChannelID string `rule:"digit" min:"1" max:"100" msg:"channel_id error" name:"channel_id"` // 通道id
-	FMin      string `rule:"float" msg:"fmin error" name:"fmin"`                               // 最小支付金额
-	FMax      string `rule:"float" msg:"fmax error" name:"fmax"`                               // 最大支付金额
+	CateID      string `rule:"digit" msg:"cate_id error" name:"cate_id"`                         // 渠道id
+	ChannelID   string `rule:"digit" min:"1" max:"100" msg:"channel_id error" name:"channel_id"` // 通道id
+	PaymentName string `rule:"none" msg:"payment_name error" name:"payment_name"`                // 通道名称
+	FMin        string `rule:"float" msg:"fmin error" name:"fmin"`                               // 最小支付金额
+	FMax        string `rule:"float" msg:"fmax error" name:"fmax"`                               // 最大支付金额
 	//St         string `rule:"time" msg:"st error" name:"st"`                                    // 开始时间
 	//Et         string `rule:"time" msg:"et error" name:"et"`                                    // 结束时间
 	Device     string `rule:"none" msg:"device error" name:"device"`               // 设备号多选逗号分开
@@ -29,16 +30,17 @@ type channelParam struct {
 }
 
 type updateChannelParam struct {
-	ID         string `rule:"digit" msg:"id error" name:"id"`
-	FMin       string `rule:"float" msg:"fmin error" name:"fmin"`                  // 最小支付金额
-	FMax       string `rule:"float" msg:"fmax error" name:"fmax"`                  // 最大支付金额
-	St         string `rule:"time" msg:"st error" name:"st"`                       // 开始时间
-	Et         string `rule:"time" msg:"et error" name:"et"`                       // 结束时间
-	Device     string `rule:"none" msg:"device error" name:"device"`               // 设备号多选逗号分开
-	Sort       string `rule:"digit" min:"1" max:"99" msg:"sort error" name:"sort"` // 排序
-	Comment    string `rule:"none" msg:"comment error" name:"comment"`             // 备注
-	Code       string `rule:"digit" msg:"code error" name:"code"`                  // 动态验证码
-	AmountList string `rule:"none" msg:"amount_list error" name:"amount_list"`     // 固定金额列表
+	ID          string `rule:"digit" msg:"id error" name:"id"`
+	PaymentName string `rule:"none" msg:"payment_name error" name:"payment_name"`   // 通道名称
+	FMin        string `rule:"float" msg:"fmin error" name:"fmin"`                  // 最小支付金额
+	FMax        string `rule:"float" msg:"fmax error" name:"fmax"`                  // 最大支付金额
+	St          string `rule:"time" msg:"st error" name:"st"`                       // 开始时间
+	Et          string `rule:"time" msg:"et error" name:"et"`                       // 结束时间
+	Device      string `rule:"none" msg:"device error" name:"device"`               // 设备号多选逗号分开
+	Sort        string `rule:"digit" min:"1" max:"99" msg:"sort error" name:"sort"` // 排序
+	Comment     string `rule:"none" msg:"comment error" name:"comment"`             // 备注
+	Code        string `rule:"digit" msg:"code error" name:"code"`                  // 动态验证码
+	AmountList  string `rule:"none" msg:"amount_list error" name:"amount_list"`     // 固定金额列表
 }
 
 type channelListParam struct {
@@ -154,17 +156,18 @@ func (that *ChannelController) Insert(ctx *fasthttp.RequestCtx) {
 	//defer model.SystemLogWrite(content, ctx)
 
 	fields := map[string]string{
-		"id":          helper.GenLongId(),
-		"cate_id":     param.CateID,
-		"channel_id":  param.ChannelID,
-		"fmin":        param.FMin,
-		"fmax":        param.FMax,
-		"st":          "00:00:00",
-		"et":          "00:00:00",
-		"created_at":  fmt.Sprintf("%d", ctx.Time().Unix()),
-		"sort":        param.Sort,
-		"comment":     param.Comment,
-		"amount_list": param.AmountList,
+		"id":           helper.GenLongId(),
+		"cate_id":      param.CateID,
+		"channel_id":   param.ChannelID,
+		"payment_name": param.ChannelID,
+		"fmin":         param.FMin,
+		"fmax":         param.FMax,
+		"st":           "00:00:00",
+		"et":           "00:00:00",
+		"created_at":   fmt.Sprintf("%d", ctx.Time().Unix()),
+		"sort":         param.Sort,
+		"comment":      param.Comment,
+		"amount_list":  param.AmountList,
 	}
 	err = model.ChannelInsert(fields, device)
 	if err != nil {
@@ -256,16 +259,17 @@ func (that *ChannelController) Update(ctx *fasthttp.RequestCtx) {
 	//defer model.SystemLogWrite(content, ctx)
 
 	fields := map[string]string{
-		"id":          param.ID,
-		"quota":       "0",
-		"gateway":     "",
-		"fmin":        param.FMin,
-		"fmax":        param.FMax,
-		"st":          param.St,
-		"et":          param.Et,
-		"sort":        param.Sort,
-		"comment":     param.Comment,
-		"amount_list": param.AmountList,
+		"id":           param.ID,
+		"quota":        "0",
+		"gateway":      "",
+		"payment_name": param.PaymentName,
+		"fmin":         param.FMin,
+		"fmax":         param.FMax,
+		"st":           param.St,
+		"et":           param.Et,
+		"sort":         param.Sort,
+		"comment":      param.Comment,
+		"amount_list":  param.AmountList,
 	}
 
 	if len(param.AmountList) > 0 {
