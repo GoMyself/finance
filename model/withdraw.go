@@ -497,6 +497,7 @@ func withdrawDailyData(username string) (int64, decimal.Decimal, error) {
 	ex := g.Ex{
 		"prefix":     meta.Prefix,
 		"username":   username,
+		"state":      WithdrawSuccess,
 		"created_at": g.Op{"between": exp.NewRangeVal(helper.DayTST(0, loc).Unix(), helper.DayTET(0, loc).Unix())},
 	}
 	query, _, _ := dialect.From("tbl_withdraw").Select(g.COUNT("id").As("t"), g.SUM("amount").As("agg")).Where(ex).ToSQL()
