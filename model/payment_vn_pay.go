@@ -107,12 +107,12 @@ func (that *VnPayment) New() {
 		PayNotify:      "%s/finance/callback/vnd",
 		WithdrawNotify: "%s/finance/callback/vnw",
 		Channel: map[string]string{
-			"online":     p3Online,
-			"offline":    p3Offline,
-			"momo":       p3MOMO,
-			"8":          p3QR,
-			"zalo":       p3ZALO,
-			"viettelpay": p3VIETTELPAY,
+			"3": p3Online,
+			"9": p3Offline,
+			"1": p3MOMO,
+			"8": p3QR,
+			"2": p3ZALO,
+			"6": p3VIETTELPAY,
 		},
 	}
 }
