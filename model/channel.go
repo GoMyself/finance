@@ -167,14 +167,15 @@ func ChannelInsert(param map[string]string, device []string) error {
 func ChannelUpdate(param map[string]string, device []string) error {
 
 	record := g.Record{
-		"fmin":        param["fmin"],
-		"fmax":        param["fmax"],
-		"st":          param["st"],
-		"et":          param["et"],
-		"sort":        param["sort"],
-		"comment":     param["comment"],
-		"devices":     strings.Join(device, ","),
-		"amount_list": param["amount_list"],
+		"fmin":         param["fmin"],
+		"fmax":         param["fmax"],
+		"payment_name": param["payment_name"],
+		"st":           param["st"],
+		"et":           param["et"],
+		"sort":         param["sort"],
+		"comment":      param["comment"],
+		"devices":      strings.Join(device, ","),
+		"amount_list":  param["amount_list"],
 	}
 
 	var dr []g.Record
@@ -229,7 +230,7 @@ func ChannelUpdate(param map[string]string, device []string) error {
 		return pushLog(err, helper.TransErr)
 	}
 
-	// _ = CacheRefreshPayment(param["id"])
+	_ = CacheRefreshPayment(param["id"])
 	return nil
 }
 
