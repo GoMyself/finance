@@ -64,7 +64,6 @@ func (that *VtPayment) Name() string {
 func (that *VtPayment) Pay(orderId, ch, amount, bid string) (paymentDepositResp, error) {
 
 	data := paymentDepositResp{}
-
 	cno, ok := that.Conf.Channel[ch]
 	if !ok {
 		return data, errors.New(helper.ChannelNotExist)
