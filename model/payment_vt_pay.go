@@ -47,12 +47,12 @@ func (that *VtPayment) New() {
 		PayNotify:      "%s/finance/callback/vtd",
 		WithdrawNotify: "%s/finance/callback/vtw",
 		Channel: map[string]string{
-			"momo":       vtMomo,
-			"unionpay":   vtBankQr,
-			"online":     vtOnline,
-			"zalo":       vtZaloPay,
-			"viettelpay": vtViettelPay,
-			"Thẻ Cào":    vtCard,
+			"1":  vtMomo,
+			"8":  vtBankQr,
+			"3":  vtOnline,
+			"2":  vtZaloPay,
+			"6":  vtViettelPay,
+			"15": vtCard,
 		},
 	}
 }
@@ -64,7 +64,6 @@ func (that *VtPayment) Name() string {
 func (that *VtPayment) Pay(orderId, ch, amount, bid string) (paymentDepositResp, error) {
 
 	data := paymentDepositResp{}
-
 	cno, ok := that.Conf.Channel[ch]
 	if !ok {
 		return data, errors.New(helper.ChannelNotExist)

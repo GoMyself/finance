@@ -91,6 +91,22 @@ var (
 	withdrawOrderLockKey = "w:order:%s"
 	//usdt汇率 设置
 	usdtKey = "usdt_rate"
+
+	chanelMap = map[string]string{
+		"MoMo":               "1",
+		"Zalo Pay":           "2",
+		"Online":             "3",
+		"Chuyển Khoản":       "4",
+		"CoinPay":            "5",
+		"ViettelPay":         "6",
+		"Withdraw":           "7",
+		"QR Banking":         "8",
+		"Offline":            "9",
+		"USDT":               "10",
+		"manual":             "11",
+		"Chuyển Khoản Nhanh": "14",
+		"Thẻ Cào":            "15",
+	}
 )
 
 //提现钱包

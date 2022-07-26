@@ -62,10 +62,10 @@ func (that *WPayment) New() {
 		PayNotify:      "%s/finance/callback/wd",
 		WithdrawNotify: "%s/finance/callback/ww",
 		Channel: map[string]string{
-			"momo":         wMomo,
-			"QR Banking":   wUnionPay,
-			"online":       wOnline,
-			"chuyển khoản": wRemit,
+			"1": wMomo,
+			"8": wUnionPay,
+			"3": wOnline,
+			"4": wRemit,
 		},
 	}
 }
