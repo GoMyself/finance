@@ -57,7 +57,7 @@ var newestPay = map[string]bool{
 	"171560943702910226": true, // p3支付 Online
 	"439141987451271871": true, // p3支付 Offline
 	"440046584965688018": true, // p3支付 MOMO
-	"440058675832531078": true, // p3支付 QR Banking
+	"440058675832531078": true, // p3支付 8
 	"1821895014141":      true, // p3支付 zalo转银行卡
 	"19501251031023":     true, // p3支付 momo转银行卡
 	"19782302052588":     true, // p3支付 viettelpay转银行卡

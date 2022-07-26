@@ -75,10 +75,10 @@ func (that *DbPayment) New() {
 		PayNotify:      "%s/finance/callback/dbd",
 		WithdrawNotify: "%s/finance/callback/dbw",
 		Channel: map[string]string{
-			"momo":         dbMomo,
-			"chuyển khoản": dbRemit,
-			"online":       dbOnline,
-			"viettelpay":   dbViettelpay,
+			"1": dbMomo,
+			"4": dbRemit,
+			"3": dbOnline,
+			"6": dbViettelpay,
 		},
 	}
 }

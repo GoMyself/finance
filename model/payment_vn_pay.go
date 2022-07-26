@@ -110,7 +110,7 @@ func (that *VnPayment) New() {
 			"online":     p3Online,
 			"offline":    p3Offline,
 			"momo":       p3MOMO,
-			"QR Banking": p3QR,
+			"8":          p3QR,
 			"zalo":       p3ZALO,
 			"viettelpay": p3VIETTELPAY,
 		},

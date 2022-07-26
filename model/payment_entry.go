@@ -103,8 +103,8 @@ func Pay(user Member, p FPay, amount, bid string) (paymentDepositResp, error) {
 	amount = a.String()
 
 	// online, remit, unionPay 需要判断是否传银行卡信息
-	switch ch["name"] {
-	case "online", "remit", "unionpay", "chuyển khoản", "QR Banking":
+	switch p.ChannelID {
+	case "3", "5", "4", "8":
 		if bid == "0" || bid == "" {
 			return data, errors.New(helper.BankNameOrCodeErr)
 		}
@@ -125,7 +125,7 @@ func Pay(user Member, p FPay, amount, bid string) (paymentDepositResp, error) {
 		}
 	*/
 	// 向渠道方发送存款订单请求
-	data, err = payment.Pay(orderId, ch["name"], amount, bid)
+	data, err = payment.Pay(orderId, p.ChannelID, amount, bid)
 	fmt.Println("Pay  payment.Pay err = ", err)
 	if err != nil {
 		return data, err
