@@ -230,7 +230,7 @@ func ChannelUpdate(param map[string]string, device []string) error {
 		return pushLog(err, helper.TransErr)
 	}
 
-	// _ = CacheRefreshPayment(param["id"])
+	_ = CacheRefreshPayment(param["id"])
 	return nil
 }
 
