@@ -52,7 +52,8 @@ func main() {
 
 	mt := new(model.MetaTable)
 
-	mt.MerchantTD = conn.InitTD(cfg.Td.Addr, cfg.Td.MaxIdleConn, cfg.Td.MaxOpenConn)
+	mt.MerchantTD = conn.InitTD(cfg.Td.Message.Addr, cfg.Td.Message.MaxIdleConn, cfg.Td.Message.MaxOpenConn)
+	mt.MerchantLogTD = conn.InitTD(cfg.Td.Log.Addr, cfg.Td.Log.MaxIdleConn, cfg.Td.Log.MaxOpenConn)
 	mt.MerchantDB = conn.InitDB(cfg.Db.Master.Addr, cfg.Db.Master.MaxIdleConn, cfg.Db.Master.MaxOpenConn)
 	mt.MerchantRedis = conn.InitRedisCluster(cfg.Redis.Addr, cfg.Redis.Password)
 

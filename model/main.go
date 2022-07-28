@@ -31,6 +31,7 @@ import (
 type MetaTable struct {
 	MerchantDB    *sqlx.DB
 	MerchantTD    *sqlx.DB
+	MerchantLogTD *sqlx.DB
 	MerchantRedis *redis.ClusterClient
 	MerchantMqtt  *mqtt.Client
 	Program       string
@@ -76,10 +77,7 @@ var (
 	colsWithdraw         = helper.EnumFields(Withdraw{})
 	colsMember           = helper.EnumFields(Member{})
 	colsMemberBankcard   = helper.EnumFields(MemberBankCard{})
-	closChannelDevice    = helper.EnumFields(ChannelDevice{})
 	colsMemberInfo       = helper.EnumFields(MemberInfo{})
-	depositFields        = helper.EnumRedisFields(Deposit{})
-	withdrawFields       = helper.EnumRedisFields(Withdraw{})
 )
 
 var (
@@ -89,24 +87,6 @@ var (
 	depositOrderLockKey = "d:order:%s"
 	// 通过redis锁定提款订单的key
 	withdrawOrderLockKey = "w:order:%s"
-	//usdt汇率 设置
-	usdtKey = "usdt_rate"
-
-	chanelMap = map[string]string{
-		"MoMo":               "1",
-		"Zalo Pay":           "2",
-		"Online":             "3",
-		"Chuyển Khoản":       "4",
-		"CoinPay":            "5",
-		"ViettelPay":         "6",
-		"Withdraw":           "7",
-		"QR Banking":         "8",
-		"Offline":            "9",
-		"USDT":               "10",
-		"manual":             "11",
-		"Chuyển Khoản Nhanh": "14",
-		"Thẻ Cào":            "15",
-	}
 )
 
 //提现钱包
@@ -142,7 +122,7 @@ func Constructor(mt *MetaTable, socks5, c string) {
 		"20": "DBPAY",
 	}
 
-	cateToRedis()
+	_ = cateToRedis()
 
 	rpchttp.RegisterHandler()
 	RegisterTransport()
@@ -189,7 +169,7 @@ func pushLog(err error, code string) error {
 
 	query, _, _ := dialect.Insert("finance_error").Rows(&fields).ToSQL()
 	fmt.Println(query)
-	_, err1 := meta.MerchantTD.Exec(query)
+	_, err1 := meta.MerchantLogTD.Exec(query)
 	if err1 != nil {
 		fmt.Println("insert goerror query = ", query)
 		fmt.Println("insert goerror err = ", err1.Error())
