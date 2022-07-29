@@ -72,7 +72,7 @@ type depositListParam struct {
 	Ty         int    `rule:"digit" min:"0" max:"4" default:"0" name:"ty"`                     // 1 三方订单 2 usdt 订单 3 线下转卡 4 线下转USDT
 	Dty        int    `rule:"none" default:"0" name:"dty"`
 	SortField  string `rule:"none" default:"created_at" name:"sort_field"` //排序字段
-	IsAsc      int    `rule:"digit" default:"1" name:"is_asc"`
+	IsAsc      int    `rule:"none" default:"0" name:"is_asc"`
 }
 
 //Detail 会员列表-存款信息
@@ -198,8 +198,9 @@ func (that *DepositController) History(ctx *fasthttp.RequestCtx) {
 
 	if param.SortField != "" {
 		sortFields := map[string]string{
-			"amount":   "amount",
-			"discount": "discount",
+			"amount":     "amount",
+			"discount":   "discount",
+			"created_at": "created_at",
 		}
 
 		if _, ok := sortFields[param.SortField]; !ok {
