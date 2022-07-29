@@ -8,12 +8,11 @@ import (
 )
 
 // 发送站内信
-func messageSend(msgID, title, subTitle, content, sendName, prefix string, isTop, isVip, ty int, names []string) error {
+func messageSend(msgID, title, content, sendName, prefix string, isTop, isVip, ty int, names []string) error {
 
 	record := g.Record{
 		"message_id": msgID,
 		"title":      title,
-		"sub_title":  subTitle,
 		"content":    content,
 		"send_name":  sendName,
 		"prefix":     prefix,
