@@ -71,6 +71,8 @@ type depositListParam struct {
 	PageSize   int    `rule:"digit" min:"10" max:"200" msg:"page_size error" name:"page_size"` // 页大小
 	Ty         int    `rule:"digit" min:"0" max:"4" default:"0" name:"ty"`                     // 1 三方订单 2 usdt 订单 3 线下转卡 4 线下转USDT
 	Dty        int    `rule:"none" default:"0" name:"dty"`
+	SortField  string `rule:"none" default:"created_at" name:"sort_field"` //排序字段
+	IsAsc      int    `rule:"digit" default:"1" name:"is_asc"`
 }
 
 //Detail 会员列表-存款信息
@@ -194,8 +196,25 @@ func (that *DepositController) History(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	if param.SortField != "" {
+		sortFields := map[string]string{
+			"amount":   "amount",
+			"discount": "discount",
+		}
+
+		if _, ok := sortFields[param.SortField]; !ok {
+			helper.Print(ctx, false, helper.ParamErr)
+			return
+		}
+
+		if !validator.CheckIntScope(strconv.Itoa(param.IsAsc), 0, 1) {
+			helper.Print(ctx, false, helper.ParamErr)
+			return
+		}
+	}
+
 	data, err := model.DepositHistory(param.Username, param.ParentName, param.GroupName, param.ID, param.ChannelID, param.OID, strconv.Itoa(param.State),
-		param.MinAmount, param.MaxAmount, param.StartTime, param.EndTime, param.CID, param.TimeFlag, param.Flag, param.Page, param.PageSize, param.Ty, param.Dty)
+		param.MinAmount, param.MaxAmount, param.StartTime, param.EndTime, param.CID, param.SortField, param.TimeFlag, param.Flag, param.Page, param.PageSize, param.Ty, param.Dty, param.IsAsc)
 	if err != nil {
 		helper.Print(ctx, false, err.Error())
 		return

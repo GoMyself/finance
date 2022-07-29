@@ -76,7 +76,7 @@ type DepositData struct {
 
 // DepositHistory 存款历史列表
 func DepositHistory(username, parentName, groupName, id, channelID, oid, state,
-	minAmount, maxAmount, startTime, endTime, cid string, timeFlag uint8, flag, page, pageSize, ty, dty int) (FDepositData, error) {
+	minAmount, maxAmount, startTime, endTime, cid, sortField string, timeFlag uint8, flag, page, pageSize, ty, dty, isAsc int) (FDepositData, error) {
 
 	data := FDepositData{}
 
@@ -223,8 +223,19 @@ func DepositHistory(username, parentName, groupName, id, channelID, oid, state,
 	}
 
 	offset := uint((page - 1) * pageSize)
+	orderField := g.L("username")
+	if sortField != "" {
+		orderField = g.L(sortField)
+	} else {
+		orderField = g.L("sum(company_net_amount)")
+	}
+
+	orderBy := orderField.Desc()
+	if isAsc == 1 {
+		orderBy = orderField.Asc()
+	}
 	query, _, _ := dialect.From("tbl_deposit").Select(colsDeposit...).
-		Where(g.And(and, or)).Offset(offset).Limit(uint(pageSize)).Order(g.C("created_at").Desc()).ToSQL()
+		Where(g.And(and, or)).Offset(offset).Limit(uint(pageSize)).Order(orderBy).ToSQL()
 	fmt.Println(query)
 	err = meta.MerchantDB.Select(&data.D, query)
 	if err != nil {
